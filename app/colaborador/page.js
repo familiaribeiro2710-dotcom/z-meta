@@ -235,7 +235,7 @@ export default function ColaboradorPage() {
 
   async function saveEntry(e) {
     e.preventDefault();
-    if (!entryValue || Number(entryValue) < 0) return;
+    if (entryValue === "" || entryValue === null || entryValue === undefined || Number(entryValue) < 0) return;
     setSavingEntry(true);
     setEntryMsg("");
     const { error } = await supabase.from("sales_entries").upsert(
@@ -490,9 +490,15 @@ export default function ColaboradorPage() {
                     </p>
                     <div className="mt-3"><ProgressBar pct={progressPct} showLabel={false} /></div>
                     <p className="text-xs text-muted mt-1">{formatPct(progressPct)} da meta</p>
-                    <div className="mt-3 pt-3 border-t border-line">
-                      <p className="text-[11px] text-muted uppercase tracking-wider font-bold">Meta de hoje</p>
-                      <p className="text-xl font-extrabold gradient-text mt-0.5">{formatBRL(goalDailyGoal)}</p>
+                    <div className="mt-3 pt-3 border-t border-line grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-[11px] text-muted uppercase tracking-wider font-bold">Meta de hoje</p>
+                        <p className="text-xl font-extrabold gradient-text mt-0.5">{formatBRL(goalDailyGoal)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted uppercase tracking-wider font-bold">Falta pra bater</p>
+                        <p className="text-xl font-extrabold text-navy mt-0.5">{formatBRL(rest)}</p>
+                      </div>
                     </div>
                   </div>
                 );
