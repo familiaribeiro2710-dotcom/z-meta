@@ -14,6 +14,8 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
+  ChevronLeft,
   ShieldCheck,
   User,
   KeyRound,
@@ -50,13 +52,11 @@ export default function AdminPage() {
   const [health, setHealth] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
   const [lojaAccess, setLojaAccess] = useState([]);
-  const [expanded, setExpanded] = useState({});
-  const [editingEmpresaId, setEditingEmpresaId] = useState(null);
-  const [editingEmpresaName, setEditingEmpresaName] = useState("");
   const [sortKey, setSortKey] = useState("risco");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedLoja, setSelectedLoja] = useState(null);
+  const [selectedEmpresaDetail, setSelectedEmpresaDetail] = useState(null);
 
   const [empresaName, setEmpresaName] = useState("");
   const [cnpj, setCnpj] = useState("");
@@ -119,14 +119,6 @@ export default function AdminPage() {
     await loadAll();
   }
 
-  async function saveEmpresaName(empresaId) {
-    const trimmed = editingEmpresaName.trim();
-    if (!trimmed) return;
-    await supabase.from("empresas").update({ name: trimmed }).eq("id", empresaId);
-    setEditingEmpresaId(null);
-    await loadAll();
-  }
-
   async function toggleEmpresaActive(row) {
     const next = !row.active;
     if (!next && !window.confirm(`Desativar "${row.empresa_name}"? Gerentes e colaboradores dessa empresa perdem o acesso até você reativar.`)) return;
@@ -156,7 +148,7 @@ export default function AdminPage() {
     await loadAll();
   }
 
-  const empresasGrouped = useMemo(() => {
+  const allEmpresas = useMemo(() => {
     const map = new Map();
     health.forEach((row) => {
       if (!map.has(row.empresa_id)) {
@@ -167,29 +159,45 @@ export default function AdminPage() {
           active: row.active,
           created_at: row.empresa_created_at,
           logo_url: row.logo_url,
+          cnpj: row.cnpj,
+          telefone: row.telefone,
+          email: row.email,
           lojas: [],
         });
       }
       if (row.loja_id) map.get(row.empresa_id).lojas.push(row);
     });
-    let list = Array.from(map.values());
-
-    const q = search.trim().toLowerCase();
-    if (q) list = list.filter((e) => e.empresa_name.toLowerCase().includes(q));
-
+    const list = Array.from(map.values());
     list.forEach((e) => {
       e._worstStale = e.lojas.length ? Math.max(...e.lojas.map((l) => daysSince(l.last_activity))) : Infinity;
       e._worstPct = e.lojas.length ? Math.min(...e.lojas.map((l) => Number(l.team_pct))) : 0;
       e._colabTotal = e.lojas.reduce((s, l) => s + Number(l.colaboradores_count), 0);
     });
+    return list;
+  }, [health]);
 
+  const empresasGrouped = useMemo(() => {
+    let list = allEmpresas;
+
+    const q = search.trim().toLowerCase();
+    if (q) list = list.filter((e) => e.empresa_name.toLowerCase().includes(q));
+
+    list = [...list];
     if (sortKey === "risco") list.sort((a, b) => b._worstStale - a._worstStale);
     else if (sortKey === "recente") list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     else if (sortKey === "nome") list.sort((a, b) => a.empresa_name.localeCompare(b.empresa_name));
     else if (sortKey === "desempenho") list.sort((a, b) => a._worstPct - b._worstPct);
 
     return list;
-  }, [health, sortKey, search]);
+  }, [allEmpresas, sortKey, search]);
+
+  const empresaDetail = selectedEmpresaDetail ? allEmpresas.find((e) => e.empresa_id === selectedEmpresaDetail) : null;
+
+  useEffect(() => {
+    if (selectedEmpresaDetail && !allEmpresas.find((e) => e.empresa_id === selectedEmpresaDetail)) {
+      setSelectedEmpresaDetail(null);
+    }
+  }, [allEmpresas, selectedEmpresaDetail]);
 
   const growthBuckets = useMemo(() => {
     const uniqueEmpresas = new Map();
@@ -222,6 +230,32 @@ export default function AdminPage() {
 
   if (profile.must_change_password) {
     return <ChangePassword force onDone={() => setProfile({ ...profile, must_change_password: false })} />;
+  }
+
+  if (selectedEmpresaDetail && !selectedLoja) {
+    return (
+      <AppShell
+        userName={profile.full_name}
+        userId={profile.id}
+        userUsername={profile.username}
+        onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+      >
+        {empresaDetail ? (
+          <EmpresaDetail
+            empresa={empresaDetail}
+            allProfiles={allProfiles}
+            lojaAccess={lojaAccess}
+            onBack={() => setSelectedEmpresaDetail(null)}
+            onChanged={loadAll}
+            onOpenLojaDados={setSelectedLoja}
+            onToggleActive={toggleEmpresaActive}
+            onDelete={deleteEmpresa}
+          />
+        ) : (
+          <p className="text-sm text-muted">Empresa não encontrada.</p>
+        )}
+      </AppShell>
+    );
   }
 
   if (selectedLoja) {
@@ -401,14 +435,13 @@ export default function AdminPage() {
             {empresasGrouped.map((row) => {
               const stale = row._worstStale;
               const neverActive = stale === Infinity;
-              const isExpanded = !!expanded[row.empresa_id];
               return (
                 <div
                   key={row.empresa_id}
                   className={`border rounded-xl p-3.5 cursor-pointer transition-colors ${
                     row.lojas.length > 0 && (neverActive || stale >= 7) ? "border-danger/40 bg-danger/5" : "border-line hover:border-purple/40"
                   } ${!row.active ? "opacity-60" : ""}`}
-                  onClick={() => setExpanded((e) => ({ ...e, [row.empresa_id]: !e[row.empresa_id] }))}
+                  onClick={() => setSelectedEmpresaDetail(row.empresa_id)}
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex items-start gap-3">
@@ -416,51 +449,11 @@ export default function AdminPage() {
                         <EmpresaAvatar empresaId={row.empresa_id} logoUrl={row.logo_url} name={row.empresa_name} onChanged={loadAll} />
                       </div>
                       <div>
-                        {editingEmpresaId === row.empresa_id ? (
-                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              className="input !py-1 !text-sm !w-auto"
-                              value={editingEmpresaName}
-                              onChange={(e) => setEditingEmpresaName(e.target.value)}
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEmpresaName(row.empresa_id);
-                                if (e.key === "Escape") setEditingEmpresaId(null);
-                              }}
-                            />
-                            <button
-                              className="p-1.5 rounded-lg border border-success text-success hover:bg-success/10 transition-colors"
-                              onClick={() => saveEmpresaName(row.empresa_id)}
-                              title="Salvar"
-                            >
-                              <Check size={13} />
-                            </button>
-                            <button
-                              className="p-1.5 rounded-lg border border-line text-muted hover:border-navy hover:text-navy transition-colors"
-                              onClick={() => setEditingEmpresaId(null)}
-                              title="Cancelar"
-                            >
-                              <X size={13} />
-                            </button>
-                          </div>
-                        ) : (
-                          <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-                            {row.empresa_name}
-                            <button
-                              className="text-muted hover:text-purple transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingEmpresaId(row.empresa_id);
-                                setEditingEmpresaName(row.empresa_name);
-                              }}
-                              title="Editar nome da empresa"
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            {isExpanded ? <ChevronUp size={14} className="text-muted" /> : <ChevronDown size={14} className="text-muted" />}
-                            {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
-                          </p>
-                        )}
+                        <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
+                          {row.empresa_name}
+                          <ChevronRight size={14} className="text-muted" />
+                          {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+                        </p>
                         <p className="text-xs text-muted">
                           {row.lojas.length} loja{row.lojas.length !== 1 ? "s" : ""} · {row._colabTotal} colaborador(es) no total
                         </p>
@@ -494,25 +487,6 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
-
-                  {isExpanded && (
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <HierarquiaList
-                        empresaId={row.empresa_id}
-                        lojas={row.lojas}
-                        people={allProfiles.filter((p) => p.empresa_id === row.empresa_id && (p.role === "socio" || p.role === "supervisor"))}
-                        lojaAccess={lojaAccess}
-                        onChanged={loadAll}
-                      />
-                      <LojasList
-                        empresaId={row.empresa_id}
-                        lojas={row.lojas}
-                        allProfiles={allProfiles}
-                        onChanged={loadAll}
-                        onOpenDados={setSelectedLoja}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -601,43 +575,394 @@ const ROLE_META = {
   supervisor: { label: "Supervisor", color: "#2563eb", bg: "rgba(37,99,235,0.12)" },
 };
 
-function HierarquiaList({ empresaId, lojas, people, lojaAccess, onChanged }) {
-  const [addingRole, setAddingRole] = useState(null);
-  const [openPersonId, setOpenPersonId] = useState(null);
+function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, onOpenLojaDados, onToggleActive, onDelete }) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameVal, setNameVal] = useState(empresa.empresa_name);
+  const [editingContact, setEditingContact] = useState(false);
+  const [cnpjVal, setCnpjVal] = useState(empresa.cnpj || "");
+  const [telVal, setTelVal] = useState(empresa.telefone || "");
+  const [emailVal, setEmailVal] = useState(empresa.email || "");
+  const [savingContact, setSavingContact] = useState(false);
+
+  useEffect(() => { if (!editingName) setNameVal(empresa.empresa_name); }, [empresa.empresa_name, editingName]);
+  useEffect(() => {
+    if (!editingContact) {
+      setCnpjVal(empresa.cnpj || "");
+      setTelVal(empresa.telefone || "");
+      setEmailVal(empresa.email || "");
+    }
+  }, [empresa.cnpj, empresa.telefone, empresa.email, editingContact]);
+
+  async function saveName() {
+    const trimmed = nameVal.trim();
+    if (!trimmed) return;
+    await supabase.from("empresas").update({ name: trimmed }).eq("id", empresa.empresa_id);
+    setEditingName(false);
+    onChanged();
+  }
+
+  async function saveContact(e) {
+    e.preventDefault();
+    setSavingContact(true);
+    await supabase
+      .from("empresas")
+      .update({ cnpj: cnpjVal || null, telefone: telVal || null, email: emailVal || null })
+      .eq("id", empresa.empresa_id);
+    setSavingContact(false);
+    setEditingContact(false);
+    onChanged();
+  }
+
+  const people = allProfiles.filter(
+    (p) => p.empresa_id === empresa.empresa_id && (p.role === "socio" || p.role === "supervisor")
+  );
+  const stale = empresa._worstStale;
+  const neverActive = stale === Infinity;
 
   return (
-    <div className="mt-3 pt-3 border-t border-line space-y-3">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
-          <ShieldCheck size={13} /> Sócios e supervisores ({people.length})
-        </p>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setAddingRole(addingRole === "socio" ? null : "socio")}
-            className="text-[11px] uppercase tracking-wider font-bold text-muted hover:text-navy transition-colors flex items-center gap-1"
-          >
-            <Plus size={12} /> incluir sócio
-          </button>
-          <button
-            onClick={() => setAddingRole(addingRole === "supervisor" ? null : "supervisor")}
-            className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
-          >
-            <Plus size={12} /> incluir supervisor
-          </button>
+    <div className="space-y-6">
+      <button className="text-xs font-bold text-muted hover:text-navy flex items-center gap-1.5" onClick={onBack}>
+        <ChevronLeft size={14} /> Voltar para empresas
+      </button>
+
+      <div className="card space-y-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-4">
+            <EmpresaAvatar empresaId={empresa.empresa_id} logoUrl={empresa.logo_url} name={empresa.empresa_name} onChanged={onChanged} />
+            <div>
+              {editingName ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    className="input !py-1 !text-lg font-bold !w-auto"
+                    value={nameVal}
+                    onChange={(e) => setNameVal(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveName();
+                      if (e.key === "Escape") setEditingName(false);
+                    }}
+                  />
+                  <button className="p-1.5 rounded-lg border border-success text-success hover:bg-success/10 transition-colors" onClick={saveName}>
+                    <Check size={14} />
+                  </button>
+                  <button
+                    className="p-1.5 rounded-lg border border-line text-muted hover:border-navy hover:text-navy transition-colors"
+                    onClick={() => setEditingName(false)}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <h1 className="text-xl font-bold text-navy flex items-center gap-2">
+                  {empresa.empresa_name}
+                  <button className="text-muted hover:text-purple transition-colors" onClick={() => setEditingName(true)} title="Editar nome">
+                    <Pencil size={14} />
+                  </button>
+                  {!empresa.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+                </h1>
+              )}
+              <p className="text-xs text-muted mt-1 flex items-center gap-1.5">
+                <Calendar size={13} /> cadastrada em {empresa.created_at ? new Date(empresa.created_at).toLocaleDateString("pt-BR") : "—"}
+              </p>
+              <p className="text-[11px] text-muted mt-0.5">
+                {empresa.lojas.length} loja{empresa.lojas.length !== 1 ? "s" : ""} · {empresa._colabTotal} colaborador(es)
+                {empresa.lojas.length > 0 && (neverActive ? " · nenhuma loja teve atividade ainda" : ` · loja mais parada: há ${stale} dia(s)`)}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              title={empresa.active ? "Desativar empresa" : "Ativar empresa"}
+              onClick={() => onToggleActive(empresa)}
+              className={`p-2 rounded-lg border transition-colors ${empresa.active ? "border-line text-muted hover:border-warn hover:text-warn" : "border-success text-success"}`}
+            >
+              <Power size={15} />
+            </button>
+            <button
+              title="Excluir empresa"
+              onClick={() => onDelete(empresa)}
+              className="p-2 rounded-lg border border-line text-muted hover:border-danger hover:text-danger transition-colors"
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-line">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] uppercase tracking-wider text-muted font-bold">Dados da empresa</p>
+            {!editingContact && (
+              <button
+                className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
+                onClick={() => setEditingContact(true)}
+              >
+                <Pencil size={11} /> editar
+              </button>
+            )}
+          </div>
+          {editingContact ? (
+            <form onSubmit={saveContact} className="grid sm:grid-cols-3 gap-3">
+              <div>
+                <label className="label">CNPJ</label>
+                <CnpjInput value={cnpjVal} onChange={setCnpjVal} />
+              </div>
+              <div>
+                <label className="label">Telefone</label>
+                <PhoneInput value={telVal} onChange={setTelVal} />
+              </div>
+              <div>
+                <label className="label">E-mail</label>
+                <input type="email" className="input" value={emailVal} onChange={(e) => setEmailVal(e.target.value)} />
+              </div>
+              <div className="sm:col-span-3 flex items-center gap-2">
+                <button type="submit" className="btn-outline !py-1.5 !text-xs" disabled={savingContact}>
+                  {savingContact ? "Salvando…" : "Salvar"}
+                </button>
+                <button type="button" className="text-[11px] text-muted hover:text-navy" onClick={() => setEditingContact(false)}>
+                  cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="grid sm:grid-cols-3 gap-3 text-sm">
+              <div>
+                <p className="text-[11px] text-muted">CNPJ</p>
+                <p className="text-navy font-medium">{empresa.cnpj || "—"}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted">Telefone</p>
+                <p className="text-navy font-medium">{empresa.telefone || "—"}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted">E-mail</p>
+                <p className="text-navy font-medium">{empresa.email || "—"}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {addingRole && (
-        <AddHierarchyForm
-          role={addingRole}
-          empresaId={empresaId}
-          lojas={lojas}
-          onDone={() => { setAddingRole(null); onChanged(); }}
-          onCancel={() => setAddingRole(null)}
-        />
-      )}
+      <AddUserCard empresaId={empresa.empresa_id} lojas={empresa.lojas} onChanged={onChanged} />
 
-      {people.length === 0 && !addingRole && <p className="text-xs text-muted">Nenhum sócio ou supervisor cadastrado ainda.</p>}
+      <div className="card">
+        <HierarquiaList lojas={empresa.lojas} people={people} lojaAccess={lojaAccess} onChanged={onChanged} />
+      </div>
+
+      <div className="card">
+        <LojasList
+          empresaId={empresa.empresa_id}
+          lojas={empresa.lojas}
+          allProfiles={allProfiles}
+          onChanged={onChanged}
+          onOpenDados={onOpenLojaDados}
+        />
+      </div>
+    </div>
+  );
+}
+
+const NEW_USER_ROLES = [
+  { key: "socio", label: "Sócio" },
+  { key: "supervisor", label: "Supervisor" },
+  { key: "gerente", label: "Gerente" },
+  { key: "colaborador", label: "Colaborador" },
+];
+
+function AddUserCard({ empresaId, lojas, onChanged }) {
+  const [open, setOpen] = useState(false);
+  const [role, setRole] = useState(null);
+
+  function close() {
+    setOpen(false);
+    setRole(null);
+  }
+  function done() {
+    close();
+    onChanged();
+  }
+
+  return (
+    <div className="card">
+      {!open ? (
+        <button className="btn" onClick={() => setOpen(true)}>
+          <Plus size={15} /> Cadastrar novo usuário
+        </button>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-wider text-muted font-bold">Novo usuário — escolha o papel</p>
+            <button className="text-muted hover:text-navy transition-colors" onClick={close}>
+              <X size={15} />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {NEW_USER_ROLES.map((r) => (
+              <button
+                key={r.key}
+                onClick={() => setRole(r.key)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
+                  role === r.key ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          {(role === "socio" || role === "supervisor") && (
+            <AddHierarchyForm role={role} empresaId={empresaId} lojas={lojas} onDone={done} onCancel={close} />
+          )}
+          {role === "gerente" && <AddGerenteForm empresaId={empresaId} lojas={lojas} onDone={done} onCancel={close} />}
+          {role === "colaborador" && <AddColaboradorForm empresaId={empresaId} lojas={lojas} onDone={done} onCancel={close} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
+  const [lojaId, setLojaId] = useState(lojas[0]?.loja_id || "");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!lojaId || !name.trim() || !password) {
+      setMsg("Erro: preencha loja, nome e senha.");
+      return;
+    }
+    setCreating(true);
+    setMsg("");
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/create-gerente", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ empresaId, lojaId, gerenteName: name.trim(), password }),
+    });
+    const json = await res.json();
+    setCreating(false);
+    if (!res.ok) {
+      setMsg("Erro: " + (json.error || "não foi possível criar."));
+      return;
+    }
+    onDone();
+  }
+
+  if (lojas.length === 0) {
+    return (
+      <p className="text-xs text-muted flex items-center justify-between gap-2">
+        Cadastre uma loja antes de incluir um gerente.
+        <button type="button" onClick={onCancel} className="text-muted hover:text-navy"><X size={13} /></button>
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="grid sm:grid-cols-3 gap-2 items-end">
+      <div>
+        <label className="label">Loja</label>
+        <select className="input !py-1.5 !text-xs" value={lojaId} onChange={(e) => setLojaId(e.target.value)}>
+          {lojas.map((l) => (
+            <option key={l.loja_id} value={l.loja_id}>
+              {l.loja_name}{l.gerente_id ? " (já tem gerente)" : ""}
+            </option>
+          ))}
+        </select>
+      </div>
+      <input className="input !py-1.5 !text-xs" placeholder="nome do gerente" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <div className="sm:col-span-3 flex items-center gap-2">
+        <button type="submit" className="btn-outline !py-1.5 !text-xs" disabled={creating}>
+          {creating ? "Criando…" : "Criar gerente"}
+        </button>
+        <button type="button" onClick={onCancel} className="text-[11px] text-muted hover:text-navy">cancelar</button>
+      </div>
+      {msg && (
+        <p className="sm:col-span-3 text-[11px] text-muted flex items-center gap-1.5">
+          {msg.startsWith("Erro") ? <AlertTriangle size={11} className="text-danger" /> : <CheckCircle2 size={11} className="text-success" />}
+          {msg}
+        </p>
+      )}
+    </form>
+  );
+}
+
+function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
+  const [lojaId, setLojaId] = useState(lojas[0]?.loja_id || "");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!lojaId || !name.trim() || !password) {
+      setMsg("Erro: preencha loja, nome e senha.");
+      return;
+    }
+    setCreating(true);
+    setMsg("");
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/create-employee", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ fullName: name.trim(), password, empresaId, lojaId }),
+    });
+    const json = await res.json();
+    setCreating(false);
+    if (!res.ok) {
+      setMsg("Erro: " + (json.error || "não foi possível criar."));
+      return;
+    }
+    onDone();
+  }
+
+  if (lojas.length === 0) {
+    return (
+      <p className="text-xs text-muted flex items-center justify-between gap-2">
+        Cadastre uma loja antes de incluir um colaborador.
+        <button type="button" onClick={onCancel} className="text-muted hover:text-navy"><X size={13} /></button>
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="grid sm:grid-cols-3 gap-2 items-end">
+      <div>
+        <label className="label">Loja</label>
+        <select className="input !py-1.5 !text-xs" value={lojaId} onChange={(e) => setLojaId(e.target.value)}>
+          {lojas.map((l) => <option key={l.loja_id} value={l.loja_id}>{l.loja_name}</option>)}
+        </select>
+      </div>
+      <input className="input !py-1.5 !text-xs" placeholder="nome do colaborador" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <div className="sm:col-span-3 flex items-center gap-2">
+        <button type="submit" className="btn-outline !py-1.5 !text-xs" disabled={creating}>
+          {creating ? "Criando…" : "Criar colaborador"}
+        </button>
+        <button type="button" onClick={onCancel} className="text-[11px] text-muted hover:text-navy">cancelar</button>
+      </div>
+      {msg && (
+        <p className="sm:col-span-3 text-[11px] text-muted flex items-center gap-1.5">
+          {msg.startsWith("Erro") ? <AlertTriangle size={11} className="text-danger" /> : <CheckCircle2 size={11} className="text-success" />}
+          {msg}
+        </p>
+      )}
+    </form>
+  );
+}
+
+function HierarquiaList({ lojas, people, lojaAccess, onChanged }) {
+  const [openPersonId, setOpenPersonId] = useState(null);
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
+        <ShieldCheck size={13} /> Sócios e supervisores ({people.length})
+      </p>
+
+      {people.length === 0 && <p className="text-xs text-muted">Nenhum sócio ou supervisor cadastrado ainda.</p>}
 
       <div className="space-y-1.5">
         {people.map((p) => {
@@ -817,7 +1142,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados }) {
   }
 
   return (
-    <div className="mt-3 pt-3 border-t border-line space-y-3">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
           <Store size={13} /> Lojas ({lojas.length})
@@ -862,12 +1187,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados }) {
   );
 }
 
-function LojaCard({ loja, empresaId, allProfiles, onChanged, onOpenDados, isOpen, onToggle }) {
-  const [addingGerente, setAddingGerente] = useState(false);
-  const [gerenteName, setGerenteName] = useState("");
-  const [password, setPassword] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [msg, setMsg] = useState("");
+function LojaCard({ loja, allProfiles, onChanged, onOpenDados, empresaId, isOpen, onToggle }) {
   const [openUserId, setOpenUserId] = useState(null);
 
   const colaboradores = allProfiles.filter((p) => p.loja_id === loja.loja_id && p.role === "colaborador");
@@ -879,28 +1199,6 @@ function LojaCard({ loja, empresaId, allProfiles, onChanged, onOpenDados, isOpen
   else if (loja.gerente_pending_password) alerts.push("gerente não trocou a senha");
   if (Number(loja.tasks_count) === 0) alerts.push("sem tarefas cadastradas");
   if (Number(loja.goals_count) === 0) alerts.push("sem meta do mês");
-
-  async function createGerente(e) {
-    e.preventDefault();
-    if (!gerenteName.trim() || !password) return;
-    setCreating(true);
-    setMsg("");
-    const { data: { session } } = await supabase.auth.getSession();
-    const res = await fetch("/api/admin/create-gerente", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ empresaId, lojaId: loja.loja_id, gerenteName: gerenteName.trim(), password }),
-    });
-    const json = await res.json();
-    setCreating(false);
-    if (!res.ok) {
-      setMsg("Erro: " + (json.error || "não foi possível criar."));
-      return;
-    }
-    setMsg(`Gerente criado! Usuário: ${json.username}`);
-    setGerenteName(""); setPassword(""); setAddingGerente(false);
-    onChanged();
-  }
 
   return (
     <div className="border border-line rounded-xl p-3">
@@ -962,39 +1260,7 @@ function LojaCard({ loja, empresaId, allProfiles, onChanged, onOpenDados, isOpen
               )}
             </div>
           ) : (
-            <div>
-              <button
-                onClick={() => setAddingGerente((v) => !v)}
-                className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
-              >
-                <Plus size={12} /> cadastrar gerente
-              </button>
-              {addingGerente && (
-                <form onSubmit={createGerente} className="grid sm:grid-cols-2 gap-2 mt-2">
-                  <input
-                    className="input !py-1.5 !text-xs"
-                    placeholder="nome do gerente"
-                    value={gerenteName}
-                    onChange={(e) => setGerenteName(e.target.value)}
-                  />
-                  <input
-                    className="input !py-1.5 !text-xs"
-                    placeholder="senha temporária"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button type="submit" className="btn-outline !py-1.5 !text-xs sm:col-span-2" disabled={creating}>
-                    {creating ? "Criando…" : "Criar gerente"}
-                  </button>
-                </form>
-              )}
-              {msg && (
-                <p className="text-[11px] text-muted mt-1 flex items-center gap-1.5">
-                  {msg.startsWith("Erro") ? <AlertTriangle size={11} className="text-danger" /> : <CheckCircle2 size={11} className="text-success" />}
-                  {msg}
-                </p>
-              )}
-            </div>
+            <p className="text-xs text-muted">Nenhum gerente cadastrado nesta loja ainda. Use "Cadastrar novo usuário" no topo da página.</p>
           )}
 
           <div>
