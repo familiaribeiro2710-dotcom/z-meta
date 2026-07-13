@@ -279,6 +279,7 @@ export default function ColaboradorPage() {
     <AppShell
       userName={profile.full_name}
       userId={profile.id}
+      userUsername={profile.username}
       onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
       tabs={TABS}
       activeTab={tab}

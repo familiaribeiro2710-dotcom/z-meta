@@ -44,6 +44,7 @@ export default function GestorPage() {
     <AppShell
       userName={profile.full_name}
       userId={profile.id}
+      userUsername={profile.username}
       onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
     >
       <div className="space-y-6">

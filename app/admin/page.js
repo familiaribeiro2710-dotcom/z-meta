@@ -210,6 +210,7 @@ export default function AdminPage() {
       <AppShell
         userName={profile.full_name}
         userId={profile.id}
+        userUsername={profile.username}
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
       >
         <div className="space-y-6">
@@ -232,6 +233,7 @@ export default function AdminPage() {
     <AppShell
       userName={profile.full_name}
       userId={profile.id}
+      userUsername={profile.username}
       onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
     >
       <div className="space-y-6">
