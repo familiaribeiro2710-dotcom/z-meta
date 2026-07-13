@@ -9,7 +9,7 @@ export async function POST(req) {
     const body = await req.json();
     const { employeeId, fullName, resetPassword } = body || {};
     if (!employeeId) {
-      return NextResponse.json({ error: "Informe o colaborador." }, { status: 400 });
+      return NextResponse.json({ error: "Informe o usuário." }, { status: 400 });
     }
     if (!fullName && !resetPassword) {
       return NextResponse.json({ error: "Nada para atualizar." }, { status: 400 });
@@ -43,7 +43,7 @@ export async function POST(req) {
     const isGestor = callerProfile?.role === "gestor" && !!callerProfile.empresa_id;
     if (!callerProfile || (!isMasterAdmin && !isGestor)) {
       return NextResponse.json(
-        { error: "Apenas o gestor ou o Master Admin podem editar colaboradores." },
+        { error: "Apenas o gestor ou o Master Admin podem editar usuários." },
         { status: 403 }
       );
     }
@@ -56,11 +56,12 @@ export async function POST(req) {
       .eq("id", employeeId)
       .single();
 
-    if (!target || target.role !== "colaborador") {
-      return NextResponse.json({ error: "Colaborador não encontrado." }, { status: 404 });
+    if (!target || (target.role !== "colaborador" && target.role !== "gestor")) {
+      return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
     }
-    if (isGestor && target.empresa_id !== callerProfile.empresa_id) {
-      return NextResponse.json({ error: "Esse colaborador não pertence à sua empresa." }, { status: 403 });
+    // gestor só pode editar colaboradores da própria empresa — nunca outro gestor
+    if (isGestor && (target.role !== "colaborador" || target.empresa_id !== callerProfile.empresa_id)) {
+      return NextResponse.json({ error: "Você só pode editar colaboradores da sua empresa." }, { status: 403 });
     }
 
     if (fullName && fullName.trim()) {

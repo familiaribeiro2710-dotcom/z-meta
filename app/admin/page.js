@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   User,
   KeyRound,
+  Power,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -107,6 +109,35 @@ export default function AdminPage() {
 
   async function updatePlano(empresaId, plano) {
     await supabase.from("empresas").update({ plano }).eq("id", empresaId);
+    await loadAll();
+  }
+
+  async function toggleEmpresaActive(row) {
+    const next = !row.active;
+    if (!next && !window.confirm(`Desativar "${row.empresa_name}"? O gestor e todos os colaboradores dessa empresa perdem o acesso até você reativar.`)) return;
+    await supabase.from("empresas").update({ active: next }).eq("id", row.empresa_id);
+    await loadAll();
+  }
+
+  async function deleteEmpresa(row) {
+    const typed = window.prompt(
+      `Isso vai apagar "${row.empresa_name}" e TODOS os dados dela (gestor, colaboradores, tarefas, metas, histórico) para sempre. Digite o nome da empresa para confirmar:`
+    );
+    if (typed !== row.empresa_name) {
+      if (typed !== null) alert("Nome não confere. Nada foi excluído.");
+      return;
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/delete-empresa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ empresaId: row.empresa_id }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      alert("Erro ao excluir: " + (json.error || "não foi possível excluir."));
+      return;
+    }
     await loadAll();
   }
 
@@ -285,13 +316,21 @@ export default function AdminPage() {
               if (row.gestor_pending_password) alerts.push("gestor não trocou a senha");
               if (!row.gestor_name) alerts.push("sem gestor cadastrado");
 
+              const isExpanded = !!expanded[row.empresa_id];
               return (
-                <div key={row.empresa_id} className={`border rounded-xl p-3.5 ${neverActive || stale >= 7 ? "border-danger/40 bg-danger/5" : "border-line"}`}>
+                <div
+                  key={row.empresa_id}
+                  className={`border rounded-xl p-3.5 cursor-pointer transition-colors ${
+                    neverActive || stale >= 7 ? "border-danger/40 bg-danger/5" : "border-line hover:border-purple/40"
+                  } ${!row.active ? "opacity-60" : ""}`}
+                  onClick={() => setExpanded((e) => ({ ...e, [row.empresa_id]: !e[row.empresa_id] }))}
+                >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
-                      <p className="font-semibold text-navy text-sm">
+                      <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
                         {row.empresa_name}
-                        {!row.active && <span className="ml-2 text-[10px] uppercase text-danger">inativa</span>}
+                        {isExpanded ? <ChevronUp size={14} className="text-muted" /> : <ChevronDown size={14} className="text-muted" />}
+                        {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
                       </p>
                       <p className="text-xs text-muted">
                         {row.gestor_name ? `gestor: ${row.gestor_name} (${row.gestor_username})` : "sem gestor"} · {row.colaboradores_count} colaborador(es)
@@ -304,7 +343,7 @@ export default function AdminPage() {
                         <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <select
                         className="input !py-1 !text-xs w-auto"
                         value={row.plano}
@@ -313,25 +352,35 @@ export default function AdminPage() {
                         {PLANOS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                       </select>
                       <button
-                        className="flex items-center gap-1 text-xs uppercase tracking-wider text-muted hover:text-navy font-medium whitespace-nowrap"
-                        onClick={() => setExpanded((e) => ({ ...e, [row.empresa_id]: !e[row.empresa_id] }))}
-                      >
-                        equipe {expanded[row.empresa_id] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                      </button>
-                      <button
                         className="text-xs uppercase tracking-wider text-muted hover:text-navy font-medium whitespace-nowrap"
                         onClick={() => setSelectedEmpresa({ id: row.empresa_id, name: row.empresa_name })}
                       >
                         ver dados →
                       </button>
+                      <button
+                        title={row.active ? "Desativar empresa" : "Ativar empresa"}
+                        onClick={() => toggleEmpresaActive(row)}
+                        className={`p-1.5 rounded-lg border transition-colors ${row.active ? "border-line text-muted hover:border-warn hover:text-warn" : "border-success text-success"}`}
+                      >
+                        <Power size={13} />
+                      </button>
+                      <button
+                        title="Excluir empresa"
+                        onClick={() => deleteEmpresa(row)}
+                        className="p-1.5 rounded-lg border border-line text-muted hover:border-danger hover:text-danger transition-colors"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
 
-                  {expanded[row.empresa_id] && (
-                    <EquipeList
-                      profiles={allProfiles.filter((p) => p.empresa_id === row.empresa_id)}
-                      onChanged={loadAll}
-                    />
+                  {isExpanded && (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <EquipeList
+                        profiles={allProfiles.filter((p) => p.empresa_id === row.empresa_id)}
+                        onChanged={loadAll}
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -375,13 +424,22 @@ function EquipeList({ profiles, onChanged }) {
           <ShieldCheck size={13} /> Gestores ({gestores.length})
         </p>
         {gestores.length === 0 && <p className="text-xs text-muted">Nenhum gestor cadastrado.</p>}
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {gestores.map((g) => (
-            <li key={g.id} className="text-xs flex items-center justify-between gap-2">
-              <span className="text-navy font-medium">{g.full_name} <span className="text-muted font-normal">({g.username})</span></span>
-              {g.must_change_password && (
-                <span className="badge bg-warn/15 text-warn shrink-0"><KeyRound size={10} /> senha pendente</span>
-              )}
+            <li key={g.id}>
+              <button
+                onClick={() => setOpenId(openId === g.id ? null : g.id)}
+                className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+              >
+                <span className="text-navy font-medium">{g.full_name} <span className="text-muted font-normal">({g.username})</span></span>
+                <span className="flex items-center gap-1.5 shrink-0">
+                  {g.must_change_password && (
+                    <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
+                  )}
+                  {openId === g.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </span>
+              </button>
+              {openId === g.id && <EditUser user={g} onChanged={onChanged} onClose={() => setOpenId(null)} />}
             </li>
           ))}
         </ul>
@@ -408,7 +466,7 @@ function EquipeList({ profiles, onChanged }) {
                   {openId === c.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                 </span>
               </button>
-              {openId === c.id && <EditColaborador employee={c} onChanged={onChanged} onClose={() => setOpenId(null)} />}
+              {openId === c.id && <EditUser user={c} onChanged={onChanged} onClose={() => setOpenId(null)} />}
             </li>
           ))}
         </ul>
@@ -417,8 +475,8 @@ function EquipeList({ profiles, onChanged }) {
   );
 }
 
-function EditColaborador({ employee, onChanged, onClose }) {
-  const [name, setName] = useState(employee.full_name);
+function EditUser({ user, onChanged, onClose }) {
+  const [name, setName] = useState(user.full_name);
   const [msg, setMsg] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -428,7 +486,7 @@ function EditColaborador({ employee, onChanged, onClose }) {
     const res = await fetch("/api/admin/update-employee", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ employeeId: employee.id, ...body }),
+      body: JSON.stringify({ employeeId: user.id, ...body }),
     });
     return { ok: res.ok, json: await res.json() };
   }
@@ -449,7 +507,7 @@ function EditColaborador({ employee, onChanged, onClose }) {
   }
 
   async function resetPassword() {
-    if (!window.confirm(`Redefinir a senha de ${employee.full_name} para 123456789?`)) return;
+    if (!window.confirm(`Redefinir a senha de ${user.full_name} para 123456789?`)) return;
     setResetting(true);
     setMsg("");
     const { ok, json } = await call({ resetPassword: true });
@@ -458,7 +516,7 @@ function EditColaborador({ employee, onChanged, onClose }) {
       setMsg("Erro: " + (json.error || "não foi possível redefinir."));
       return;
     }
-    setMsg("Senha redefinida para 123456789 — colaborador deve trocar no próximo acesso.");
+    setMsg("Senha redefinida para 123456789 — a pessoa deve trocar no próximo acesso.");
     onChanged && onChanged();
   }
 
