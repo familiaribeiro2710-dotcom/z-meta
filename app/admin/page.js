@@ -24,6 +24,7 @@ import {
   Check,
   X,
   Search,
+  Filter,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -56,6 +57,7 @@ export default function AdminPage() {
   const [editingEmpresaName, setEditingEmpresaName] = useState("");
   const [sortKey, setSortKey] = useState("risco");
   const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
   const [empresaName, setEmpresaName] = useState("");
@@ -314,25 +316,42 @@ export default function AdminPage() {
         <div className="card overflow-x-auto">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <p className="label mb-0 flex items-center gap-1.5">
-              <Building2 size={14} /> Empresas ({sortedHealth.length}{search.trim() ? ` de ${health.length}` : ""}) — {monthLabel(month)}
+              <Building2 size={14} /> {monthLabel(month)}
             </p>
-            <div className="flex gap-2 flex-wrap">
-              {[
-                { key: "risco", label: "mais em risco" },
-                { key: "recente", label: "mais recente" },
-                { key: "desempenho", label: "pior desempenho" },
-                { key: "nome", label: "nome" },
-              ].map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => setSortKey(s.key)}
-                  className={`text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all ${
-                    sortKey === s.key ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
+            <div className="relative">
+              <button
+                onClick={() => setFilterOpen((v) => !v)}
+                className={`p-2 rounded-full border transition-all ${
+                  filterOpen ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
+                }`}
+                title="Ordenar empresas"
+              >
+                <Filter size={15} />
+              </button>
+              {filterOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setFilterOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 z-40 w-56 card !p-2 animate-pop border-purple/20">
+                    {[
+                      { key: "risco", label: "mais em risco" },
+                      { key: "recente", label: "mais recente" },
+                      { key: "desempenho", label: "pior desempenho" },
+                      { key: "nome", label: "nome" },
+                    ].map((s) => (
+                      <button
+                        key={s.key}
+                        onClick={() => { setSortKey(s.key); setFilterOpen(false); }}
+                        className={`w-full text-left text-xs px-3 py-2 rounded-xl transition-all flex items-center justify-between gap-2 ${
+                          sortKey === s.key ? "bg-purple/10 text-purple font-bold" : "text-muted hover:bg-paper hover:text-navy"
+                        }`}
+                      >
+                        {s.label}
+                        {sortKey === s.key && <Check size={13} />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
