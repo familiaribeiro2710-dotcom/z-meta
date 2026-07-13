@@ -16,32 +16,34 @@ html, body {
   box-sizing: border-box;
 }
 
-.input {
-  @apply w-full border-2 border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-purple focus:ring-4 focus:ring-purple/15 transition-all;
-}
+@layer components {
+  .input {
+    @apply w-full border-2 border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-purple focus:ring-4 focus:ring-purple/15 transition-all;
+  }
 
-.btn {
-  @apply inline-flex items-center justify-center gap-2 text-white rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-pop;
-  background: linear-gradient(135deg, #7c3aed, #ec4899);
-}
-.btn:hover {
-  filter: brightness(1.08);
-}
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 text-white rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-pop;
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+  }
+  .btn:hover {
+    filter: brightness(1.08);
+  }
 
-.btn-outline {
-  @apply inline-flex items-center justify-center gap-2 border-2 border-purple text-purple rounded-full px-5 py-2.5 text-sm font-bold tracking-wide hover:bg-purple hover:text-white active:scale-95 transition-all disabled:opacity-40;
-}
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 border-2 border-purple text-purple rounded-full px-5 py-2.5 text-sm font-bold tracking-wide hover:bg-purple hover:text-white active:scale-95 transition-all disabled:opacity-40;
+  }
 
-.card {
-  @apply border-2 border-line bg-white rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
-}
+  .card {
+    @apply border-2 border-line bg-white rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
+  }
 
-.label {
-  @apply block text-xs uppercase tracking-wider text-muted mb-1.5 font-bold;
-}
+  .label {
+    @apply block text-xs uppercase tracking-wider text-muted mb-1.5 font-bold;
+  }
 
-.badge {
-  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold;
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold;
+  }
 }
 
 .gradient-text {
