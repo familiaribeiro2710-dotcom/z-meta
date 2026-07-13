@@ -11,6 +11,11 @@ import {
   Plus,
   CheckCircle2,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  ShieldCheck,
+  User,
+  KeyRound,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -37,6 +42,8 @@ export default function AdminPage() {
   const [profile, setProfile] = useState(null);
   const [overview, setOverview] = useState(null);
   const [health, setHealth] = useState([]);
+  const [allProfiles, setAllProfiles] = useState([]);
+  const [expanded, setExpanded] = useState({});
   const [sortKey, setSortKey] = useState("risco");
   const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
@@ -54,6 +61,12 @@ export default function AdminPage() {
     setOverview((overviewRows && overviewRows[0]) || null);
     const { data: healthRows } = await supabase.rpc("admin_empresas_health", { p_month: month });
     setHealth(healthRows || []);
+    const { data: profileRows } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("role", ["gestor", "colaborador"])
+      .order("full_name");
+    setAllProfiles(profileRows || []);
   }, [month]);
 
   useEffect(() => {
@@ -292,6 +305,12 @@ export default function AdminPage() {
                         {PLANOS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                       </select>
                       <button
+                        className="flex items-center gap-1 text-xs uppercase tracking-wider text-muted hover:text-navy font-medium whitespace-nowrap"
+                        onClick={() => setExpanded((e) => ({ ...e, [row.empresa_id]: !e[row.empresa_id] }))}
+                      >
+                        equipe {expanded[row.empresa_id] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                      </button>
+                      <button
                         className="text-xs uppercase tracking-wider text-muted hover:text-navy font-medium whitespace-nowrap"
                         onClick={() => setSelectedEmpresa({ id: row.empresa_id, name: row.empresa_name })}
                       >
@@ -299,6 +318,12 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+
+                  {expanded[row.empresa_id] && (
+                    <EquipeList
+                      profiles={allProfiles.filter((p) => p.empresa_id === row.empresa_id)}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -327,6 +352,50 @@ function MetricCard({ label, value, sub, danger, accent = "purple", Icon }) {
       </p>
       <p className={`text-3xl font-extrabold mt-1 ${danger ? "text-danger" : "gradient-text"}`}>{value ?? 0}</p>
       <p className="text-[11px] text-muted mt-0.5">{sub}</p>
+    </div>
+  );
+}
+
+function EquipeList({ profiles }) {
+  const gestores = profiles.filter((p) => p.role === "gestor");
+  const colaboradores = profiles.filter((p) => p.role === "colaborador");
+
+  return (
+    <div className="mt-3 pt-3 border-t border-line grid sm:grid-cols-2 gap-4">
+      <div>
+        <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-2 flex items-center gap-1.5">
+          <ShieldCheck size={13} /> Gestores ({gestores.length})
+        </p>
+        {gestores.length === 0 && <p className="text-xs text-muted">Nenhum gestor cadastrado.</p>}
+        <ul className="space-y-1.5">
+          {gestores.map((g) => (
+            <li key={g.id} className="text-xs flex items-center justify-between gap-2">
+              <span className="text-navy font-medium">{g.full_name} <span className="text-muted font-normal">({g.username})</span></span>
+              {g.must_change_password && (
+                <span className="badge bg-warn/15 text-warn shrink-0"><KeyRound size={10} /> senha pendente</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-2 flex items-center gap-1.5">
+          <User size={13} /> Colaboradores ({colaboradores.length})
+        </p>
+        {colaboradores.length === 0 && <p className="text-xs text-muted">Nenhum colaborador cadastrado.</p>}
+        <ul className="space-y-1.5">
+          {colaboradores.map((c) => (
+            <li key={c.id} className="text-xs flex items-center justify-between gap-2">
+              <span className={`font-medium ${c.active ? "text-navy" : "text-muted line-through"}`}>
+                {c.full_name} <span className="text-muted font-normal">({c.username})</span>
+              </span>
+              {c.must_change_password && (
+                <span className="badge bg-warn/15 text-warn shrink-0"><KeyRound size={10} /> senha pendente</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

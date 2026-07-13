@@ -6,7 +6,7 @@ import { generateUniqueUsername } from "../../../../lib/generateUsername";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { fullName, password } = body || {};
+    const { fullName, password, empresaId } = body || {};
 
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
@@ -32,11 +32,19 @@ export async function POST(req) {
       .eq("id", userData.user.id)
       .single();
 
-    if (!callerProfile || callerProfile.role !== "gestor" || !callerProfile.empresa_id) {
+    const isMasterAdmin = callerProfile?.role === "master_admin";
+    const isGestor = callerProfile?.role === "gestor" && !!callerProfile.empresa_id;
+
+    if (!callerProfile || (!isMasterAdmin && !isGestor)) {
       return NextResponse.json(
-        { error: "Apenas o gestor pode cadastrar colaboradores." },
+        { error: "Apenas o gestor ou o Master Admin podem cadastrar colaboradores." },
         { status: 403 }
       );
+    }
+
+    const targetEmpresaId = isMasterAdmin ? empresaId : callerProfile.empresa_id;
+    if (!targetEmpresaId) {
+      return NextResponse.json({ error: "Informe a empresa." }, { status: 400 });
     }
 
     if (!fullName || !password) {
@@ -67,7 +75,7 @@ export async function POST(req) {
       full_name: fullName,
       role: "colaborador",
       username,
-      empresa_id: callerProfile.empresa_id,
+      empresa_id: targetEmpresaId,
       must_change_password: true,
     });
     if (profileErr) {
