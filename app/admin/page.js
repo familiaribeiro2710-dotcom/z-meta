@@ -315,8 +315,8 @@ export default function AdminPage() {
 
         <div className="card overflow-x-auto">
           <div className="flex items-center justify-between mb-3 flex-nowrap gap-2">
-            <p className="label mb-0 flex items-center gap-1.5 whitespace-nowrap">
-              <Building2 size={14} /> Empresas
+            <p className="inline-flex items-center gap-1.5 whitespace-nowrap m-0 text-xs uppercase tracking-wider text-muted font-bold">
+              <Building2 size={14} className="shrink-0" /> Empresas
             </p>
             <div className="relative shrink-0">
               <button
