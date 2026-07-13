@@ -322,6 +322,7 @@ export default function AdminPage() {
                   {expanded[row.empresa_id] && (
                     <EquipeList
                       profiles={allProfiles.filter((p) => p.empresa_id === row.empresa_id)}
+                      onChanged={loadAll}
                     />
                   )}
                 </div>
@@ -356,7 +357,8 @@ function MetricCard({ label, value, sub, danger, accent = "purple", Icon }) {
   );
 }
 
-function EquipeList({ profiles }) {
+function EquipeList({ profiles, onChanged }) {
+  const [openId, setOpenId] = useState(null);
   const gestores = profiles.filter((p) => p.role === "gestor");
   const colaboradores = profiles.filter((p) => p.role === "colaborador");
 
@@ -383,19 +385,98 @@ function EquipeList({ profiles }) {
           <User size={13} /> Colaboradores ({colaboradores.length})
         </p>
         {colaboradores.length === 0 && <p className="text-xs text-muted">Nenhum colaborador cadastrado.</p>}
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {colaboradores.map((c) => (
-            <li key={c.id} className="text-xs flex items-center justify-between gap-2">
-              <span className={`font-medium ${c.active ? "text-navy" : "text-muted line-through"}`}>
-                {c.full_name} <span className="text-muted font-normal">({c.username})</span>
-              </span>
-              {c.must_change_password && (
-                <span className="badge bg-warn/15 text-warn shrink-0"><KeyRound size={10} /> senha pendente</span>
-              )}
+            <li key={c.id}>
+              <button
+                onClick={() => setOpenId(openId === c.id ? null : c.id)}
+                className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+              >
+                <span className={`font-medium ${c.active ? "text-navy" : "text-muted line-through"}`}>
+                  {c.full_name} <span className="text-muted font-normal">({c.username})</span>
+                </span>
+                <span className="flex items-center gap-1.5 shrink-0">
+                  {c.must_change_password && (
+                    <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
+                  )}
+                  {openId === c.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </span>
+              </button>
+              {openId === c.id && <EditColaborador employee={c} onChanged={onChanged} onClose={() => setOpenId(null)} />}
             </li>
           ))}
         </ul>
       </div>
+    </div>
+  );
+}
+
+function EditColaborador({ employee, onChanged, onClose }) {
+  const [name, setName] = useState(employee.full_name);
+  const [msg, setMsg] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  async function call(body) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/update-employee", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ employeeId: employee.id, ...body }),
+    });
+    return { ok: res.ok, json: await res.json() };
+  }
+
+  async function saveName(e) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSavingName(true);
+    setMsg("");
+    const { ok, json } = await call({ fullName: name.trim() });
+    setSavingName(false);
+    if (!ok) {
+      setMsg("Erro: " + (json.error || "não foi possível salvar."));
+      return;
+    }
+    setMsg("Nome atualizado.");
+    onChanged && onChanged();
+  }
+
+  async function resetPassword() {
+    if (!window.confirm(`Redefinir a senha de ${employee.full_name} para 123456789?`)) return;
+    setResetting(true);
+    setMsg("");
+    const { ok, json } = await call({ resetPassword: true });
+    setResetting(false);
+    if (!ok) {
+      setMsg("Erro: " + (json.error || "não foi possível redefinir."));
+      return;
+    }
+    setMsg("Senha redefinida para 123456789 — colaborador deve trocar no próximo acesso.");
+    onChanged && onChanged();
+  }
+
+  return (
+    <div className="mt-2 mb-1 p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
+      <form onSubmit={saveName} className="flex items-center gap-2">
+        <input className="input !py-1.5 !text-xs flex-1" value={name} onChange={(e) => setName(e.target.value)} />
+        <button type="submit" className="btn-outline !px-3 !py-1.5 !text-xs whitespace-nowrap" disabled={savingName}>
+          {savingName ? "Salvando…" : "Salvar nome"}
+        </button>
+      </form>
+      <button
+        onClick={resetPassword}
+        className="flex items-center gap-1.5 text-xs font-bold text-danger hover:text-red-700 transition-colors"
+        disabled={resetting}
+      >
+        <KeyRound size={13} /> {resetting ? "Redefinindo…" : "Redefinir senha para 123456789"}
+      </button>
+      {msg && (
+        <p className="text-[11px] text-muted flex items-center gap-1.5">
+          {msg.startsWith("Erro") ? <AlertTriangle size={12} className="text-danger" /> : <CheckCircle2 size={12} className="text-success" />}
+          {msg}
+        </p>
+      )}
     </div>
   );
 }
