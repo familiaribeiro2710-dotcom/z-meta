@@ -21,6 +21,7 @@ import AppShell from "../../lib/AppShell";
 import ProgressBar from "../../lib/ProgressBar";
 import ChangePassword from "../../lib/ChangePassword";
 import Confetti from "../../lib/Confetti";
+import { CurrencyInput } from "../../lib/MaskedInputs";
 import { calcIndividualPct, formatBRL, formatPct, motivationalMessage } from "../../lib/scoring";
 import {
   todayStr,
@@ -464,7 +465,7 @@ export default function ColaboradorPage() {
               </div>
               <div className="flex-1 w-full">
                 <label className="label">Valor total vendido no mês até essa data</label>
-                <input type="number" step="0.01" min="0" className="input" value={entryValue} onChange={(e) => setEntryValue(e.target.value)} required />
+                <CurrencyInput value={entryValue} onChange={setEntryValue} required />
               </div>
               <button type="submit" className="btn whitespace-nowrap" disabled={savingEntry}>
                 {savingEntry ? "Salvando…" : "Salvar"}
