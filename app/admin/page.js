@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Crown,
@@ -19,6 +19,7 @@ import {
   Power,
   Trash2,
   Eye,
+  Camera,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -337,22 +338,27 @@ export default function AdminPage() {
                   onClick={() => setExpanded((e) => ({ ...e, [row.empresa_id]: !e[row.empresa_id] }))}
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div>
-                      <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-                        {row.empresa_name}
-                        {isExpanded ? <ChevronUp size={14} className="text-muted" /> : <ChevronDown size={14} className="text-muted" />}
-                        {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
-                      </p>
-                      <p className="text-xs text-muted">
-                        {row.gestor_name ? `gestor: ${row.gestor_name} (${row.gestor_username})` : "sem gestor"} · {row.colaboradores_count} colaborador(es)
-                      </p>
-                      <p className="text-[11px] text-muted mt-0.5">
-                        {neverActive ? "nunca teve atividade" : `última atividade há ${stale} dia(s)`}
-                        {" · "}barra do mês: {Number(row.team_pct).toFixed(0)}% (meta {Number(row.team_threshold).toFixed(0)}%)
-                      </p>
-                      {alerts.length > 0 && (
-                        <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
-                      )}
+                    <div className="flex items-start gap-3">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <EmpresaAvatar empresaId={row.empresa_id} logoUrl={row.logo_url} name={row.empresa_name} onChanged={loadAll} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
+                          {row.empresa_name}
+                          {isExpanded ? <ChevronUp size={14} className="text-muted" /> : <ChevronDown size={14} className="text-muted" />}
+                          {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {row.gestor_name ? `gestor: ${row.gestor_name} (${row.gestor_username})` : "sem gestor"} · {row.colaboradores_count} colaborador(es)
+                        </p>
+                        <p className="text-[11px] text-muted mt-0.5">
+                          {neverActive ? "nunca teve atividade" : `última atividade há ${stale} dia(s)`}
+                          {" · "}barra do mês: {Number(row.team_pct).toFixed(0)}% (meta {Number(row.team_threshold).toFixed(0)}%)
+                        </p>
+                        {alerts.length > 0 && (
+                          <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <select
@@ -402,6 +408,66 @@ export default function AdminPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function EmpresaAvatar({ empresaId, logoUrl, name, onChanged }) {
+  const inputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const initials = (name || "?").trim().charAt(0).toUpperCase();
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Selecione um arquivo de imagem.");
+      return;
+    }
+    setUploading(true);
+    const ext = (file.name.split(".").pop() || "png").toLowerCase();
+    const path = `${empresaId}/logo.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("empresa-logos")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) {
+      setUploading(false);
+      alert("Erro ao enviar imagem: " + upErr.message);
+      return;
+    }
+    const { data } = supabase.storage.from("empresa-logos").getPublicUrl(path);
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+    await supabase.from("empresas").update({ logo_url: url }).eq("id", empresaId);
+    setUploading(false);
+    onChanged && onChanged();
+  }
+
+  return (
+    <div
+      className="relative w-11 h-11 rounded-full shrink-0 overflow-hidden cursor-pointer group border-2 border-purple/20"
+      onClick={() => inputRef.current?.click()}
+      title="Alterar logotipo da empresa"
+    >
+      {logoUrl ? (
+        <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <div
+          className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
+          style={{ background: "linear-gradient(135deg, #7c3aed, #ec4899)" }}
+        >
+          {initials}
+        </div>
+      )}
+      <div className="absolute inset-0 flex items-center justify-center bg-navy/0 group-hover:bg-navy/50 opacity-0 group-hover:opacity-100 transition-all">
+        <Camera size={14} className="text-white" />
+      </div>
+      {uploading && (
+        <div className="absolute inset-0 bg-navy/60 flex items-center justify-center">
+          <Loader2 size={14} className="text-white animate-spin" />
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+    </div>
   );
 }
 
