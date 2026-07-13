@@ -156,7 +156,11 @@ export default function AdminPage() {
 
   if (selectedEmpresa) {
     return (
-      <AppShell userName={profile.full_name}>
+      <AppShell
+        userName={profile.full_name}
+        userId={profile.id}
+        onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+      >
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -174,7 +178,11 @@ export default function AdminPage() {
   }
 
   return (
-    <AppShell userName={profile.full_name}>
+    <AppShell
+      userName={profile.full_name}
+      userId={profile.id}
+      onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+    >
       <div className="space-y-6">
         <div>
           <h1 className="text-xl font-bold text-navy flex items-center gap-2">
@@ -331,8 +339,6 @@ export default function AdminPage() {
             {sortedHealth.length === 0 && <p className="text-sm text-muted py-2">Nenhuma empresa cadastrada ainda.</p>}
           </div>
         </div>
-
-        <ChangePassword />
       </div>
     </AppShell>
   );

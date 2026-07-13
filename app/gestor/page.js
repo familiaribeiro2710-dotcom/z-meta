@@ -41,13 +41,16 @@ export default function GestorPage() {
   }
 
   return (
-    <AppShell userName={profile.full_name}>
+    <AppShell
+      userName={profile.full_name}
+      userId={profile.id}
+      onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+    >
       <div className="space-y-6">
         <h1 className="text-xl font-bold text-navy flex items-center gap-2">
           <greet.Icon size={20} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
         </h1>
         <EmpresaDashboard empresaId={profile.empresa_id} />
-        <ChangePassword />
       </div>
     </AppShell>
   );

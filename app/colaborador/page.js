@@ -276,7 +276,14 @@ export default function ColaboradorPage() {
   const willRelease = teamPct >= Number(settings.team_threshold_pct);
 
   return (
-    <AppShell userName={profile.full_name} tabs={TABS} activeTab={tab} onTabChange={setTab}>
+    <AppShell
+      userName={profile.full_name}
+      userId={profile.id}
+      onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+      tabs={TABS}
+      activeTab={tab}
+      onTabChange={setTab}
+    >
       {showCongrats && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
@@ -381,8 +388,6 @@ export default function ColaboradorPage() {
               </ul>
             )}
           </div>
-
-          <ChangePassword />
         </div>
       )}
 
