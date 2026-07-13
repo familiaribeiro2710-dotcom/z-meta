@@ -31,7 +31,7 @@ import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard from "../../lib/EmpresaDashboard";
-import { CnpjInput } from "../../lib/MaskedInputs";
+import { CnpjInput, PhoneInput } from "../../lib/MaskedInputs";
 import { greeting, todayStr, firstDayOfMonth } from "../../lib/date";
 
 const PLANOS = [
@@ -329,7 +329,7 @@ export default function AdminPage() {
             </div>
             <div>
               <label className="label">Telefone</label>
-              <input className="input" value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(00) 00000-0000" />
+              <PhoneInput value={telefone} onChange={setTelefone} />
             </div>
             <div>
               <label className="label">E-mail principal</label>
