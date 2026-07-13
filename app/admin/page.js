@@ -269,7 +269,9 @@ export default function AdminPage() {
         )}
 
         <div className="card">
-          <p className="label mb-3 flex items-center gap-1.5"><TrendingUp size={14} /> Empresas cadastradas por mês</p>
+          <p className="inline-flex items-center gap-1.5 whitespace-nowrap m-0 mb-3 text-xs uppercase tracking-wider text-muted font-bold">
+            <TrendingUp size={14} className="shrink-0" /> Empresas cadastradas por mês
+          </p>
           <div className="flex items-end gap-3 h-28">
             {growthBuckets.map((b) => (
               <div key={b.key} className="flex-1 flex flex-col items-center justify-end h-full">
@@ -285,7 +287,9 @@ export default function AdminPage() {
         </div>
 
         <div className="card">
-          <p className="label mb-3 flex items-center gap-1.5"><Plus size={14} /> Nova empresa</p>
+          <p className="inline-flex items-center gap-1.5 whitespace-nowrap m-0 mb-3 text-xs uppercase tracking-wider text-muted font-bold">
+            <Plus size={14} className="shrink-0" /> Nova empresa
+          </p>
           <form onSubmit={handleCreate} className="grid sm:grid-cols-3 gap-4">
             <div>
               <label className="label">Nome da empresa</label>
