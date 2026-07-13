@@ -277,7 +277,7 @@ export default function AdminPage() {
               ← Voltar para empresas
             </button>
           </div>
-          <EmpresaDashboard lojaId={selectedLoja.lojaId} empresaId={selectedLoja.empresaId} />
+          <EmpresaDashboard lojaId={selectedLoja.lojaId} empresaId={selectedLoja.empresaId} viewerRole="master_admin" />
         </div>
       </AppShell>
     );

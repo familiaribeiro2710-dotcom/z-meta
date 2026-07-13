@@ -1,35 +1,130 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Store, Users, Trophy } from "lucide-react";
+import {
+  Loader2,
+  Store,
+  Rocket,
+  CalendarClock,
+  ListTodo,
+  Coins,
+  Gift,
+  Trophy,
+  PartyPopper,
+  Wallet,
+} from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard from "../../lib/EmpresaDashboard";
-import { greeting, todayStr, firstDayOfMonth } from "../../lib/date";
+import ProgressBar from "../../lib/ProgressBar";
+import { formatBRL } from "../../lib/scoring";
+import { greeting, todayStr, firstDayOfMonth, remainingDaysInMonth } from "../../lib/date";
 
 export default function GerentePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [lojaName, setLojaName] = useState("");
-  const [colabCount, setColabCount] = useState(0);
   const [teamPct, setTeamPct] = useState(0);
+  const [settings, setSettings] = useState({ team_threshold_pct: 95 });
+  const [hero, setHero] = useState({ metaLoja: 0, soldLoja: 0, pendingToday: 0, commissionSoFar: 0, prizesSoFar: 0 });
   const greet = greeting();
-  const month = firstDayOfMonth(todayStr());
+  const today = todayStr();
+  const month = firstDayOfMonth(today);
 
   const loadStats = useCallback(async (prof) => {
     const { data: loja } = await supabase.from("lojas").select("name").eq("id", prof.loja_id).single();
     setLojaName(loja?.name || "");
-    const { count } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("loja_id", prof.loja_id)
-      .eq("role", "colaborador");
-    setColabCount(count || 0);
+
+    const { data: settingsRow } = await supabase.from("app_settings").select("*").eq("loja_id", prof.loja_id).single();
+    if (settingsRow) setSettings(settingsRow);
+
     const { data: pct } = await supabase.rpc("get_team_progress", { p_month: month, p_loja: prof.loja_id });
     setTeamPct(Number(pct) || 0);
-  }, [month]);
+
+    const { data: emps } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("loja_id", prof.loja_id)
+      .eq("role", "colaborador")
+      .eq("active", true);
+    const empIds = (emps || []).map((e) => e.id);
+
+    const nextMonth = new Date(month + "T00:00:00");
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const nextMonthStr = nextMonth.toISOString().slice(0, 10);
+
+    // atividades pendentes hoje, somando todos os colaboradores da loja
+    let pendingToday = 0;
+    const { data: activeTasks } = await supabase
+      .from("tasks")
+      .select("id")
+      .eq("loja_id", prof.loja_id)
+      .eq("active", true);
+    const taskIds = (activeTasks || []).map((t) => t.id);
+    if (taskIds.length) {
+      const { data: todayRows } = await supabase
+        .from("task_completions")
+        .select("task_id, completed")
+        .in("task_id", taskIds)
+        .eq("completion_date", today);
+      const doneTaskIds = new Set((todayRows || []).filter((r) => r.completed).map((r) => r.task_id));
+      pendingToday = taskIds.filter((id) => !doneTaskIds.has(id)).length;
+    }
+
+    // meta da loja no mês (soma de todas as metas ativas) e vendido no mês (todos os colaboradores)
+    const { data: goalRows } = await supabase
+      .from("sales_goals")
+      .select("id, store_total")
+      .eq("loja_id", prof.loja_id)
+      .eq("month", month);
+    const metaLoja = (goalRows || []).reduce((s, g) => s + Number(g.store_total || 0), 0);
+    const goalIds = (goalRows || []).map((g) => g.id);
+
+    let allocRows = [];
+    if (goalIds.length) {
+      const { data } = await supabase.from("sales_goal_allocations").select("employee_id, amount, commission_pct").in("goal_id", goalIds);
+      allocRows = data || [];
+    }
+
+    let entryRows = [];
+    if (empIds.length) {
+      const { data } = await supabase
+        .from("sales_entries")
+        .select("employee_id, daily_amount")
+        .in("employee_id", empIds)
+        .gte("entry_date", month)
+        .lt("entry_date", nextMonthStr);
+      entryRows = data || [];
+    }
+    const soldLoja = entryRows.reduce((s, e) => s + Number(e.daily_amount || 0), 0);
+
+    // comissão até agora: por colaborador, vendido no mês x comissão média ponderada das metas dele — somado pra loja toda
+    const soldByEmp = {};
+    entryRows.forEach((e) => { soldByEmp[e.employee_id] = (soldByEmp[e.employee_id] || 0) + Number(e.daily_amount || 0); });
+    let commissionSoFar = 0;
+    empIds.forEach((id) => {
+      const myAllocs = allocRows.filter((a) => a.employee_id === id);
+      const metaEmp = myAllocs.reduce((s, a) => s + Number(a.amount || 0), 0);
+      const weighted = myAllocs.reduce((s, a) => s + Number(a.amount || 0) * Number(a.commission_pct || 0), 0);
+      const commissionPct = metaEmp > 0 ? weighted / metaEmp : 0;
+      commissionSoFar += (soldByEmp[id] || 0) * (commissionPct / 100);
+    });
+
+    // premiações do mês lançadas pelo supervisor, somando todos os colaboradores da loja
+    let prizesSoFar = 0;
+    if (empIds.length) {
+      const { data: prizeRows } = await supabase
+        .from("employee_stage_prizes")
+        .select("amount")
+        .in("employee_id", empIds)
+        .eq("month", month);
+      prizesSoFar = (prizeRows || []).reduce((s, p) => s + Number(p.amount || 0), 0);
+    }
+
+    setHero({ metaLoja, soldLoja, pendingToday, commissionSoFar, prizesSoFar });
+  }, [month, today]);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +158,11 @@ export default function GerentePage() {
     return <ChangePassword force onDone={() => setProfile({ ...profile, must_change_password: false })} />;
   }
 
+  const remaining = remainingDaysInMonth(today);
+  const restoDaMeta = Math.max(0, hero.metaLoja - hero.soldLoja);
+  const dailyGoal = remaining > 0 ? restoDaMeta / remaining : 0;
+  const willRelease = teamPct >= Number(settings.team_threshold_pct || 95);
+
   return (
     <AppShell
       userName={profile.full_name}
@@ -79,26 +179,50 @@ export default function GerentePage() {
           className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
           style={{ background: "linear-gradient(135deg, #16a34a 0%, #4ade80 100%)", boxShadow: "0 10px 28px rgba(22,163,74,0.35)" }}
         >
-          <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
-          <div className="relative flex items-center gap-2 mb-5">
+          <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/15" />
+          <div className="relative flex items-center gap-2 mb-3">
             <Store size={18} className="text-white" />
-            <span className="text-xs font-bold uppercase tracking-wider text-white">Gerente · {lojaName || "sua loja"}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-white">Meta de hoje · {lojaName || "sua loja"}</span>
           </div>
-          <div className="relative grid grid-cols-2 gap-4">
+          <p className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(dailyGoal)}</p>
+          <p className="relative text-xs font-semibold text-white/80 mt-1">pra bater a meta da loja nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
+
+          <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-white/25">
             <div>
-              <Users size={20} className="text-white" />
-              <p className="text-3xl font-extrabold mt-2 text-white">{colabCount}</p>
-              <p className="text-xs font-semibold mt-0.5 text-white">Colaboradores</p>
+              <p className="text-xl font-extrabold text-white">{formatBRL(restoDaMeta)}</p>
+              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Rocket size={11} /> Falta pra meta do mês</p>
             </div>
-            <div className="sm:border-l sm:border-white/25 sm:pl-4">
-              <Trophy size={20} className="text-white" />
-              <p className="text-3xl font-extrabold mt-2 text-white">{teamPct.toFixed(0)}%</p>
-              <p className="text-xs font-semibold mt-0.5 text-white">Barra da equipe (mês)</p>
+            <div>
+              <p className="text-xl font-extrabold text-white">{remaining}</p>
+              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><CalendarClock size={11} /> Dias restantes no mês</p>
+            </div>
+            <div>
+              <p className="text-xl font-extrabold text-white">{hero.pendingToday}</p>
+              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><ListTodo size={11} /> Atividades pendentes</p>
+            </div>
+            <div>
+              <p className="text-xl font-extrabold text-white">{formatBRL(hero.commissionSoFar)}</p>
+              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Coins size={11} /> Comissão até agora</p>
+            </div>
+            <div>
+              <p className="text-xl font-extrabold text-white">{formatBRL(hero.prizesSoFar)}</p>
+              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Gift size={11} /> Premiações</p>
             </div>
           </div>
         </div>
 
-        <EmpresaDashboard lojaId={profile.loja_id} empresaId={profile.empresa_id} />
+        <div className="card animate-pop border-teal/20">
+          <p className="label flex items-center gap-1.5"><Trophy size={14} /> Barra geral da equipe (mês)</p>
+          <ProgressBar pct={teamPct} threshold={settings.team_threshold_pct} />
+          <p className={`text-[12px] mt-2 font-bold flex items-center gap-1.5 ${willRelease ? "text-teal" : "text-muted"}`}>
+            {willRelease ? <PartyPopper size={14} /> : <Wallet size={14} />}
+            {willRelease
+              ? `Prêmio garantido se seguir assim!`
+              : `Prêmio do mês liberado com ${settings.team_threshold_pct}%+ no fim do mês.`}
+          </p>
+        </div>
+
+        <EmpresaDashboard lojaId={profile.loja_id} empresaId={profile.empresa_id} viewerRole="gerente" />
       </div>
     </AppShell>
   );
