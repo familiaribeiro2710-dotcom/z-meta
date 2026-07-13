@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  background-color: #f5f3ee;
+  color: #12203a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.input {
+  @apply w-full border border-line bg-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition-all;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 bg-navy text-white rounded-full px-5 py-2.5 text-sm font-medium tracking-wide hover:bg-navylight active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-soft;
+}
+
+.btn-outline {
+  @apply inline-flex items-center justify-center gap-2 border-2 border-navy text-navy rounded-full px-5 py-2.5 text-sm font-medium tracking-wide hover:bg-navy hover:text-white active:scale-95 transition-all disabled:opacity-40;
+}
+
+.card {
+  @apply border border-line bg-white rounded-2xl p-5 shadow-soft hover:shadow-card transition-shadow;
+}
+
+.label {
+  @apply block text-xs uppercase tracking-wider text-muted mb-1.5 font-medium;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop {
+  animation: pop 0.25s ease-out;
+}
+
+@keyframes fadeUp {
+  0% { transform: translateY(6px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-fadeUp {
+  animation: fadeUp 0.35s ease-out;
+}
