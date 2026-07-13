@@ -66,8 +66,8 @@ export default function ColaboradorPage() {
   const month = firstDayOfMonth(today);
   const greet = greeting();
 
-  const loadAll = useCallback(async (uid, empresaId) => {
-    const { data: settingsRow } = await supabase.from("app_settings").select("*").eq("empresa_id", empresaId).single();
+  const loadAll = useCallback(async (uid, lojaId) => {
+    const { data: settingsRow } = await supabase.from("app_settings").select("*").eq("loja_id", lojaId).single();
     if (settingsRow) setSettings(settingsRow);
     const penalty = settingsRow?.warning_penalty_points ?? 10;
 
@@ -147,7 +147,7 @@ export default function ColaboradorPage() {
       setStreak(0);
     }
 
-    const { data: teamPctData } = await supabase.rpc("get_team_progress", { p_month: month, p_empresa: empresaId });
+    const { data: teamPctData } = await supabase.rpc("get_team_progress", { p_month: month, p_loja: lojaId });
     setTeamPct(Number(teamPctData) || 0);
 
     const { data: stageRows } = await supabase.from("stage_dynamics").select("*").eq("month", month).order("stage_number");
@@ -179,7 +179,7 @@ export default function ColaboradorPage() {
       if (!session) { router.replace("/login"); return; }
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
       if (!prof || prof.role !== "colaborador") {
-        router.replace(prof?.role === "master_admin" ? "/admin" : prof?.role === "gestor" ? "/gestor" : "/login");
+        router.replace(prof?.role === "master_admin" ? "/admin" : prof?.role === "gerente" ? "/gerente" : "/login");
         return;
       }
       if (!active) return;
@@ -189,7 +189,7 @@ export default function ColaboradorPage() {
       y.setDate(y.getDate() - 1);
       setEntryDate(y.toISOString().slice(0, 10));
       if (!prof.must_change_password) {
-        await loadAll(session.user.id, prof.empresa_id);
+        await loadAll(session.user.id, prof.loja_id);
       }
       setLoading(false);
     })();
@@ -204,7 +204,7 @@ export default function ColaboradorPage() {
       .update({ completed: newVal, completed_at: newVal ? new Date().toISOString() : null })
       .eq("task_id", taskId)
       .eq("completion_date", today);
-    await loadAll(user.id, profile.empresa_id);
+    await loadAll(user.id, profile.loja_id);
 
     if (newVal) {
       const willAllBeDone = tasks.length > 0 && tasks.every((t) => (t.id === taskId ? true : todayCompletions[t.id]?.completed));
@@ -233,6 +233,7 @@ export default function ColaboradorPage() {
         updated_by: user.id,
         updated_at: new Date().toISOString(),
         empresa_id: profile.empresa_id,
+        loja_id: profile.loja_id,
       },
       { onConflict: "employee_id,entry_date" }
     );
@@ -242,7 +243,7 @@ export default function ColaboradorPage() {
     } else {
       setEntryMsg("Lançamento salvo.");
       setEntryValue("");
-      await loadAll(user.id, profile.empresa_id);
+      await loadAll(user.id, profile.loja_id);
     }
   }
 
@@ -261,7 +262,7 @@ export default function ColaboradorPage() {
         onDone={async () => {
           const updated = { ...profile, must_change_password: false };
           setProfile(updated);
-          await loadAll(user.id, updated.empresa_id);
+          await loadAll(user.id, updated.loja_id);
         }}
       />
     );
@@ -313,6 +314,31 @@ export default function ColaboradorPage() {
                 <span className="badge bg-orange/15 text-orange"><Flame size={12} /> {streak} dia{streak > 1 ? "s" : ""} seguidos</span>
               )}
             </p>
+          </div>
+
+          <div
+            className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
+            style={{ background: "linear-gradient(135deg, #a78bfa 0%, #ddd6fe 100%)", boxShadow: "0 10px 28px rgba(167,139,250,0.35)" }}
+          >
+            <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/15" />
+            <div className="relative flex items-center gap-2 mb-5">
+              <Target size={18} className="text-navy" />
+              <span className="text-xs font-bold uppercase tracking-wider text-navy">Meu desempenho</span>
+            </div>
+            <div className="relative grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-3xl font-extrabold text-navy">{Math.round(individualPct)}%</p>
+                <p className="text-xs font-semibold mt-0.5 text-navy">Minha barra</p>
+              </div>
+              <div className="border-l border-navy/15 pl-4">
+                <p className="text-3xl font-extrabold text-navy">{streak}</p>
+                <p className="text-xs font-semibold mt-0.5 text-navy">Dias seguidos</p>
+              </div>
+              <div className="border-l border-navy/15 pl-4">
+                <p className="text-3xl font-extrabold text-navy">{Math.round(teamPct)}%</p>
+                <p className="text-xs font-semibold mt-0.5 text-navy">Equipe</p>
+              </div>
+            </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
@@ -452,7 +478,7 @@ export default function ColaboradorPage() {
                 <ul className="text-sm divide-y divide-line">
                   {entries.slice(0, 8).map((en) => (
                     <li key={en.id} className="flex justify-between py-1.5">
-                      <span className="text-muted">{en.entry_date}{en.edited_by_manager ? " (corrigido pelo gestor)" : ""}</span>
+                      <span className="text-muted">{en.entry_date}{en.edited_by_manager ? " (corrigido pelo gerente)" : ""}</span>
                       <span>{formatBRL(en.cumulative_amount)}</span>
                     </li>
                   ))}

@@ -32,13 +32,13 @@ export default function LoginPage() {
       .eq("id", data.user.id)
       .single();
     if (!profile) {
-      setError("Conta sem perfil configurado. Fale com o gestor.");
+      setError("Conta sem perfil configurado. Fale com o gerente.");
       await supabase.auth.signOut();
       setLoading(false);
       return;
     }
     if (profile.role === "master_admin") router.replace("/admin");
-    else if (profile.role === "gestor") router.replace("/gestor");
+    else if (profile.role === "gerente") router.replace("/gerente");
     else router.replace("/colaborador");
   }
 

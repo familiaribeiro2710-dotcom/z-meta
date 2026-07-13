@@ -29,8 +29,8 @@ export default function Home() {
       }
       if (profile.role === "master_admin") {
         router.replace("/admin");
-      } else if (profile.role === "gestor") {
-        router.replace("/gestor");
+      } else if (profile.role === "gerente") {
+        router.replace("/gerente");
       } else {
         router.replace("/colaborador");
       }

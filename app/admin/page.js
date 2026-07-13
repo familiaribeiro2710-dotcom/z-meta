@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   Crown,
   Building2,
+  Store,
   Users,
   Sprout,
   AlertTriangle,
@@ -58,11 +59,12 @@ export default function AdminPage() {
   const [sortKey, setSortKey] = useState("risco");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedEmpresa, setSelectedEmpresa] = useState(null);
+  const [selectedLoja, setSelectedLoja] = useState(null);
 
   const [empresaName, setEmpresaName] = useState("");
-  const [gestorName, setGestorName] = useState("");
-  const [password, setPassword] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [email, setEmail] = useState("");
   const [msg, setMsg] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -72,12 +74,12 @@ export default function AdminPage() {
   const loadAll = useCallback(async () => {
     const { data: overviewRows } = await supabase.rpc("admin_overview");
     setOverview((overviewRows && overviewRows[0]) || null);
-    const { data: healthRows } = await supabase.rpc("admin_empresas_health", { p_month: month });
+    const { data: healthRows } = await supabase.rpc("admin_lojas_health", { p_month: month });
     setHealth(healthRows || []);
     const { data: profileRows } = await supabase
       .from("profiles")
       .select("*")
-      .in("role", ["gestor", "colaborador"])
+      .in("role", ["gerente", "colaborador"])
       .order("full_name");
     setAllProfiles(profileRows || []);
   }, [month]);
@@ -105,7 +107,7 @@ export default function AdminPage() {
     const res = await fetch("/api/admin/create-empresa", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ empresaName, gestorName, password }),
+      body: JSON.stringify({ empresaName, cnpj, telefone, email }),
     });
     const json = await res.json();
     setCreating(false);
@@ -113,8 +115,8 @@ export default function AdminPage() {
       setMsg("Erro: " + (json.error || "não foi possível criar."));
       return;
     }
-    setMsg(`Empresa criada! Login do gestor → usuário: ${json.username}`);
-    setEmpresaName(""); setGestorName(""); setPassword("");
+    setMsg("Empresa criada! Agora cadastre uma loja e um gerente dentro dela.");
+    setEmpresaName(""); setCnpj(""); setTelefone(""); setEmail("");
     await loadAll();
   }
 
@@ -133,14 +135,14 @@ export default function AdminPage() {
 
   async function toggleEmpresaActive(row) {
     const next = !row.active;
-    if (!next && !window.confirm(`Desativar "${row.empresa_name}"? O gestor e todos os colaboradores dessa empresa perdem o acesso até você reativar.`)) return;
+    if (!next && !window.confirm(`Desativar "${row.empresa_name}"? Gerentes e colaboradores dessa empresa perdem o acesso até você reativar.`)) return;
     await supabase.from("empresas").update({ active: next }).eq("id", row.empresa_id);
     await loadAll();
   }
 
   async function deleteEmpresa(row) {
     const typed = window.prompt(
-      `Isso vai apagar "${row.empresa_name}" e TODOS os dados dela (gestor, colaboradores, tarefas, metas, histórico) para sempre. Digite o nome da empresa para confirmar:`
+      `Isso vai apagar "${row.empresa_name}" e TODOS os dados dela (lojas, gerentes, colaboradores, tarefas, metas, histórico) para sempre. Digite o nome da empresa para confirmar:`
     );
     if (typed !== row.empresa_name) {
       if (typed !== null) alert("Nome não confere. Nada foi excluído.");
@@ -160,22 +162,45 @@ export default function AdminPage() {
     await loadAll();
   }
 
-  const sortedHealth = useMemo(() => {
+  const empresasGrouped = useMemo(() => {
+    const map = new Map();
+    health.forEach((row) => {
+      if (!map.has(row.empresa_id)) {
+        map.set(row.empresa_id, {
+          empresa_id: row.empresa_id,
+          empresa_name: row.empresa_name,
+          plano: row.plano,
+          active: row.active,
+          created_at: row.empresa_created_at,
+          logo_url: row.logo_url,
+          lojas: [],
+        });
+      }
+      if (row.loja_id) map.get(row.empresa_id).lojas.push(row);
+    });
+    let list = Array.from(map.values());
+
     const q = search.trim().toLowerCase();
-    const rows = q ? health.filter((r) => r.empresa_name.toLowerCase().includes(q)) : [...health];
-    if (sortKey === "risco") {
-      rows.sort((a, b) => daysSince(b.last_activity) - daysSince(a.last_activity));
-    } else if (sortKey === "recente") {
-      rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    } else if (sortKey === "nome") {
-      rows.sort((a, b) => a.empresa_name.localeCompare(b.empresa_name));
-    } else if (sortKey === "desempenho") {
-      rows.sort((a, b) => Number(a.team_pct) - Number(b.team_pct));
-    }
-    return rows;
+    if (q) list = list.filter((e) => e.empresa_name.toLowerCase().includes(q));
+
+    list.forEach((e) => {
+      e._worstStale = e.lojas.length ? Math.max(...e.lojas.map((l) => daysSince(l.last_activity))) : Infinity;
+      e._worstPct = e.lojas.length ? Math.min(...e.lojas.map((l) => Number(l.team_pct))) : 0;
+      e._colabTotal = e.lojas.reduce((s, l) => s + Number(l.colaboradores_count), 0);
+    });
+
+    if (sortKey === "risco") list.sort((a, b) => b._worstStale - a._worstStale);
+    else if (sortKey === "recente") list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    else if (sortKey === "nome") list.sort((a, b) => a.empresa_name.localeCompare(b.empresa_name));
+    else if (sortKey === "desempenho") list.sort((a, b) => a._worstPct - b._worstPct);
+
+    return list;
   }, [health, sortKey, search]);
 
   const growthBuckets = useMemo(() => {
+    const uniqueEmpresas = new Map();
+    health.forEach((row) => { if (!uniqueEmpresas.has(row.empresa_id)) uniqueEmpresas.set(row.empresa_id, row); });
+
     const buckets = [];
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
@@ -183,8 +208,8 @@ export default function AdminPage() {
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       buckets.push({ key, label: d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""), count: 0 });
     }
-    health.forEach((row) => {
-      const key = String(row.created_at).slice(0, 7);
+    Array.from(uniqueEmpresas.values()).forEach((row) => {
+      const key = String(row.empresa_created_at).slice(0, 7);
       const bucket = buckets.find((b) => b.key === key);
       if (bucket) bucket.count += 1;
     });
@@ -205,7 +230,7 @@ export default function AdminPage() {
     return <ChangePassword force onDone={() => setProfile({ ...profile, must_change_password: false })} />;
   }
 
-  if (selectedEmpresa) {
+  if (selectedLoja) {
     return (
       <AppShell
         userName={profile.full_name}
@@ -214,16 +239,16 @@ export default function AdminPage() {
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
       >
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Building2 size={20} className="text-purple" /> {selectedEmpresa.name}</h1>
-              <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><Crown size={13} className="text-gold" /> Visualizando como Master Admin — dados completos desta empresa</p>
+              <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Store size={20} className="text-purple" /> {selectedLoja.lojaName}</h1>
+              <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><Crown size={13} className="text-gold" /> Visualizando como Master Admin — dados completos desta loja</p>
             </div>
-            <button className="btn-outline whitespace-nowrap" onClick={() => setSelectedEmpresa(null)}>
+            <button className="btn-outline whitespace-nowrap" onClick={() => setSelectedLoja(null)}>
               ← Voltar para empresas
             </button>
           </div>
-          <EmpresaDashboard empresaId={selectedEmpresa.id} />
+          <EmpresaDashboard lojaId={selectedLoja.lojaId} empresaId={selectedLoja.empresaId} />
         </div>
       </AppShell>
     );
@@ -292,22 +317,26 @@ export default function AdminPage() {
           <p className="inline-flex items-center gap-1.5 whitespace-nowrap m-0 mb-3 text-xs uppercase tracking-wider text-muted font-bold">
             <Plus size={14} className="shrink-0" /> Nova empresa
           </p>
-          <form onSubmit={handleCreate} className="grid sm:grid-cols-3 gap-4">
+          <form onSubmit={handleCreate} className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Nome da empresa</label>
               <input className="input" value={empresaName} onChange={(e) => setEmpresaName(e.target.value)} required />
             </div>
             <div>
-              <label className="label">Nome do gestor</label>
-              <input className="input" value={gestorName} onChange={(e) => setGestorName(e.target.value)} required />
+              <label className="label">CNPJ</label>
+              <input className="input" value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" />
             </div>
             <div>
-              <label className="label">Senha temporária</label>
-              <input className="input" type="text" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <label className="label">Telefone</label>
+              <input className="input" value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(00) 00000-0000" />
             </div>
-            <div className="sm:col-span-3">
+            <div>
+              <label className="label">E-mail principal</label>
+              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contato@empresa.com" />
+            </div>
+            <div className="sm:col-span-2">
               <button className="btn" type="submit" disabled={creating}>
-                {creating ? "Criando…" : "Criar empresa + gestor"}
+                {creating ? "Criando…" : "Criar empresa"}
               </button>
             </div>
           </form>
@@ -372,24 +401,18 @@ export default function AdminPage() {
           </div>
 
           <div className="space-y-3">
-            {sortedHealth.length === 0 && search.trim() && (
+            {empresasGrouped.length === 0 && search.trim() && (
               <p className="text-sm text-muted py-2">Nenhuma empresa encontrada para &ldquo;{search.trim()}&rdquo;.</p>
             )}
-            {sortedHealth.map((row) => {
-              const stale = daysSince(row.last_activity);
+            {empresasGrouped.map((row) => {
+              const stale = row._worstStale;
               const neverActive = stale === Infinity;
-              const alerts = [];
-              if (Number(row.tasks_count) === 0) alerts.push("sem tarefas cadastradas");
-              if (Number(row.goals_count) === 0) alerts.push("sem meta do mês");
-              if (row.gestor_pending_password) alerts.push("gestor não trocou a senha");
-              if (!row.gestor_name) alerts.push("sem gestor cadastrado");
-
               const isExpanded = !!expanded[row.empresa_id];
               return (
                 <div
                   key={row.empresa_id}
                   className={`border rounded-xl p-3.5 cursor-pointer transition-colors ${
-                    neverActive || stale >= 7 ? "border-danger/40 bg-danger/5" : "border-line hover:border-purple/40"
+                    row.lojas.length > 0 && (neverActive || stale >= 7) ? "border-danger/40 bg-danger/5" : "border-line hover:border-purple/40"
                   } ${!row.active ? "opacity-60" : ""}`}
                   onClick={() => setExpanded((e) => ({ ...e, [row.empresa_id]: !e[row.empresa_id] }))}
                 >
@@ -445,15 +468,15 @@ export default function AdminPage() {
                           </p>
                         )}
                         <p className="text-xs text-muted">
-                          {row.gestor_name ? `gestor: ${row.gestor_name} (${row.gestor_username})` : "sem gestor"} · {row.colaboradores_count} colaborador(es)
+                          {row.lojas.length} loja{row.lojas.length !== 1 ? "s" : ""} · {row._colabTotal} colaborador(es) no total
                         </p>
                         <p className="text-[11px] text-muted mt-0.5">
-                          {neverActive ? "nunca teve atividade" : `última atividade há ${stale} dia(s)`}
-                          {" · "}barra do mês: {Number(row.team_pct).toFixed(0)}% (meta {Number(row.team_threshold).toFixed(0)}%)
+                          {row.lojas.length === 0
+                            ? "nenhuma loja cadastrada ainda"
+                            : neverActive
+                              ? "nenhuma loja teve atividade ainda"
+                              : `loja mais parada: há ${stale} dia(s)`}
                         </p>
-                        {alerts.length > 0 && (
-                          <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -464,13 +487,6 @@ export default function AdminPage() {
                       >
                         {PLANOS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                       </select>
-                      <button
-                        className="inline-flex items-center gap-1.5 text-white rounded-full px-3.5 py-1.5 text-xs font-bold whitespace-nowrap shadow-pop active:scale-95 hover:brightness-110 transition-all"
-                        style={{ background: "linear-gradient(135deg, #7c3aed, #ec4899)" }}
-                        onClick={() => setSelectedEmpresa({ id: row.empresa_id, name: row.empresa_name })}
-                      >
-                        <Eye size={13} /> Ver dados
-                      </button>
                       <button
                         title={row.active ? "Desativar empresa" : "Ativar empresa"}
                         onClick={() => toggleEmpresaActive(row)}
@@ -490,16 +506,19 @@ export default function AdminPage() {
 
                   {isExpanded && (
                     <div onClick={(e) => e.stopPropagation()}>
-                      <EquipeList
-                        profiles={allProfiles.filter((p) => p.empresa_id === row.empresa_id)}
+                      <LojasList
+                        empresaId={row.empresa_id}
+                        lojas={row.lojas}
+                        allProfiles={allProfiles}
                         onChanged={loadAll}
+                        onOpenDados={setSelectedLoja}
                       />
                     </div>
                   )}
                 </div>
               );
             })}
-            {sortedHealth.length === 0 && !search.trim() && <p className="text-sm text-muted py-2">Nenhuma empresa cadastrada ainda.</p>}
+            {empresasGrouped.length === 0 && !search.trim() && <p className="text-sm text-muted py-2">Nenhuma empresa cadastrada ainda.</p>}
           </div>
         </div>
       </div>
@@ -579,65 +598,240 @@ function HeroStat({ Icon, value, label, sub, divider, danger }) {
   );
 }
 
-function EquipeList({ profiles, onChanged }) {
-  const [openId, setOpenId] = useState(null);
-  const gestores = profiles.filter((p) => p.role === "gestor");
-  const colaboradores = profiles.filter((p) => p.role === "colaborador");
+function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados }) {
+  const [addingLoja, setAddingLoja] = useState(false);
+  const [lojaName, setLojaName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [openLojaId, setOpenLojaId] = useState(null);
+
+  async function createLoja(e) {
+    e.preventDefault();
+    if (!lojaName.trim()) return;
+    setCreating(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/create-loja", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ empresaId, lojaName: lojaName.trim() }),
+    });
+    setCreating(false);
+    if (res.ok) {
+      setLojaName("");
+      setAddingLoja(false);
+      onChanged();
+    }
+  }
 
   return (
-    <div className="mt-3 pt-3 border-t border-line grid sm:grid-cols-2 gap-4">
-      <div>
-        <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-2 flex items-center gap-1.5">
-          <ShieldCheck size={13} /> Gestores ({gestores.length})
+    <div className="mt-3 pt-3 border-t border-line space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
+          <Store size={13} /> Lojas ({lojas.length})
         </p>
-        {gestores.length === 0 && <p className="text-xs text-muted">Nenhum gestor cadastrado.</p>}
-        <ul className="space-y-2">
-          {gestores.map((g) => (
-            <li key={g.id}>
+        <button
+          onClick={() => setAddingLoja((v) => !v)}
+          className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
+        >
+          <Plus size={12} /> nova loja
+        </button>
+      </div>
+      {addingLoja && (
+        <form onSubmit={createLoja} className="flex items-center gap-2">
+          <input
+            className="input !py-1.5 !text-xs flex-1"
+            placeholder="nome da loja"
+            value={lojaName}
+            onChange={(e) => setLojaName(e.target.value)}
+            autoFocus
+          />
+          <button type="submit" className="btn-outline !px-3 !py-1.5 !text-xs whitespace-nowrap" disabled={creating}>
+            {creating ? "Criando…" : "Criar"}
+          </button>
+        </form>
+      )}
+      {lojas.length === 0 && <p className="text-xs text-muted">Nenhuma loja cadastrada ainda.</p>}
+      <div className="space-y-2">
+        {lojas.map((l) => (
+          <LojaCard
+            key={l.loja_id}
+            loja={l}
+            empresaId={empresaId}
+            allProfiles={allProfiles}
+            onChanged={onChanged}
+            onOpenDados={onOpenDados}
+            isOpen={openLojaId === l.loja_id}
+            onToggle={() => setOpenLojaId(openLojaId === l.loja_id ? null : l.loja_id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LojaCard({ loja, empresaId, allProfiles, onChanged, onOpenDados, isOpen, onToggle }) {
+  const [addingGerente, setAddingGerente] = useState(false);
+  const [gerenteName, setGerenteName] = useState("");
+  const [password, setPassword] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [openUserId, setOpenUserId] = useState(null);
+
+  const colaboradores = allProfiles.filter((p) => p.loja_id === loja.loja_id && p.role === "colaborador");
+  const stale = daysSince(loja.last_activity);
+  const neverActive = stale === Infinity;
+
+  const alerts = [];
+  if (!loja.gerente_id) alerts.push("sem gerente cadastrado");
+  else if (loja.gerente_pending_password) alerts.push("gerente não trocou a senha");
+  if (Number(loja.tasks_count) === 0) alerts.push("sem tarefas cadastradas");
+  if (Number(loja.goals_count) === 0) alerts.push("sem meta do mês");
+
+  async function createGerente(e) {
+    e.preventDefault();
+    if (!gerenteName.trim() || !password) return;
+    setCreating(true);
+    setMsg("");
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/create-gerente", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ empresaId, lojaId: loja.loja_id, gerenteName: gerenteName.trim(), password }),
+    });
+    const json = await res.json();
+    setCreating(false);
+    if (!res.ok) {
+      setMsg("Erro: " + (json.error || "não foi possível criar."));
+      return;
+    }
+    setMsg(`Gerente criado! Usuário: ${json.username}`);
+    setGerenteName(""); setPassword(""); setAddingGerente(false);
+    onChanged();
+  }
+
+  return (
+    <div className="border border-line rounded-xl p-3">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div>
+          <p className="text-sm font-semibold text-navy flex items-center gap-1.5">
+            <Store size={13} className="text-teal" /> {loja.loja_name}
+            {!loja.loja_active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+          </p>
+          <p className="text-[11px] text-muted mt-0.5">
+            {loja.gerente_name ? `gerente: ${loja.gerente_name} (${loja.gerente_username})` : "sem gerente"} · {loja.colaboradores_count} colaborador(es)
+          </p>
+          <p className="text-[11px] text-muted mt-0.5">
+            {neverActive ? "nunca teve atividade" : `última atividade há ${stale} dia(s)`}
+            {" · "}barra do mês: {Number(loja.team_pct || 0).toFixed(0)}% (meta {Number(loja.team_threshold || 95).toFixed(0)}%)
+          </p>
+          {alerts.length > 0 && (
+            <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            className="inline-flex items-center gap-1.5 text-white rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap shadow-pop active:scale-95 hover:brightness-110 transition-all"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #ec4899)" }}
+            onClick={() => onOpenDados({ lojaId: loja.loja_id, lojaName: loja.loja_name, empresaId })}
+          >
+            <Eye size={12} /> Ver dados
+          </button>
+          <button onClick={onToggle} className="p-1.5 rounded-lg border border-line text-muted hover:border-navy hover:text-navy transition-colors">
+            {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </button>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="mt-3 pt-3 border-t border-line space-y-3">
+          {loja.gerente_id ? (
+            <div>
               <button
-                onClick={() => setOpenId(openId === g.id ? null : g.id)}
+                onClick={() => setOpenUserId(openUserId === loja.gerente_id ? null : loja.gerente_id)}
                 className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
               >
-                <span className="text-navy font-medium">{g.full_name} <span className="text-muted font-normal">({g.username})</span></span>
-                <span className="flex items-center gap-1.5 shrink-0">
-                  {g.must_change_password && (
+                <span className="text-navy font-medium flex items-center gap-1.5">
+                  <ShieldCheck size={12} /> {loja.gerente_name} <span className="text-muted font-normal">({loja.gerente_username})</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  {loja.gerente_pending_password && (
                     <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
                   )}
-                  {openId === g.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  {openUserId === loja.gerente_id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                 </span>
               </button>
-              {openId === g.id && <EditUser user={g} onChanged={onChanged} onClose={() => setOpenId(null)} />}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div>
-        <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-2 flex items-center gap-1.5">
-          <User size={13} /> Colaboradores ({colaboradores.length})
-        </p>
-        {colaboradores.length === 0 && <p className="text-xs text-muted">Nenhum colaborador cadastrado.</p>}
-        <ul className="space-y-2">
-          {colaboradores.map((c) => (
-            <li key={c.id}>
+              {openUserId === loja.gerente_id && (
+                <EditUser
+                  user={{ id: loja.gerente_id, full_name: loja.gerente_name, username: loja.gerente_username }}
+                  onChanged={onChanged}
+                  onClose={() => setOpenUserId(null)}
+                />
+              )}
+            </div>
+          ) : (
+            <div>
               <button
-                onClick={() => setOpenId(openId === c.id ? null : c.id)}
-                className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+                onClick={() => setAddingGerente((v) => !v)}
+                className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
               >
-                <span className={`font-medium ${c.active ? "text-navy" : "text-muted line-through"}`}>
-                  {c.full_name} <span className="text-muted font-normal">({c.username})</span>
-                </span>
-                <span className="flex items-center gap-1.5 shrink-0">
-                  {c.must_change_password && (
-                    <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
-                  )}
-                  {openId === c.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                </span>
+                <Plus size={12} /> cadastrar gerente
               </button>
-              {openId === c.id && <EditUser user={c} onChanged={onChanged} onClose={() => setOpenId(null)} />}
-            </li>
-          ))}
-        </ul>
-      </div>
+              {addingGerente && (
+                <form onSubmit={createGerente} className="grid sm:grid-cols-2 gap-2 mt-2">
+                  <input
+                    className="input !py-1.5 !text-xs"
+                    placeholder="nome do gerente"
+                    value={gerenteName}
+                    onChange={(e) => setGerenteName(e.target.value)}
+                  />
+                  <input
+                    className="input !py-1.5 !text-xs"
+                    placeholder="senha temporária"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button type="submit" className="btn-outline !py-1.5 !text-xs sm:col-span-2" disabled={creating}>
+                    {creating ? "Criando…" : "Criar gerente"}
+                  </button>
+                </form>
+              )}
+              {msg && (
+                <p className="text-[11px] text-muted mt-1 flex items-center gap-1.5">
+                  {msg.startsWith("Erro") ? <AlertTriangle size={11} className="text-danger" /> : <CheckCircle2 size={11} className="text-success" />}
+                  {msg}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-1.5 flex items-center gap-1.5">
+              <User size={12} /> Colaboradores ({colaboradores.length})
+            </p>
+            <ul className="space-y-1.5">
+              {colaboradores.map((c) => (
+                <li key={c.id}>
+                  <button
+                    onClick={() => setOpenUserId(openUserId === c.id ? null : c.id)}
+                    className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+                  >
+                    <span className={`font-medium ${c.active ? "text-navy" : "text-muted line-through"}`}>
+                      {c.full_name} <span className="text-muted font-normal">({c.username})</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      {c.must_change_password && (
+                        <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
+                      )}
+                      {openUserId === c.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    </span>
+                  </button>
+                  {openUserId === c.id && <EditUser user={c} onChanged={onChanged} onClose={() => setOpenUserId(null)} />}
+                </li>
+              ))}
+              {colaboradores.length === 0 && <p className="text-xs text-muted">Nenhum colaborador cadastrado ainda.</p>}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

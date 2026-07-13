@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { empresaName, cnpj, telefone, email } = body || {};
+    const { empresaId, lojaName } = body || {};
 
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
@@ -32,34 +32,30 @@ export async function POST(req) {
       .single();
 
     if (!callerProfile || callerProfile.role !== "master_admin") {
-      return NextResponse.json(
-        { error: "Apenas o Master Admin pode cadastrar novas empresas." },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Apenas o Master Admin pode cadastrar lojas." }, { status: 403 });
     }
 
-    if (!empresaName || !empresaName.trim()) {
-      return NextResponse.json({ error: "Informe o nome da empresa." }, { status: 400 });
+    if (!empresaId || !lojaName || !lojaName.trim()) {
+      return NextResponse.json({ error: "Informe a empresa e o nome da loja." }, { status: 400 });
     }
 
     const admin = getSupabaseAdmin();
 
-    const { data: empresa, error: empresaErr } = await admin
-      .from("empresas")
-      .insert({
-        name: empresaName.trim(),
-        cnpj: cnpj?.trim() || null,
-        telefone: telefone?.trim() || null,
-        email: email?.trim() || null,
-        created_by: userData.user.id,
-      })
-      .select()
-      .single();
-    if (empresaErr) {
-      return NextResponse.json({ error: empresaErr.message }, { status: 400 });
+    const { data: empresa } = await admin.from("empresas").select("id").eq("id", empresaId).single();
+    if (!empresa) {
+      return NextResponse.json({ error: "Empresa não encontrada." }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, empresaId: empresa.id });
+    const { data: loja, error: lojaErr } = await admin
+      .from("lojas")
+      .insert({ empresa_id: empresaId, name: lojaName.trim(), created_by: userData.user.id })
+      .select()
+      .single();
+    if (lojaErr) {
+      return NextResponse.json({ error: lojaErr.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ ok: true, lojaId: loja.id });
   } catch (e) {
     return NextResponse.json({ error: e.message || "Erro inesperado." }, { status: 500 });
   }
