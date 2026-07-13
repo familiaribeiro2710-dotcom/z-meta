@@ -46,7 +46,9 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-10">
-          <Logo size="lg" />
+          <div className="-translate-x-2">
+            <Logo size="lg" />
+          </div>
         </div>
         <form onSubmit={handleSubmit} className="card space-y-4 border-purple/20">
           <div>
