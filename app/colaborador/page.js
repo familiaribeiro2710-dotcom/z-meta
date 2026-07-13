@@ -18,6 +18,7 @@ import {
   CalendarClock,
   ListTodo,
   Coins,
+  Gift,
   Loader2,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
@@ -61,6 +62,7 @@ export default function ColaboradorPage() {
   const [showCongrats, setShowCongrats] = useState(false);
 
   const [goals, setGoals] = useState([]); // {goal, allocation}
+  const [prizes, setPrizes] = useState([]); // premiações por estágio lançadas pelo gerente
   const [entries, setEntries] = useState([]); // lançamentos do mês (valor vendido em cada dia), mais recente primeiro
   const [entryDate, setEntryDate] = useState("");
   const [entryValue, setEntryValue] = useState("");
@@ -177,6 +179,13 @@ export default function ColaboradorPage() {
       .lt("entry_date", nextMonthStr)
       .order("entry_date", { ascending: false });
     setEntries(entryRows || []);
+
+    const { data: prizeRows } = await supabase
+      .from("employee_stage_prizes")
+      .select("*")
+      .eq("employee_id", uid)
+      .eq("month", month);
+    setPrizes(prizeRows || []);
   }, [today, month]);
 
   useEffect(() => {
@@ -301,6 +310,7 @@ export default function ColaboradorPage() {
   const restoDaMeta = Math.max(0, metaDoMes - soldSoFar);
   const dailyGoal = remaining > 0 ? restoDaMeta / remaining : 0;
   const commissionSoFar = soldSoFar * (commissionPct / 100);
+  const prizesSoFar = prizes.reduce((s, p) => s + Number(p.amount || 0), 0);
 
   // histórico com acumulado corrido (mais antigo primeiro pra calcular o acumulado, depois exibido do mais recente)
   const historyAsc = [...entries].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
@@ -363,7 +373,7 @@ export default function ColaboradorPage() {
             <p className="relative text-4xl sm:text-5xl font-extrabold text-navy leading-tight">{formatBRL(dailyGoal)}</p>
             <p className="relative text-xs font-semibold text-navy/70 mt-1">pra bater a meta do mês nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
 
-            <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-5 border-t border-navy/15">
+            <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-navy/15">
               <div>
                 <p className="text-xl font-extrabold text-navy">{formatBRL(restoDaMeta)}</p>
                 <p className="text-[11px] font-semibold text-navy/70 mt-0.5 flex items-center gap-1"><Rocket size={11} /> Falta pra meta do mês</p>
@@ -379,6 +389,10 @@ export default function ColaboradorPage() {
               <div>
                 <p className="text-xl font-extrabold text-navy">{formatBRL(commissionSoFar)}</p>
                 <p className="text-[11px] font-semibold text-navy/70 mt-0.5 flex items-center gap-1"><Coins size={11} /> Comissão até agora</p>
+              </div>
+              <div>
+                <p className="text-xl font-extrabold text-navy">{formatBRL(prizesSoFar)}</p>
+                <p className="text-[11px] font-semibold text-navy/70 mt-0.5 flex items-center gap-1"><Gift size={11} /> Premiações</p>
               </div>
             </div>
           </div>
@@ -397,8 +411,8 @@ export default function ColaboradorPage() {
               <p className={`text-[12px] mt-2 font-bold flex items-center gap-1.5 ${willRelease ? "text-teal" : "text-muted"}`}>
                 {willRelease ? <PartyPopper size={14} /> : <Wallet size={14} />}
                 {willRelease
-                  ? `Prêmio de ${formatBRL(settings.monthly_prize)} garantido se seguir assim!`
-                  : `Prêmio do mês: ${formatBRL(settings.monthly_prize)} — libera com ${settings.team_threshold_pct}%+ no fim do mês.`}
+                  ? `Prêmio garantido se seguir assim!`
+                  : `Prêmio do mês liberado com ${settings.team_threshold_pct}%+ no fim do mês.`}
               </p>
             </div>
           </div>
