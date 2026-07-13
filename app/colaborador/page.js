@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Home,
   Target,
   Wallet,
   Trophy,
@@ -14,6 +15,9 @@ import {
   ThumbsUp,
   Rocket,
   FileText,
+  CalendarClock,
+  ListTodo,
+  Coins,
   Loader2,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
@@ -35,7 +39,7 @@ import {
 } from "../../lib/date";
 
 const TABS = [
-  { key: "atividades", label: "Atividades", Icon: Target },
+  { key: "atividades", label: "Início", Icon: Home },
   { key: "metas", label: "Metas", Icon: Wallet },
 ];
 
@@ -57,7 +61,7 @@ export default function ColaboradorPage() {
   const [showCongrats, setShowCongrats] = useState(false);
 
   const [goals, setGoals] = useState([]); // {goal, allocation}
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState([]); // lançamentos do mês (valor vendido em cada dia), mais recente primeiro
   const [entryDate, setEntryDate] = useState("");
   const [entryValue, setEntryValue] = useState("");
   const [savingEntry, setSavingEntry] = useState(false);
@@ -71,6 +75,10 @@ export default function ColaboradorPage() {
     const { data: settingsRow } = await supabase.from("app_settings").select("*").eq("loja_id", lojaId).single();
     if (settingsRow) setSettings(settingsRow);
     const penalty = settingsRow?.warning_penalty_points ?? 10;
+
+    const nextMonth = new Date(month + "T00:00:00");
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const nextMonthStr = nextMonth.toISOString().slice(0, 10);
 
     // tarefas ativas do colaborador
     const { data: myTasks } = await supabase
@@ -98,9 +106,6 @@ export default function ColaboradorPage() {
       (todayRows || []).forEach((r) => (map[r.task_id] = r));
       setTodayCompletions(map);
 
-      const nextMonth = new Date(month + "T00:00:00");
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      const nextMonthStr = nextMonth.toISOString().slice(0, 10);
       const { data: monthRows } = await supabase
         .from("task_completions")
         .select("completed, completion_date")
@@ -168,8 +173,9 @@ export default function ColaboradorPage() {
       .from("sales_entries")
       .select("*")
       .eq("employee_id", uid)
-      .order("entry_date", { ascending: false })
-      .limit(31);
+      .gte("entry_date", month)
+      .lt("entry_date", nextMonthStr)
+      .order("entry_date", { ascending: false });
     setEntries(entryRows || []);
   }, [today, month]);
 
@@ -196,9 +202,7 @@ export default function ColaboradorPage() {
       if (!active) return;
       setUser(session.user);
       setProfile(prof);
-      const y = new Date();
-      y.setDate(y.getDate() - 1);
-      setEntryDate(y.toISOString().slice(0, 10));
+      setEntryDate(yesterdayStr(todayStr()));
       if (!prof.must_change_password) {
         await loadAll(session.user.id, prof.loja_id);
       }
@@ -238,7 +242,7 @@ export default function ColaboradorPage() {
       {
         employee_id: user.id,
         entry_date: entryDate,
-        cumulative_amount: Number(entryValue),
+        daily_amount: Number(entryValue),
         edited_by_manager: false,
         created_by: user.id,
         updated_by: user.id,
@@ -281,11 +285,31 @@ export default function ColaboradorPage() {
 
   const remaining = remainingDaysInMonth(today);
   const currentStage = stageNumberForDate(today);
-  const latestEntry = entries[0];
-  const soldSoFar = latestEntry ? Number(latestEntry.cumulative_amount) : 0;
   const doneCount = tasks.filter((t) => todayCompletions[t.id]?.completed).length;
+  const pendingCount = tasks.length - doneCount;
   const todayPct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0;
   const willRelease = teamPct >= Number(settings.team_threshold_pct);
+
+  // vendido no mês = soma dos lançamentos diários (cada um é o valor vendido naquele dia)
+  const soldSoFar = entries.reduce((s, en) => s + Number(en.daily_amount || 0), 0);
+  const latestEntry = entries[0];
+
+  // meta combinada do mês (soma de todas as metas atribuídas a este colaborador) + comissão média ponderada
+  const metaDoMes = goals.reduce((s, { allocation }) => s + Number(allocation.amount || 0), 0);
+  const commissionWeightedSum = goals.reduce((s, { allocation }) => s + Number(allocation.amount || 0) * Number(allocation.commission_pct || 0), 0);
+  const commissionPct = metaDoMes > 0 ? commissionWeightedSum / metaDoMes : 0;
+  const restoDaMeta = Math.max(0, metaDoMes - soldSoFar);
+  const dailyGoal = remaining > 0 ? restoDaMeta / remaining : 0;
+  const commissionSoFar = soldSoFar * (commissionPct / 100);
+
+  // histórico com acumulado corrido (mais antigo primeiro pra calcular o acumulado, depois exibido do mais recente)
+  const historyAsc = [...entries].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
+  let running = 0;
+  const historyWithRunning = historyAsc.map((en) => {
+    running += Number(en.daily_amount || 0);
+    return { ...en, running };
+  });
+  historyWithRunning.reverse();
 
   return (
     <AppShell
@@ -332,22 +356,29 @@ export default function ColaboradorPage() {
             style={{ background: "linear-gradient(135deg, #a78bfa 0%, #ddd6fe 100%)", boxShadow: "0 10px 28px rgba(167,139,250,0.35)" }}
           >
             <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/15" />
-            <div className="relative flex items-center gap-2 mb-5">
+            <div className="relative flex items-center gap-2 mb-3">
               <Target size={18} className="text-navy" />
-              <span className="text-xs font-bold uppercase tracking-wider text-navy">Meu desempenho</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-navy">Meta de hoje</span>
             </div>
-            <div className="relative grid grid-cols-3 gap-4">
+            <p className="relative text-4xl sm:text-5xl font-extrabold text-navy leading-tight">{formatBRL(dailyGoal)}</p>
+            <p className="relative text-xs font-semibold text-navy/70 mt-1">pra bater a meta do mês nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
+
+            <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-5 border-t border-navy/15">
               <div>
-                <p className="text-3xl font-extrabold text-navy">{Math.round(individualPct)}%</p>
-                <p className="text-xs font-semibold mt-0.5 text-navy">Minha barra</p>
+                <p className="text-xl font-extrabold text-navy">{formatBRL(restoDaMeta)}</p>
+                <p className="text-[11px] font-semibold text-navy/70 mt-0.5 flex items-center gap-1"><Rocket size={11} /> Falta pra meta do mês</p>
               </div>
-              <div className="border-l border-navy/15 pl-4">
-                <p className="text-3xl font-extrabold text-navy">{streak}</p>
-                <p className="text-xs font-semibold mt-0.5 text-navy">Dias seguidos</p>
+              <div>
+                <p className="text-xl font-extrabold text-navy">{remaining}</p>
+                <p className="text-[11px] font-semibold text-navy/70 mt-0.5 flex items-center gap-1"><CalendarClock size={11} /> Dias restantes no mês</p>
               </div>
-              <div className="border-l border-navy/15 pl-4">
-                <p className="text-3xl font-extrabold text-navy">{Math.round(teamPct)}%</p>
-                <p className="text-xs font-semibold mt-0.5 text-navy">Equipe</p>
+              <div>
+                <p className="text-xl font-extrabold text-navy">{pendingCount}</p>
+                <p className="text-[11px] font-semibold text-navy/70 mt-0.5 flex items-center gap-1"><ListTodo size={11} /> Atividades pendentes</p>
+              </div>
+              <div>
+                <p className="text-xl font-extrabold text-navy">{formatBRL(commissionSoFar)}</p>
+                <p className="text-[11px] font-semibold text-navy/70 mt-0.5 flex items-center gap-1"><Coins size={11} /> Comissão até agora</p>
               </div>
             </div>
           </div>
@@ -434,7 +465,7 @@ export default function ColaboradorPage() {
           <div>
             <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-purple" /> Minhas metas — {monthLabel(today)}</h1>
             <p className="text-xs text-muted mt-1">
-              Vendido até {latestEntry ? latestEntry.entry_date : "—"}: {formatBRL(soldSoFar)} · faltam {remaining} dia(s) no mês
+              Vendido no mês até {latestEntry ? latestEntry.entry_date : "—"}: {formatBRL(soldSoFar)} · faltam {remaining} dia(s) no mês
             </p>
           </div>
 
@@ -445,7 +476,7 @@ export default function ColaboradorPage() {
               {goals.map(({ goal, allocation }, i) => {
                 const target = Number(allocation.amount);
                 const rest = Math.max(0, target - soldSoFar);
-                const dailyGoal = rest / remaining;
+                const goalDailyGoal = remaining > 0 ? rest / remaining : 0;
                 const progressPct = target > 0 ? Math.min(100, (soldSoFar / target) * 100) : 0;
                 const icons = [Target, Rocket, Trophy];
                 const IconCmp = icons[i % icons.length];
@@ -453,12 +484,15 @@ export default function ColaboradorPage() {
                 return (
                   <div key={goal.id} className={`card animate-pop ${borders[i % borders.length]}`}>
                     <p className="font-bold text-sm text-navy flex items-center gap-1.5"><IconCmp size={15} /> {goal.name}</p>
-                    <p className="text-xs text-muted mt-0.5">meta individual: {formatBRL(target)}</p>
+                    <p className="text-xs text-muted mt-0.5">
+                      meta individual: {formatBRL(target)}
+                      {Number(allocation.commission_pct) > 0 && ` · ${Number(allocation.commission_pct)}% de comissão`}
+                    </p>
                     <div className="mt-3"><ProgressBar pct={progressPct} showLabel={false} /></div>
                     <p className="text-xs text-muted mt-1">{formatPct(progressPct)} da meta</p>
                     <div className="mt-3 pt-3 border-t border-line">
                       <p className="text-[11px] text-muted uppercase tracking-wider font-bold">Meta de hoje</p>
-                      <p className="text-xl font-extrabold gradient-text mt-0.5">{formatBRL(dailyGoal)}</p>
+                      <p className="text-xl font-extrabold gradient-text mt-0.5">{formatBRL(goalDailyGoal)}</p>
                     </div>
                   </div>
                 );
@@ -467,14 +501,14 @@ export default function ColaboradorPage() {
           )}
 
           <div className="card">
-            <p className="label mb-3 flex items-center gap-1.5"><FileText size={14} /> Lançar valor vendido no mês (acumulado)</p>
+            <p className="label mb-3 flex items-center gap-1.5"><FileText size={14} /> Lançar valor vendido ontem</p>
             <form onSubmit={saveEntry} className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1 w-full">
-                <label className="label">Data de referência</label>
+                <label className="label">Dia da venda</label>
                 <input type="date" className="input" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} required />
               </div>
               <div className="flex-1 w-full">
-                <label className="label">Valor total vendido no mês até essa data</label>
+                <label className="label">Valor vendido nesse dia</label>
                 <CurrencyInput value={entryValue} onChange={setEntryValue} required />
               </div>
               <button type="submit" className="btn whitespace-nowrap" disabled={savingEntry}>
@@ -482,19 +516,31 @@ export default function ColaboradorPage() {
               </button>
             </form>
             {entryMsg && <p className="text-xs text-muted mt-2">{entryMsg}</p>}
+          </div>
 
-            {entries.length > 0 && (
-              <div className="mt-5">
-                <p className="label mb-2">Histórico recente</p>
-                <ul className="text-sm divide-y divide-line">
-                  {entries.slice(0, 8).map((en) => (
-                    <li key={en.id} className="flex justify-between py-1.5">
-                      <span className="text-muted">{en.entry_date}{en.edited_by_manager ? " (corrigido pelo gerente)" : ""}</span>
-                      <span>{formatBRL(en.cumulative_amount)}</span>
-                    </li>
+          <div className="card overflow-x-auto">
+            <p className="label mb-3">Registros do mês</p>
+            {historyWithRunning.length === 0 ? (
+              <p className="text-sm text-muted">Nenhum lançamento este mês ainda.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wider text-muted border-b border-line">
+                    <th className="pb-2">Data</th>
+                    <th className="pb-2">Vendido no dia</th>
+                    <th className="pb-2">Acumulado no mês</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyWithRunning.map((en) => (
+                    <tr key={en.id} className="border-b border-line last:border-0">
+                      <td className="py-2 text-muted">{en.entry_date}{en.edited_by_manager ? " (corrigido pelo gerente)" : ""}</td>
+                      <td className="py-2 text-navy font-medium">{formatBRL(en.daily_amount)}</td>
+                      <td className="py-2 text-muted">{formatBRL(en.running)}</td>
+                    </tr>
                   ))}
-                </ul>
-              </div>
+                </tbody>
+              </table>
             )}
           </div>
         </div>
