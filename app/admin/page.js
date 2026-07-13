@@ -20,6 +20,9 @@ import {
   Trash2,
   Eye,
   Camera,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -48,6 +51,8 @@ export default function AdminPage() {
   const [health, setHealth] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
   const [expanded, setExpanded] = useState({});
+  const [editingEmpresaId, setEditingEmpresaId] = useState(null);
+  const [editingEmpresaName, setEditingEmpresaName] = useState("");
   const [sortKey, setSortKey] = useState("risco");
   const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
@@ -111,6 +116,14 @@ export default function AdminPage() {
 
   async function updatePlano(empresaId, plano) {
     await supabase.from("empresas").update({ plano }).eq("id", empresaId);
+    await loadAll();
+  }
+
+  async function saveEmpresaName(empresaId) {
+    const trimmed = editingEmpresaName.trim();
+    if (!trimmed) return;
+    await supabase.from("empresas").update({ name: trimmed }).eq("id", empresaId);
+    setEditingEmpresaId(null);
     await loadAll();
   }
 
@@ -343,11 +356,51 @@ export default function AdminPage() {
                         <EmpresaAvatar empresaId={row.empresa_id} logoUrl={row.logo_url} name={row.empresa_name} onChanged={loadAll} />
                       </div>
                       <div>
-                        <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-                          {row.empresa_name}
-                          {isExpanded ? <ChevronUp size={14} className="text-muted" /> : <ChevronDown size={14} className="text-muted" />}
-                          {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
-                        </p>
+                        {editingEmpresaId === row.empresa_id ? (
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              className="input !py-1 !text-sm !w-auto"
+                              value={editingEmpresaName}
+                              onChange={(e) => setEditingEmpresaName(e.target.value)}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") saveEmpresaName(row.empresa_id);
+                                if (e.key === "Escape") setEditingEmpresaId(null);
+                              }}
+                            />
+                            <button
+                              className="p-1.5 rounded-lg border border-success text-success hover:bg-success/10 transition-colors"
+                              onClick={() => saveEmpresaName(row.empresa_id)}
+                              title="Salvar"
+                            >
+                              <Check size={13} />
+                            </button>
+                            <button
+                              className="p-1.5 rounded-lg border border-line text-muted hover:border-navy hover:text-navy transition-colors"
+                              onClick={() => setEditingEmpresaId(null)}
+                              title="Cancelar"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
+                            {row.empresa_name}
+                            <button
+                              className="text-muted hover:text-purple transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingEmpresaId(row.empresa_id);
+                                setEditingEmpresaName(row.empresa_name);
+                              }}
+                              title="Editar nome da empresa"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            {isExpanded ? <ChevronUp size={14} className="text-muted" /> : <ChevronDown size={14} className="text-muted" />}
+                            {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+                          </p>
+                        )}
                         <p className="text-xs text-muted">
                           {row.gestor_name ? `gestor: ${row.gestor_name} (${row.gestor_username})` : "sem gestor"} · {row.colaboradores_count} colaborador(es)
                         </p>
