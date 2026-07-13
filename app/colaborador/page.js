@@ -472,7 +472,7 @@ export default function ColaboradorPage() {
           {goals.length === 0 ? (
             <div className="card"><p className="text-sm text-muted">Nenhuma meta cadastrada para este mês ainda.</p></div>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className={`grid gap-4 ${goals.length > 1 ? "sm:grid-cols-2" : ""}`}>
               {goals.map(({ goal, allocation }, i) => {
                 const target = Number(allocation.amount);
                 const rest = Math.max(0, target - soldSoFar);
