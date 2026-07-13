@@ -30,7 +30,7 @@ import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard from "../../lib/EmpresaDashboard";
-import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
+import { greeting, todayStr, firstDayOfMonth } from "../../lib/date";
 
 const PLANOS = [
   { value: "trial", label: "Trial" },
@@ -314,11 +314,11 @@ export default function AdminPage() {
         </div>
 
         <div className="card overflow-x-auto">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <p className="label mb-0 flex items-center gap-1.5">
-              <Building2 size={14} /> {monthLabel(month)}
+          <div className="flex items-center justify-between mb-3 flex-nowrap gap-2">
+            <p className="label mb-0 flex items-center gap-1.5 whitespace-nowrap">
+              <Building2 size={14} /> Empresas
             </p>
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setFilterOpen((v) => !v)}
                 className={`p-2 rounded-full border transition-all ${
