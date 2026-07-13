@@ -26,6 +26,7 @@ import {
   X,
   Search,
   Filter,
+  Calendar,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -33,12 +34,6 @@ import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard from "../../lib/EmpresaDashboard";
 import { CnpjInput, PhoneInput } from "../../lib/MaskedInputs";
 import { greeting, todayStr, firstDayOfMonth } from "../../lib/date";
-
-const PLANOS = [
-  { value: "trial", label: "Trial" },
-  { value: "pago", label: "Pago" },
-  { value: "cancelado", label: "Cancelado" },
-];
 
 function daysSince(dateStr) {
   if (!dateStr) return Infinity;
@@ -54,6 +49,7 @@ export default function AdminPage() {
   const [overview, setOverview] = useState(null);
   const [health, setHealth] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
+  const [lojaAccess, setLojaAccess] = useState([]);
   const [expanded, setExpanded] = useState({});
   const [editingEmpresaId, setEditingEmpresaId] = useState(null);
   const [editingEmpresaName, setEditingEmpresaName] = useState("");
@@ -80,9 +76,11 @@ export default function AdminPage() {
     const { data: profileRows } = await supabase
       .from("profiles")
       .select("*")
-      .in("role", ["gerente", "colaborador"])
+      .in("role", ["gerente", "colaborador", "socio", "supervisor"])
       .order("full_name");
     setAllProfiles(profileRows || []);
+    const { data: accessRows } = await supabase.from("loja_access").select("*");
+    setLojaAccess(accessRows || []);
   }, [month]);
 
   useEffect(() => {
@@ -118,11 +116,6 @@ export default function AdminPage() {
     }
     setMsg("Empresa criada! Agora cadastre uma loja e um gerente dentro dela.");
     setEmpresaName(""); setCnpj(""); setTelefone(""); setEmail("");
-    await loadAll();
-  }
-
-  async function updatePlano(empresaId, plano) {
-    await supabase.from("empresas").update({ plano }).eq("id", empresaId);
     await loadAll();
   }
 
@@ -481,13 +474,10 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <select
-                        className="input !py-1 !text-xs w-auto"
-                        value={row.plano}
-                        onChange={(e) => updatePlano(row.empresa_id, e.target.value)}
-                      >
-                        {PLANOS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                      </select>
+                      <span className="inline-flex items-center gap-1.5 text-[11px] text-muted whitespace-nowrap" title="Data de cadastro">
+                        <Calendar size={13} />
+                        {row.created_at ? new Date(row.created_at).toLocaleDateString("pt-BR") : "—"}
+                      </span>
                       <button
                         title={row.active ? "Desativar empresa" : "Ativar empresa"}
                         onClick={() => toggleEmpresaActive(row)}
@@ -507,6 +497,13 @@ export default function AdminPage() {
 
                   {isExpanded && (
                     <div onClick={(e) => e.stopPropagation()}>
+                      <HierarquiaList
+                        empresaId={row.empresa_id}
+                        lojas={row.lojas}
+                        people={allProfiles.filter((p) => p.empresa_id === row.empresa_id && (p.role === "socio" || p.role === "supervisor"))}
+                        lojaAccess={lojaAccess}
+                        onChanged={loadAll}
+                      />
                       <LojasList
                         empresaId={row.empresa_id}
                         lojas={row.lojas}
@@ -596,6 +593,202 @@ function HeroStat({ Icon, value, label, sub, divider, danger }) {
       <p className={`text-xs font-semibold mt-0.5 ${tone}`}>{label}</p>
       <p className={`text-[11px] mt-0.5 ${danger ? "text-[#7a1f1f]/80" : "text-navy/65"}`}>{sub}</p>
     </div>
+  );
+}
+
+const ROLE_META = {
+  socio: { label: "Sócio", color: "#6b7280", bg: "rgba(148,163,184,0.18)" },
+  supervisor: { label: "Supervisor", color: "#2563eb", bg: "rgba(37,99,235,0.12)" },
+};
+
+function HierarquiaList({ empresaId, lojas, people, lojaAccess, onChanged }) {
+  const [addingRole, setAddingRole] = useState(null);
+  const [openPersonId, setOpenPersonId] = useState(null);
+
+  return (
+    <div className="mt-3 pt-3 border-t border-line space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
+          <ShieldCheck size={13} /> Sócios e supervisores ({people.length})
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setAddingRole(addingRole === "socio" ? null : "socio")}
+            className="text-[11px] uppercase tracking-wider font-bold text-muted hover:text-navy transition-colors flex items-center gap-1"
+          >
+            <Plus size={12} /> incluir sócio
+          </button>
+          <button
+            onClick={() => setAddingRole(addingRole === "supervisor" ? null : "supervisor")}
+            className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
+          >
+            <Plus size={12} /> incluir supervisor
+          </button>
+        </div>
+      </div>
+
+      {addingRole && (
+        <AddHierarchyForm
+          role={addingRole}
+          empresaId={empresaId}
+          lojas={lojas}
+          onDone={() => { setAddingRole(null); onChanged(); }}
+          onCancel={() => setAddingRole(null)}
+        />
+      )}
+
+      {people.length === 0 && !addingRole && <p className="text-xs text-muted">Nenhum sócio ou supervisor cadastrado ainda.</p>}
+
+      <div className="space-y-1.5">
+        {people.map((p) => {
+          const meta = ROLE_META[p.role] || {};
+          const access = lojaAccess.filter((a) => a.profile_id === p.id);
+          return (
+            <div key={p.id}>
+              <button
+                onClick={() => setOpenPersonId(openPersonId === p.id ? null : p.id)}
+                className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+              >
+                <span className="flex items-center gap-1.5 flex-wrap">
+                  <span className="badge" style={{ color: meta.color, background: meta.bg }}>{meta.label}</span>
+                  <span className={`font-medium ${p.active === false ? "text-muted line-through" : "text-navy"}`}>{p.full_name}</span>
+                  <span className="text-muted">({p.username})</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  {p.must_change_password && <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>}
+                  {openPersonId === p.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </span>
+              </button>
+              {openPersonId === p.id && (
+                <div className="mt-1.5">
+                  <p className="text-[11px] text-muted mb-1.5 flex flex-wrap gap-1.5">
+                    {access.length === 0 && "sem lojas atribuídas"}
+                    {access.map((a) => {
+                      const loja = lojas.find((l) => l.loja_id === a.loja_id);
+                      return (
+                        <span key={a.loja_id} className="badge bg-teal/10 text-teal">
+                          <Store size={10} /> {loja?.loja_name || "loja"} · {a.permission === "gerenciar" ? "gerenciar" : "ver"}
+                        </span>
+                      );
+                    })}
+                  </p>
+                  <EditUser user={p} onChanged={onChanged} onClose={() => setOpenPersonId(null)} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [access, setAccess] = useState({});
+  const [creating, setCreating] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const label = role === "socio" ? "sócio" : "supervisor";
+
+  function toggleLoja(lojaId) {
+    setAccess((a) => {
+      const next = { ...a };
+      if (next[lojaId]) delete next[lojaId];
+      else next[lojaId] = "ver";
+      return next;
+    });
+  }
+
+  function setPermission(lojaId, permission) {
+    setAccess((a) => ({ ...a, [lojaId]: permission }));
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    const selected = Object.entries(access).map(([lojaId, permission]) => ({ lojaId, permission }));
+    if (!fullName.trim() || !password || selected.length === 0) {
+      setMsg("Erro: preencha nome, senha e selecione ao menos uma loja.");
+      return;
+    }
+    setCreating(true);
+    setMsg("");
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/create-hierarchy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ role, empresaId, fullName: fullName.trim(), password, lojaAccess: selected }),
+    });
+    const json = await res.json();
+    setCreating(false);
+    if (!res.ok) {
+      setMsg("Erro: " + (json.error || "não foi possível criar."));
+      return;
+    }
+    onDone();
+  }
+
+  if (lojas.length === 0) {
+    return (
+      <div className="p-3 rounded-xl bg-paper border border-line text-xs text-muted flex items-center justify-between gap-2">
+        Cadastre uma loja antes de incluir um {label}.
+        <button type="button" onClick={onCancel} className="text-muted hover:text-navy"><X size={13} /></button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
+      <div className="grid sm:grid-cols-2 gap-2">
+        <input className="input !py-1.5 !text-xs" placeholder={`nome do ${label}`} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </div>
+      <div>
+        <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-1.5">Lojas com acesso</p>
+        <div className="space-y-1.5">
+          {lojas.map((l) => {
+            const perm = access[l.loja_id];
+            return (
+              <div key={l.loja_id} className="flex items-center justify-between gap-2 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!perm} onChange={() => toggleLoja(l.loja_id)} />
+                  {l.loja_name}
+                </label>
+                {perm && (
+                  <div className="flex items-center gap-1">
+                    {["ver", "gerenciar"].map((opt) => (
+                      <button
+                        type="button"
+                        key={opt}
+                        onClick={() => setPermission(l.loja_id, opt)}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-colors ${
+                          perm === opt ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button type="submit" className="btn-outline !py-1.5 !text-xs" disabled={creating}>
+          {creating ? "Criando…" : `Criar ${label}`}
+        </button>
+        <button type="button" onClick={onCancel} className="text-[11px] text-muted hover:text-navy">cancelar</button>
+      </div>
+      {msg && (
+        <p className="text-[11px] text-muted flex items-center gap-1.5">
+          {msg.startsWith("Erro") ? <AlertTriangle size={11} className="text-danger" /> : <CheckCircle2 size={11} className="text-success" />}
+          {msg}
+        </p>
+      )}
+    </form>
   );
 }
 

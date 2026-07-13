@@ -57,10 +57,10 @@ export async function POST(req) {
       .eq("id", employeeId)
       .single();
 
-    if (!target || (target.role !== "colaborador" && target.role !== "gerente")) {
+    if (!target || !["colaborador", "gerente", "socio", "supervisor"].includes(target.role)) {
       return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
     }
-    // gerente só pode editar colaboradores da própria loja — nunca outro gerente nem loja alheia
+    // gerente só pode editar colaboradores da própria loja — nunca outro gerente, sócio, supervisor nem loja alheia
     if (isGerente && (target.role !== "colaborador" || target.loja_id !== callerProfile.loja_id)) {
       return NextResponse.json({ error: "Você só pode editar colaboradores da sua loja." }, { status: 403 });
     }

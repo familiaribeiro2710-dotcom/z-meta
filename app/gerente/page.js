@@ -37,7 +37,12 @@ export default function GerentePage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace("/login"); return; }
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
-      if (!prof || prof.role !== "gerente") { router.replace(prof?.role === "master_admin" ? "/admin" : "/colaborador"); return; }
+      if (!prof || prof.role !== "gerente") {
+        router.replace(
+          prof?.role === "master_admin" ? "/admin" : prof?.role === "socio" ? "/socio" : prof?.role === "supervisor" ? "/supervisor" : "/colaborador"
+        );
+        return;
+      }
       if (!active) return;
       setProfile(prof);
       if (!prof.must_change_password) await loadStats(prof);

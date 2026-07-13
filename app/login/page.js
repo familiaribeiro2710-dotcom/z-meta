@@ -38,6 +38,8 @@ export default function LoginPage() {
       return;
     }
     if (profile.role === "master_admin") router.replace("/admin");
+    else if (profile.role === "socio") router.replace("/socio");
+    else if (profile.role === "supervisor") router.replace("/supervisor");
     else if (profile.role === "gerente") router.replace("/gerente");
     else router.replace("/colaborador");
   }
