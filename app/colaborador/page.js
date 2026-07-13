@@ -1,6 +1,21 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Target,
+  Wallet,
+  Trophy,
+  Flame,
+  PartyPopper,
+  Gamepad2,
+  CheckSquare,
+  Check,
+  AlertTriangle,
+  ThumbsUp,
+  Rocket,
+  FileText,
+  Loader2,
+} from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ProgressBar from "../../lib/ProgressBar";
@@ -19,8 +34,8 @@ import {
 } from "../../lib/date";
 
 const TABS = [
-  { key: "atividades", label: "🎯 Atividades" },
-  { key: "metas", label: "💰 Metas" },
+  { key: "atividades", label: "Atividades", Icon: Target },
+  { key: "metas", label: "Metas", Icon: Wallet },
 ];
 
 export default function ColaboradorPage() {
@@ -225,7 +240,7 @@ export default function ColaboradorPage() {
     if (error) {
       setEntryMsg("Erro ao salvar: " + error.message);
     } else {
-      setEntryMsg("Lançamento salvo. 👍");
+      setEntryMsg("Lançamento salvo.");
       setEntryValue("");
       await loadAll(user.id, profile.empresa_id);
     }
@@ -233,7 +248,9 @@ export default function ColaboradorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-xs text-muted">carregando… ⏳</div>
+      <div className="min-h-screen flex items-center justify-center text-xs text-muted gap-2">
+        <Loader2 size={16} className="animate-spin" /> carregando…
+      </div>
     );
   }
 
@@ -264,12 +281,14 @@ export default function ColaboradorPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
-            <p className="text-6xl mb-3 animate-wiggle">🎉</p>
+            <div className="flex justify-center mb-3 animate-wiggle">
+              <PartyPopper size={56} className="text-pink" />
+            </div>
             <h2 className="text-xl font-extrabold gradient-text">Parabéns, {profile.full_name.split(" ")[0]}!</h2>
-            <p className="text-sm text-muted mt-2">
-              Você concluiu <span className="font-bold text-navy">100%</span> das suas tarefas de hoje. Continue assim pra manter a barra da equipe lá em cima! 🔥
+            <p className="text-sm text-muted mt-2 flex items-center justify-center gap-1.5 flex-wrap">
+              Você concluiu <span className="font-bold text-navy">100%</span> das suas tarefas de hoje. Continue assim pra manter a barra da equipe lá em cima! <Flame size={15} className="text-orange" />
             </p>
-            <button className="btn mt-5 w-full" onClick={() => setShowCongrats(false)}>Show de bola! 🙌</button>
+            <button className="btn mt-5 w-full" onClick={() => setShowCongrats(false)}>Show de bola!</button>
           </div>
         </div>
       )}
@@ -277,35 +296,40 @@ export default function ColaboradorPage() {
       {tab === "atividades" && (
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-extrabold text-navy">{greet.emoji} {greet.word}, {profile.full_name.split(" ")[0]}!</h1>
+            <h1 className="text-2xl font-extrabold text-navy flex items-center gap-2">
+              <greet.Icon size={22} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
+            </h1>
             <p className="text-xs text-muted mt-1 flex items-center flex-wrap gap-2">
               <span>{monthLabel(today)} · estágio {currentStage} ({stageRangeLabel(currentStage, today)})</span>
               {streak > 0 && (
-                <span className="badge bg-orange/15 text-orange">🔥 {streak} dia{streak > 1 ? "s" : ""} seguidos</span>
+                <span className="badge bg-orange/15 text-orange"><Flame size={12} /> {streak} dia{streak > 1 ? "s" : ""} seguidos</span>
               )}
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="card animate-pop border-purple/20">
-              <p className="label">🎯 Minha barra (mês)</p>
+              <p className="label flex items-center gap-1.5"><Target size={14} /> Minha barra (mês)</p>
               <ProgressBar pct={individualPct} />
-              <p className="text-xs text-muted mt-2">{motivationalMessage(todayPct)}</p>
+              <p className="text-xs text-muted mt-2 flex items-center gap-1.5">
+                {(() => { const m = motivationalMessage(todayPct); return (<><m.Icon size={13} /> {m.text}</>); })()}
+              </p>
             </div>
             <div className="card animate-pop border-pink/20">
-              <p className="label">🏆 Barra geral da equipe</p>
+              <p className="label flex items-center gap-1.5"><Trophy size={14} /> Barra geral da equipe</p>
               <ProgressBar pct={teamPct} threshold={settings.team_threshold_pct} />
-              <p className={`text-[12px] mt-2 font-bold ${willRelease ? "text-teal" : "text-muted"}`}>
+              <p className={`text-[12px] mt-2 font-bold flex items-center gap-1.5 ${willRelease ? "text-teal" : "text-muted"}`}>
+                {willRelease ? <PartyPopper size={14} /> : <Wallet size={14} />}
                 {willRelease
-                  ? `🎉 Prêmio de ${formatBRL(settings.monthly_prize)} garantido se seguir assim!`
-                  : `💰 Prêmio do mês: ${formatBRL(settings.monthly_prize)} — libera com ${settings.team_threshold_pct}%+ no fim do mês.`}
+                  ? `Prêmio de ${formatBRL(settings.monthly_prize)} garantido se seguir assim!`
+                  : `Prêmio do mês: ${formatBRL(settings.monthly_prize)} — libera com ${settings.team_threshold_pct}%+ no fim do mês.`}
               </p>
             </div>
           </div>
 
           {stages.some((s) => s.title || s.description) && (
             <div className="card">
-              <p className="label mb-2">🕹️ Dinâmica do estágio atual</p>
+              <p className="label mb-2 flex items-center gap-1.5"><Gamepad2 size={14} /> Dinâmica do estágio atual</p>
               {stages.filter((s) => s.stage_number === currentStage).map((s) => (
                 <div key={s.id}>
                   <p className="text-sm font-semibold text-navy">{s.title || `Estágio ${s.stage_number}`}</p>
@@ -317,7 +341,7 @@ export default function ColaboradorPage() {
 
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <p className="label mb-0">✅ Tarefas de hoje</p>
+              <p className="label mb-0 flex items-center gap-1.5"><CheckSquare size={14} /> Tarefas de hoje</p>
               {tasks.length > 0 && <span className="text-xs text-muted">{doneCount}/{tasks.length}</span>}
             </div>
             {tasks.length === 0 && <p className="text-sm text-muted">Nenhuma tarefa cadastrada ainda.</p>}
@@ -333,7 +357,7 @@ export default function ColaboradorPage() {
                       }`}
                       style={done ? { background: "linear-gradient(135deg, #84cc16, #0d9488)" } : undefined}
                     >
-                      {done && "✓"}
+                      {done && <Check size={16} strokeWidth={3} />}
                     </button>
                     <span className={`text-sm font-medium ${done ? "line-through text-muted" : "text-navy"}`}>{t.title}</span>
                   </li>
@@ -343,9 +367,9 @@ export default function ColaboradorPage() {
           </div>
 
           <div className="card">
-            <p className="label mb-2">⚠️ Advertências no mês ({warnings.length})</p>
+            <p className="label mb-2 flex items-center gap-1.5"><AlertTriangle size={14} /> Advertências no mês ({warnings.length})</p>
             {warnings.length === 0 ? (
-              <p className="text-sm text-muted">Nenhuma advertência este mês. Continue assim! 👏</p>
+              <p className="text-sm text-muted flex items-center gap-1.5"><ThumbsUp size={14} className="text-success" /> Nenhuma advertência este mês. Continue assim!</p>
             ) : (
               <ul className="space-y-2">
                 {warnings.map((w) => (
@@ -365,7 +389,7 @@ export default function ColaboradorPage() {
       {tab === "metas" && (
         <div className="space-y-6">
           <div>
-            <h1 className="text-xl font-bold text-navy">💰 Minhas metas — {monthLabel(today)}</h1>
+            <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-purple" /> Minhas metas — {monthLabel(today)}</h1>
             <p className="text-xs text-muted mt-1">
               Vendido até {latestEntry ? latestEntry.entry_date : "—"}: {formatBRL(soldSoFar)} · faltam {remaining} dia(s) no mês
             </p>
@@ -380,11 +404,12 @@ export default function ColaboradorPage() {
                 const rest = Math.max(0, target - soldSoFar);
                 const dailyGoal = rest / remaining;
                 const progressPct = target > 0 ? Math.min(100, (soldSoFar / target) * 100) : 0;
-                const icons = ["🎯", "🚀", "🏆"];
+                const icons = [Target, Rocket, Trophy];
+                const IconCmp = icons[i % icons.length];
                 const borders = ["border-purple/25", "border-orange/25", "border-teal/25"];
                 return (
                   <div key={goal.id} className={`card animate-pop ${borders[i % borders.length]}`}>
-                    <p className="font-bold text-sm text-navy">{icons[i % icons.length]} {goal.name}</p>
+                    <p className="font-bold text-sm text-navy flex items-center gap-1.5"><IconCmp size={15} /> {goal.name}</p>
                     <p className="text-xs text-muted mt-0.5">meta individual: {formatBRL(target)}</p>
                     <div className="mt-3"><ProgressBar pct={progressPct} showLabel={false} /></div>
                     <p className="text-xs text-muted mt-1">{formatPct(progressPct)} da meta</p>
@@ -399,7 +424,7 @@ export default function ColaboradorPage() {
           )}
 
           <div className="card">
-            <p className="label mb-3">📝 Lançar valor vendido no mês (acumulado)</p>
+            <p className="label mb-3 flex items-center gap-1.5"><FileText size={14} /> Lançar valor vendido no mês (acumulado)</p>
             <form onSubmit={saveEntry} className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1 w-full">
                 <label className="label">Data de referência</label>

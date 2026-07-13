@@ -1,6 +1,17 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Crown,
+  Building2,
+  Users,
+  Sprout,
+  AlertTriangle,
+  TrendingUp,
+  Plus,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
@@ -76,7 +87,7 @@ export default function AdminPage() {
       setMsg("Erro: " + (json.error || "não foi possível criar."));
       return;
     }
-    setMsg(`✅ Empresa criada! Login do gestor → usuário: ${json.username}`);
+    setMsg(`Empresa criada! Login do gestor → usuário: ${json.username}`);
     setEmpresaName(""); setGestorName(""); setPassword("");
     await loadAll();
   }
@@ -119,7 +130,11 @@ export default function AdminPage() {
   const maxGrowth = Math.max(1, ...growthBuckets.map((b) => b.count));
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-xs text-muted">carregando… ⏳</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-xs text-muted gap-2">
+        <Loader2 size={16} className="animate-spin" /> carregando…
+      </div>
+    );
   }
 
   if (profile.must_change_password) {
@@ -132,8 +147,8 @@ export default function AdminPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-navy">🏢 {selectedEmpresa.name}</h1>
-              <p className="text-xs text-muted mt-1">👑 Visualizando como Master Admin — dados completos desta empresa</p>
+              <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Building2 size={20} className="text-purple" /> {selectedEmpresa.name}</h1>
+              <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><Crown size={13} className="text-gold" /> Visualizando como Master Admin — dados completos desta empresa</p>
             </div>
             <button className="btn-outline whitespace-nowrap" onClick={() => setSelectedEmpresa(null)}>
               ← Voltar para empresas
@@ -149,17 +164,20 @@ export default function AdminPage() {
     <AppShell userName={profile.full_name}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-navy">{greet.emoji} {greet.word}, {profile.full_name.split(" ")[0]}!</h1>
-          <p className="text-xs text-muted mt-1">👑 Master Admin — gestão de empresas clientes do Z Meta</p>
+          <h1 className="text-xl font-bold text-navy flex items-center gap-2">
+            <greet.Icon size={20} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
+          </h1>
+          <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><Crown size={13} className="text-gold" /> Master Admin — gestão de empresas clientes do Z Meta</p>
         </div>
 
         {overview && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <MetricCard label="🏢 Empresas ativas" value={overview.empresas_ativas} sub={`${overview.total_empresas} no total`} accent="purple" />
-            <MetricCard label="👥 Colaboradores" value={overview.total_colaboradores} sub="em toda a plataforma" accent="blue" />
-            <MetricCard label="🌱 Novas (30 dias)" value={overview.empresas_novas_30d} sub="crescimento recente" accent="teal" />
+            <MetricCard label="Empresas ativas" Icon={Building2} value={overview.empresas_ativas} sub={`${overview.total_empresas} no total`} accent="purple" />
+            <MetricCard label="Colaboradores" Icon={Users} value={overview.total_colaboradores} sub="em toda a plataforma" accent="blue" />
+            <MetricCard label="Novas (30 dias)" Icon={Sprout} value={overview.empresas_novas_30d} sub="crescimento recente" accent="teal" />
             <MetricCard
-              label="⚠️ Esquecidas"
+              label="Esquecidas"
+              Icon={AlertTriangle}
               value={overview.empresas_esquecidas}
               sub="sem atividade há 7+ dias"
               accent="danger"
@@ -169,7 +187,7 @@ export default function AdminPage() {
         )}
 
         <div className="card">
-          <p className="label mb-3">📈 Empresas cadastradas por mês</p>
+          <p className="label mb-3 flex items-center gap-1.5"><TrendingUp size={14} /> Empresas cadastradas por mês</p>
           <div className="flex items-end gap-3 h-28">
             {growthBuckets.map((b) => (
               <div key={b.key} className="flex-1 flex flex-col items-center justify-end h-full">
@@ -185,7 +203,7 @@ export default function AdminPage() {
         </div>
 
         <div className="card">
-          <p className="label mb-3">➕ Nova empresa</p>
+          <p className="label mb-3 flex items-center gap-1.5"><Plus size={14} /> Nova empresa</p>
           <form onSubmit={handleCreate} className="grid sm:grid-cols-3 gap-4">
             <div>
               <label className="label">Nome da empresa</label>
@@ -205,12 +223,17 @@ export default function AdminPage() {
               </button>
             </div>
           </form>
-          {msg && <p className="text-xs text-muted mt-2">{msg}</p>}
+          {msg && (
+            <p className="text-xs text-muted mt-2 flex items-center gap-1.5">
+              {msg.startsWith("Erro") ? <AlertTriangle size={13} className="text-danger" /> : <CheckCircle2 size={13} className="text-success" />}
+              {msg}
+            </p>
+          )}
         </div>
 
         <div className="card overflow-x-auto">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <p className="label mb-0">🏢 Empresas ({health.length}) — {monthLabel(month)}</p>
+            <p className="label mb-0 flex items-center gap-1.5"><Building2 size={14} /> Empresas ({health.length}) — {monthLabel(month)}</p>
             <div className="flex gap-2 flex-wrap">
               {[
                 { key: "risco", label: "mais em risco" },
@@ -257,7 +280,7 @@ export default function AdminPage() {
                         {" · "}barra do mês: {Number(row.team_pct).toFixed(0)}% (meta {Number(row.team_threshold).toFixed(0)}%)
                       </p>
                       {alerts.length > 0 && (
-                        <p className="text-[11px] text-warn mt-1">⚠️ {alerts.join(" · ")}</p>
+                        <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -296,10 +319,12 @@ const ACCENT_BORDERS = {
   danger: "border-danger/25",
 };
 
-function MetricCard({ label, value, sub, danger, accent = "purple" }) {
+function MetricCard({ label, value, sub, danger, accent = "purple", Icon }) {
   return (
     <div className={`card ${ACCENT_BORDERS[accent] || ""}`}>
-      <p className="text-[11px] uppercase tracking-wider text-muted font-bold">{label}</p>
+      <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
+        {Icon && <Icon size={13} />} {label}
+      </p>
       <p className={`text-3xl font-extrabold mt-1 ${danger ? "text-danger" : "gradient-text"}`}>{value ?? 0}</p>
       <p className="text-[11px] text-muted mt-0.5">{sub}</p>
     </div>

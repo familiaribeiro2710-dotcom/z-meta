@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
@@ -28,7 +29,11 @@ export default function GestorPage() {
   }, [router]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-xs text-muted">carregando… ⏳</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-xs text-muted gap-2">
+        <Loader2 size={16} className="animate-spin" /> carregando…
+      </div>
+    );
   }
 
   if (profile.must_change_password) {
@@ -38,7 +43,9 @@ export default function GestorPage() {
   return (
     <AppShell userName={profile.full_name}>
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-navy">{greet.emoji} {greet.word}, {profile.full_name.split(" ")[0]}!</h1>
+        <h1 className="text-xl font-bold text-navy flex items-center gap-2">
+          <greet.Icon size={20} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
+        </h1>
         <EmpresaDashboard empresaId={profile.empresa_id} />
         <ChangePassword />
       </div>

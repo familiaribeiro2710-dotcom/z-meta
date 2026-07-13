@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Target, Trophy, AlertTriangle } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import Logo from "../../lib/Logo";
 
@@ -46,7 +47,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-10">
           <Logo size="lg" />
-          <p className="text-sm text-muted mt-3 tracking-wide font-medium">Sua rotina, seu placar, seu prêmio 🎯🏆</p>
+          <p className="text-sm text-muted mt-3 tracking-wide font-medium flex items-center gap-1.5">
+            Sua rotina, seu placar, seu prêmio <Target size={14} className="text-purple" /> <Trophy size={14} className="text-gold" />
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="card space-y-4 border-purple/20">
           <div>
@@ -70,7 +73,7 @@ export default function LoginPage() {
               required
             />
           </div>
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-danger flex items-center gap-1.5"><AlertTriangle size={13} /> {error}</p>}
           <button type="submit" className="btn w-full" disabled={loading}>
             {loading ? "Entrando…" : "Entrar"}
           </button>
