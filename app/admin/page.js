@@ -16,6 +16,7 @@ import {
   ChevronUp,
   ChevronRight,
   ChevronLeft,
+  ArrowLeftRight,
   ShieldCheck,
   User,
   KeyRound,
@@ -977,6 +978,15 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
 
 function HierarquiaList({ lojas, people, lojaAccess, onChanged }) {
   const [openPersonId, setOpenPersonId] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
+
+  async function togglePermission(a) {
+    const next = a.permission === "gerenciar" ? "ver" : "gerenciar";
+    setTogglingId(a.id);
+    await supabase.from("loja_access").update({ permission: next }).eq("id", a.id);
+    setTogglingId(null);
+    onChanged();
+  }
 
   return (
     <div className="space-y-3">
@@ -1008,17 +1018,30 @@ function HierarquiaList({ lojas, people, lojaAccess, onChanged }) {
               </button>
               {openPersonId === p.id && (
                 <div className="mt-1.5">
-                  <p className="text-[11px] text-muted mb-1.5 flex flex-wrap gap-1.5">
-                    {access.length === 0 && "sem lojas atribuídas"}
-                    {access.map((a) => {
-                      const loja = lojas.find((l) => l.loja_id === a.loja_id);
-                      return (
-                        <span key={a.loja_id} className="badge bg-teal/10 text-teal">
-                          <Store size={10} /> {loja?.loja_name || "loja"} · {a.permission === "gerenciar" ? "gerenciar" : "ver"}
-                        </span>
-                      );
-                    })}
-                  </p>
+                  <div className="mb-1.5">
+                    {access.length === 0 && <p className="text-[11px] text-muted">sem lojas atribuídas</p>}
+                    <div className="flex flex-wrap gap-1.5">
+                      {access.map((a) => {
+                        const loja = lojas.find((l) => l.loja_id === a.loja_id);
+                        const isManage = a.permission === "gerenciar";
+                        return (
+                          <button
+                            key={a.loja_id}
+                            type="button"
+                            onClick={() => togglePermission(a)}
+                            disabled={togglingId === a.id}
+                            title="Clique para alternar entre ver e gerenciar"
+                            className={`badge transition-colors active:scale-95 ${
+                              isManage ? "bg-purple/15 text-purple hover:bg-purple/25" : "bg-teal/10 text-teal hover:bg-teal/20"
+                            }`}
+                          >
+                            <Store size={10} /> {loja?.loja_name || "loja"} · {isManage ? "gerenciar" : "ver"}
+                            <ArrowLeftRight size={10} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <EditUser user={p} onChanged={onChanged} onClose={() => setOpenPersonId(null)} />
                 </div>
               )}
