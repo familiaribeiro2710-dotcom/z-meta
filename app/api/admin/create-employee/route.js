@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
-import { generateUniqueUsername } from "../../../../lib/generateUsername";
+import { resolveUsername } from "../../../../lib/generateUsername";
 
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { fullName, password, empresaId, lojaId } = body || {};
+    const { fullName, password, empresaId, lojaId, username: desiredUsername } = body || {};
 
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
@@ -77,7 +77,12 @@ export async function POST(req) {
       );
     }
 
-    const username = await generateUniqueUsername(admin, fullName);
+    let username;
+    try {
+      username = await resolveUsername(admin, { username: desiredUsername, fallbackName: fullName });
+    } catch (e) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
     const email = `${username}@zmeta.local`;
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({

@@ -822,6 +822,7 @@ function AddUserCard({ empresaId, lojas, onChanged }) {
 function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
   const [lojaId, setLojaId] = useState(lojas[0]?.loja_id || "");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [msg, setMsg] = useState("");
@@ -838,7 +839,7 @@ function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
     const res = await fetch("/api/admin/create-gerente", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ empresaId, lojaId, gerenteName: name.trim(), password }),
+      body: JSON.stringify({ empresaId, lojaId, gerenteName: name.trim(), username: username.trim(), password }),
     });
     const json = await res.json();
     setCreating(false);
@@ -859,7 +860,7 @@ function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
   }
 
   return (
-    <form onSubmit={submit} className="grid sm:grid-cols-3 gap-2 items-end">
+    <form onSubmit={submit} className="space-y-2">
       <div>
         <label className="label">Loja</label>
         <select className="input !py-1.5 !text-xs" value={lojaId} onChange={(e) => setLojaId(e.target.value)}>
@@ -870,16 +871,26 @@ function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
           ))}
         </select>
       </div>
-      <input className="input !py-1.5 !text-xs" placeholder="nome do gerente" value={name} onChange={(e) => setName(e.target.value)} />
-      <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <div className="sm:col-span-3 flex items-center gap-2">
+      <div className="grid sm:grid-cols-3 gap-2">
+        <input className="input !py-1.5 !text-xs" placeholder="nome do gerente" value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          className="input !py-1.5 !text-xs"
+          placeholder="usuário de login (opcional)"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoCapitalize="none"
+          autoCorrect="off"
+        />
+        <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </div>
+      <div className="flex items-center gap-2">
         <button type="submit" className="btn-outline !py-1.5 !text-xs" disabled={creating}>
           {creating ? "Criando…" : "Criar gerente"}
         </button>
         <button type="button" onClick={onCancel} className="text-[11px] text-muted hover:text-navy">cancelar</button>
       </div>
       {msg && (
-        <p className="sm:col-span-3 text-[11px] text-muted flex items-center gap-1.5">
+        <p className="text-[11px] text-muted flex items-center gap-1.5">
           {msg.startsWith("Erro") ? <AlertTriangle size={11} className="text-danger" /> : <CheckCircle2 size={11} className="text-success" />}
           {msg}
         </p>
@@ -891,6 +902,7 @@ function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
 function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
   const [lojaId, setLojaId] = useState(lojas[0]?.loja_id || "");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [msg, setMsg] = useState("");
@@ -907,7 +919,7 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
     const res = await fetch("/api/admin/create-employee", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ fullName: name.trim(), password, empresaId, lojaId }),
+      body: JSON.stringify({ fullName: name.trim(), username: username.trim(), password, empresaId, lojaId }),
     });
     const json = await res.json();
     setCreating(false);
@@ -928,23 +940,33 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
   }
 
   return (
-    <form onSubmit={submit} className="grid sm:grid-cols-3 gap-2 items-end">
+    <form onSubmit={submit} className="space-y-2">
       <div>
         <label className="label">Loja</label>
         <select className="input !py-1.5 !text-xs" value={lojaId} onChange={(e) => setLojaId(e.target.value)}>
           {lojas.map((l) => <option key={l.loja_id} value={l.loja_id}>{l.loja_name}</option>)}
         </select>
       </div>
-      <input className="input !py-1.5 !text-xs" placeholder="nome do colaborador" value={name} onChange={(e) => setName(e.target.value)} />
-      <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <div className="sm:col-span-3 flex items-center gap-2">
+      <div className="grid sm:grid-cols-3 gap-2">
+        <input className="input !py-1.5 !text-xs" placeholder="nome do colaborador" value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          className="input !py-1.5 !text-xs"
+          placeholder="usuário de login (opcional)"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoCapitalize="none"
+          autoCorrect="off"
+        />
+        <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </div>
+      <div className="flex items-center gap-2">
         <button type="submit" className="btn-outline !py-1.5 !text-xs" disabled={creating}>
           {creating ? "Criando…" : "Criar colaborador"}
         </button>
         <button type="button" onClick={onCancel} className="text-[11px] text-muted hover:text-navy">cancelar</button>
       </div>
       {msg && (
-        <p className="sm:col-span-3 text-[11px] text-muted flex items-center gap-1.5">
+        <p className="text-[11px] text-muted flex items-center gap-1.5">
           {msg.startsWith("Erro") ? <AlertTriangle size={11} className="text-danger" /> : <CheckCircle2 size={11} className="text-success" />}
           {msg}
         </p>
@@ -1010,6 +1032,7 @@ function HierarquiaList({ lojas, people, lojaAccess, onChanged }) {
 
 function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
   const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [access, setAccess] = useState({});
   const [creating, setCreating] = useState(false);
@@ -1043,7 +1066,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
     const res = await fetch("/api/admin/create-hierarchy", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ role, empresaId, fullName: fullName.trim(), password, lojaAccess: selected }),
+      body: JSON.stringify({ role, empresaId, fullName: fullName.trim(), username: username.trim(), password, lojaAccess: selected }),
     });
     const json = await res.json();
     setCreating(false);
@@ -1065,8 +1088,16 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
 
   return (
     <form onSubmit={submit} className="p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
-      <div className="grid sm:grid-cols-2 gap-2">
+      <div className="grid sm:grid-cols-3 gap-2">
         <input className="input !py-1.5 !text-xs" placeholder={`nome do ${label}`} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <input
+          className="input !py-1.5 !text-xs"
+          placeholder="usuário de login (opcional)"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoCapitalize="none"
+          autoCorrect="off"
+        />
         <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       <div>
