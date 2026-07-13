@@ -28,7 +28,7 @@ export default function GerentePage() {
   const [lojaName, setLojaName] = useState("");
   const [teamPct, setTeamPct] = useState(0);
   const [settings, setSettings] = useState({ team_threshold_pct: 95 });
-  const [hero, setHero] = useState({ metaLoja: 0, soldLoja: 0, pendingToday: 0, commissionSoFar: 0, prizesSoFar: 0 });
+  const [hero, setHero] = useState({ metaLoja: 0, soldLoja: 0, pendingToday: 0, commissionSoFar: 0, prizesSoFar: 0, commissionPct: 0, commissionTierLabel: "não atingimento" });
   const greet = greeting();
   const today = todayStr();
   const month = firstDayOfMonth(today);
@@ -73,20 +73,14 @@ export default function GerentePage() {
       pendingToday = taskIds.filter((id) => !doneTaskIds.has(id)).length;
     }
 
-    // meta da loja no mês (soma de todas as metas ativas) e vendido no mês (todos os colaboradores)
+    // meta da loja no mês (soma de todas as metas ativas), ordenadas por valor crescente (meta 1, meta 2…)
     const { data: goalRows } = await supabase
       .from("sales_goals")
-      .select("id, store_total")
+      .select("id, name, store_total, commission_pct_gerente")
       .eq("loja_id", prof.loja_id)
-      .eq("month", month);
+      .eq("month", month)
+      .order("store_total", { ascending: true });
     const metaLoja = (goalRows || []).reduce((s, g) => s + Number(g.store_total || 0), 0);
-    const goalIds = (goalRows || []).map((g) => g.id);
-
-    let allocRows = [];
-    if (goalIds.length) {
-      const { data } = await supabase.from("sales_goal_allocations").select("employee_id, amount, commission_pct").in("goal_id", goalIds);
-      allocRows = data || [];
-    }
 
     let entryRows = [];
     if (empIds.length) {
@@ -100,17 +94,24 @@ export default function GerentePage() {
     }
     const soldLoja = entryRows.reduce((s, e) => s + Number(e.daily_amount || 0), 0);
 
-    // comissão até agora: por colaborador, vendido no mês x comissão média ponderada das metas dele — somado pra loja toda
-    const soldByEmp = {};
-    entryRows.forEach((e) => { soldByEmp[e.employee_id] = (soldByEmp[e.employee_id] || 0) + Number(e.daily_amount || 0); });
-    let commissionSoFar = 0;
-    empIds.forEach((id) => {
-      const myAllocs = allocRows.filter((a) => a.employee_id === id);
-      const metaEmp = myAllocs.reduce((s, a) => s + Number(a.amount || 0), 0);
-      const weighted = myAllocs.reduce((s, a) => s + Number(a.amount || 0) * Number(a.commission_pct || 0), 0);
-      const commissionPct = metaEmp > 0 ? weighted / metaEmp : 0;
-      commissionSoFar += (soldByEmp[id] || 0) * (commissionPct / 100);
+    const { data: commissionRow } = await supabase
+      .from("commission_settings")
+      .select("*")
+      .eq("loja_id", prof.loja_id)
+      .eq("month", month)
+      .maybeSingle();
+
+    // comissão por nível de meta da loja: quem passa do valor de uma meta, comissiona na taxa (gerente) daquele
+    // nível — assim sucessivamente. Enquanto a loja não bate a 1ª meta, usa a taxa de "não atingimento".
+    let achievedTier = null;
+    (goalRows || []).forEach((g) => {
+      if (soldLoja >= Number(g.store_total || 0)) achievedTier = g;
     });
+    const commissionPct = achievedTier
+      ? Number(achievedTier.commission_pct_gerente) || 0
+      : Number(commissionRow?.non_achievement_gerente_pct) || 0;
+    const commissionTierLabel = achievedTier ? achievedTier.name : "não atingimento";
+    const commissionSoFar = soldLoja * (commissionPct / 100);
 
     // premiações do mês lançadas pelo supervisor, somando todos os colaboradores da loja
     let prizesSoFar = 0;
@@ -123,7 +124,7 @@ export default function GerentePage() {
       prizesSoFar = (prizeRows || []).reduce((s, p) => s + Number(p.amount || 0), 0);
     }
 
-    setHero({ metaLoja, soldLoja, pendingToday, commissionSoFar, prizesSoFar });
+    setHero({ metaLoja, soldLoja, pendingToday, commissionSoFar, prizesSoFar, commissionPct, commissionTierLabel });
   }, [month, today]);
 
   useEffect(() => {
@@ -203,6 +204,9 @@ export default function GerentePage() {
             <div>
               <p className="text-xl font-extrabold text-white">{formatBRL(hero.commissionSoFar)}</p>
               <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Coins size={11} /> Comissão até agora</p>
+              {hero.metaLoja > 0 && (
+                <p className="text-[10px] text-white/70 mt-0.5">{hero.commissionPct}% · {hero.commissionTierLabel}</p>
+              )}
             </div>
             <div>
               <p className="text-xl font-extrabold text-white">{formatBRL(hero.prizesSoFar)}</p>

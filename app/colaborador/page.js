@@ -61,7 +61,8 @@ export default function ColaboradorPage() {
   const [streak, setStreak] = useState(0);
   const [showCongrats, setShowCongrats] = useState(false);
 
-  const [goals, setGoals] = useState([]); // {goal, allocation}
+  const [goals, setGoals] = useState([]); // {goal, allocation}, ordenado por store_total crescente (Meta 1, Meta 2…)
+  const [commissionSettings, setCommissionSettings] = useState({ non_achievement_colaborador_pct: 0 });
   const [prizes, setPrizes] = useState([]); // premiações por estágio lançadas pelo gerente
   const [entries, setEntries] = useState([]); // lançamentos do mês (valor vendido em cada dia), mais recente primeiro
   const [entryDate, setEntryDate] = useState("");
@@ -170,6 +171,14 @@ export default function ColaboradorPage() {
       .map((g) => ({ goal: g, allocation: (allocRows || []).find((a) => a.goal_id === g.id) }))
       .filter((x) => x.allocation);
     setGoals(combined);
+
+    const { data: commissionRow } = await supabase
+      .from("commission_settings")
+      .select("*")
+      .eq("loja_id", lojaId)
+      .eq("month", month)
+      .maybeSingle();
+    setCommissionSettings(commissionRow || { non_achievement_colaborador_pct: 0 });
 
     const { data: entryRows } = await supabase
       .from("sales_entries")
@@ -303,13 +312,23 @@ export default function ColaboradorPage() {
   const soldSoFar = entries.reduce((s, en) => s + Number(en.daily_amount || 0), 0);
   const latestEntry = entries[0];
 
-  // meta combinada do mês (soma de todas as metas atribuídas a este colaborador) + comissão média ponderada
+  // meta combinada do mês (soma de todas as metas atribuídas a este colaborador)
   const metaDoMes = goals.reduce((s, { allocation }) => s + Number(allocation.amount || 0), 0);
-  const commissionWeightedSum = goals.reduce((s, { allocation }) => s + Number(allocation.amount || 0) * Number(allocation.commission_pct || 0), 0);
-  const commissionPct = metaDoMes > 0 ? commissionWeightedSum / metaDoMes : 0;
   const restoDaMeta = Math.max(0, metaDoMes - soldSoFar);
   const dailyGoal = remaining > 0 ? restoDaMeta / remaining : 0;
-  const commissionSoFar = soldSoFar * (commissionPct / 100);
+
+  // comissão por nível de meta: quem passa da meta individual de um nível, comissiona na taxa daquele nível
+  // (goals já vem ordenado por valor crescente — meta 1, meta 2, meta 3…). Enquanto não bate nenhuma, usa a
+  // taxa de "não atingimento" definida pelo sócio/supervisor.
+  let achievedTier = null;
+  goals.forEach((g) => {
+    if (soldSoFar >= Number(g.allocation.amount || 0)) achievedTier = g;
+  });
+  const activeCommissionPct = achievedTier
+    ? Number(achievedTier.goal.commission_pct_colaborador) || 0
+    : Number(commissionSettings.non_achievement_colaborador_pct) || 0;
+  const activeTierLabel = achievedTier ? achievedTier.goal.name : "não atingimento";
+  const commissionSoFar = soldSoFar * (activeCommissionPct / 100);
   const prizesSoFar = prizes.reduce((s, p) => s + Number(p.amount || 0), 0);
 
   // histórico com acumulado corrido (mais antigo primeiro pra calcular o acumulado, depois exibido do mais recente)
@@ -389,6 +408,9 @@ export default function ColaboradorPage() {
               <div>
                 <p className="text-xl font-extrabold text-navy">{formatBRL(commissionSoFar)}</p>
                 <p className="text-[11px] font-semibold text-navy/70 mt-0.5 flex items-center gap-1"><Coins size={11} /> Comissão até agora</p>
+                {goals.length > 0 && (
+                  <p className="text-[10px] text-navy/60 mt-0.5">{activeCommissionPct}% · {activeTierLabel}</p>
+                )}
               </div>
               <div>
                 <p className="text-xl font-extrabold text-navy">{formatBRL(prizesSoFar)}</p>
@@ -500,7 +522,7 @@ export default function ColaboradorPage() {
                     <p className="font-bold text-sm text-navy flex items-center gap-1.5"><IconCmp size={15} /> {goal.name}</p>
                     <p className="text-xs text-muted mt-0.5">
                       meta individual: {formatBRL(target)}
-                      {Number(allocation.commission_pct) > 0 && ` · ${Number(allocation.commission_pct)}% de comissão`}
+                      {Number(goal.commission_pct_colaborador) > 0 && ` · ${Number(goal.commission_pct_colaborador)}% de comissão ao bater essa meta`}
                     </p>
                     <div className="mt-3"><ProgressBar pct={progressPct} showLabel={false} /></div>
                     <p className="text-xs text-muted mt-1">{formatPct(progressPct)} da meta</p>
