@@ -18,6 +18,7 @@ import {
   KeyRound,
   Power,
   Trash2,
+  Eye,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -362,10 +363,11 @@ export default function AdminPage() {
                         {PLANOS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                       </select>
                       <button
-                        className="text-xs uppercase tracking-wider text-muted hover:text-navy font-medium whitespace-nowrap"
+                        className="inline-flex items-center gap-1.5 text-white rounded-full px-3.5 py-1.5 text-xs font-bold whitespace-nowrap shadow-pop active:scale-95 hover:brightness-110 transition-all"
+                        style={{ background: "linear-gradient(135deg, #7c3aed, #ec4899)" }}
                         onClick={() => setSelectedEmpresa({ id: row.empresa_id, name: row.empresa_name })}
                       >
-                        ver dados →
+                        <Eye size={13} /> Ver dados
                       </button>
                       <button
                         title={row.active ? "Desativar empresa" : "Ativar empresa"}
