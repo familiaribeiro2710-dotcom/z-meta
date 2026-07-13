@@ -601,8 +601,10 @@ function EquipeList({ profiles, onChanged }) {
 
 function EditUser({ user, onChanged, onClose }) {
   const [name, setName] = useState(user.full_name);
+  const [username, setUsername] = useState(user.username || "");
   const [msg, setMsg] = useState("");
   const [savingName, setSavingName] = useState(false);
+  const [savingUsername, setSavingUsername] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   async function call(body) {
@@ -630,6 +632,21 @@ function EditUser({ user, onChanged, onClose }) {
     onChanged && onChanged();
   }
 
+  async function saveUsername(e) {
+    e.preventDefault();
+    if (!username.trim()) return;
+    setSavingUsername(true);
+    setMsg("");
+    const { ok, json } = await call({ newUsername: username.trim() });
+    setSavingUsername(false);
+    if (!ok) {
+      setMsg("Erro: " + (json.error || "não foi possível salvar."));
+      return;
+    }
+    setMsg("Usuário de login atualizado.");
+    onChanged && onChanged();
+  }
+
   async function resetPassword() {
     if (!window.confirm(`Redefinir a senha de ${user.full_name} para 123456789?`)) return;
     setResetting(true);
@@ -650,6 +667,19 @@ function EditUser({ user, onChanged, onClose }) {
         <input className="input !py-1.5 !text-xs flex-1" value={name} onChange={(e) => setName(e.target.value)} />
         <button type="submit" className="btn-outline !px-3 !py-1.5 !text-xs whitespace-nowrap" disabled={savingName}>
           {savingName ? "Salvando…" : "Salvar nome"}
+        </button>
+      </form>
+      <form onSubmit={saveUsername} className="flex items-center gap-2">
+        <input
+          className="input !py-1.5 !text-xs flex-1"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="usuário de login"
+          autoCapitalize="none"
+          autoCorrect="off"
+        />
+        <button type="submit" className="btn-outline !px-3 !py-1.5 !text-xs whitespace-nowrap" disabled={savingUsername}>
+          {savingUsername ? "Salvando…" : "Salvar usuário"}
         </button>
       </form>
       <button

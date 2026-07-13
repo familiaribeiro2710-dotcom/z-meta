@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { slugBase } from "../../../../lib/generateUsername";
 
 const DEFAULT_PASSWORD = "123456789";
 
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { employeeId, fullName, resetPassword } = body || {};
+    const { employeeId, fullName, resetPassword, newUsername } = body || {};
     if (!employeeId) {
       return NextResponse.json({ error: "Informe o usuário." }, { status: 400 });
     }
-    if (!fullName && !resetPassword) {
+    if (!fullName && !resetPassword && !newUsername) {
       return NextResponse.json({ error: "Nada para atualizar." }, { status: 400 });
     }
 
@@ -71,6 +72,42 @@ export async function POST(req) {
         .eq("id", employeeId);
       if (nameErr) {
         return NextResponse.json({ error: nameErr.message }, { status: 400 });
+      }
+    }
+
+    if (newUsername) {
+      if (!isMasterAdmin) {
+        return NextResponse.json(
+          { error: "Apenas o Master Admin pode alterar o usuário de login." },
+          { status: 403 }
+        );
+      }
+      const clean = slugBase(newUsername);
+      if (!clean) {
+        return NextResponse.json({ error: "Usuário inválido." }, { status: 400 });
+      }
+      const { data: existing } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("username", clean)
+        .neq("id", employeeId)
+        .maybeSingle();
+      if (existing) {
+        return NextResponse.json({ error: "Esse nome de usuário já está em uso." }, { status: 400 });
+      }
+      const { error: emailErr } = await admin.auth.admin.updateUserById(employeeId, {
+        email: `${clean}@zmeta.local`,
+        email_confirm: true,
+      });
+      if (emailErr) {
+        return NextResponse.json({ error: emailErr.message }, { status: 400 });
+      }
+      const { error: unameErr } = await admin
+        .from("profiles")
+        .update({ username: clean })
+        .eq("id", employeeId);
+      if (unameErr) {
+        return NextResponse.json({ error: unameErr.message }, { status: 400 });
       }
     }
 
