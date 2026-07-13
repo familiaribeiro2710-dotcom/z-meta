@@ -9,15 +9,11 @@ import {
   ListTodo,
   Coins,
   Gift,
-  Trophy,
-  PartyPopper,
-  Wallet,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard from "../../lib/EmpresaDashboard";
-import ProgressBar from "../../lib/ProgressBar";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, remainingDaysInMonth } from "../../lib/date";
 
@@ -26,8 +22,6 @@ export default function GerentePage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [lojaName, setLojaName] = useState("");
-  const [teamPct, setTeamPct] = useState(0);
-  const [settings, setSettings] = useState({ team_threshold_pct: 95 });
   const [hero, setHero] = useState({ metaLoja: 0, soldLoja: 0, pendingToday: 0, commissionSoFar: 0, prizesSoFar: 0, commissionPct: 0, commissionTierLabel: "não atingimento" });
   const greet = greeting();
   const today = todayStr();
@@ -36,12 +30,6 @@ export default function GerentePage() {
   const loadStats = useCallback(async (prof) => {
     const { data: loja } = await supabase.from("lojas").select("name").eq("id", prof.loja_id).single();
     setLojaName(loja?.name || "");
-
-    const { data: settingsRow } = await supabase.from("app_settings").select("*").eq("loja_id", prof.loja_id).single();
-    if (settingsRow) setSettings(settingsRow);
-
-    const { data: pct } = await supabase.rpc("get_team_progress", { p_month: month, p_loja: prof.loja_id });
-    setTeamPct(Number(pct) || 0);
 
     const { data: emps } = await supabase
       .from("profiles")
@@ -162,7 +150,6 @@ export default function GerentePage() {
   const remaining = remainingDaysInMonth(today);
   const restoDaMeta = Math.max(0, hero.metaLoja - hero.soldLoja);
   const dailyGoal = remaining > 0 ? restoDaMeta / remaining : 0;
-  const willRelease = teamPct >= Number(settings.team_threshold_pct || 95);
 
   return (
     <AppShell
@@ -213,17 +200,6 @@ export default function GerentePage() {
               <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Gift size={11} /> Premiações</p>
             </div>
           </div>
-        </div>
-
-        <div className="card animate-pop border-teal/20">
-          <p className="label flex items-center gap-1.5"><Trophy size={14} /> Barra geral da equipe (mês)</p>
-          <ProgressBar pct={teamPct} threshold={settings.team_threshold_pct} />
-          <p className={`text-[12px] mt-2 font-bold flex items-center gap-1.5 ${willRelease ? "text-teal" : "text-muted"}`}>
-            {willRelease ? <PartyPopper size={14} /> : <Wallet size={14} />}
-            {willRelease
-              ? `Prêmio garantido se seguir assim!`
-              : `Prêmio do mês liberado com ${settings.team_threshold_pct}%+ no fim do mês.`}
-          </p>
         </div>
 
         <EmpresaDashboard lojaId={profile.loja_id} empresaId={profile.empresa_id} viewerRole="gerente" />
