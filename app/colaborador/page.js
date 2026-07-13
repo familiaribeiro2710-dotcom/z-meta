@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ProgressBar from "../../lib/ProgressBar";
 import ChangePassword from "../../lib/ChangePassword";
+import Confetti from "../../lib/Confetti";
 import { calcIndividualPct, formatBRL, formatPct, motivationalMessage } from "../../lib/scoring";
 import {
   todayStr,
@@ -260,14 +261,15 @@ export default function ColaboradorPage() {
   return (
     <AppShell userName={profile.full_name} tabs={TABS} activeTab={tab} onTabChange={setTab}>
       {showCongrats && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-6">
-          <div className="card max-w-sm w-full text-center animate-pop">
-            <p className="text-5xl mb-3">🎉</p>
-            <h2 className="text-lg font-bold text-navy">Parabéns, {profile.full_name.split(" ")[0]}!</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
+          <Confetti />
+          <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
+            <p className="text-6xl mb-3 animate-wiggle">🎉</p>
+            <h2 className="text-xl font-extrabold gradient-text">Parabéns, {profile.full_name.split(" ")[0]}!</h2>
             <p className="text-sm text-muted mt-2">
-              Você concluiu 100% das suas tarefas de hoje. Continue assim para manter a barra da equipe lá em cima! 🔥
+              Você concluiu <span className="font-bold text-navy">100%</span> das suas tarefas de hoje. Continue assim pra manter a barra da equipe lá em cima! 🔥
             </p>
-            <button className="btn mt-5 w-full" onClick={() => setShowCongrats(false)}>Fechar</button>
+            <button className="btn mt-5 w-full" onClick={() => setShowCongrats(false)}>Show de bola! 🙌</button>
           </div>
         </div>
       )}
@@ -275,23 +277,25 @@ export default function ColaboradorPage() {
       {tab === "atividades" && (
         <div className="space-y-6">
           <div>
-            <h1 className="text-xl font-bold text-navy">{greet.emoji} {greet.word}, {profile.full_name.split(" ")[0]}!</h1>
-            <p className="text-xs text-muted mt-1">
-              {monthLabel(today)} · estágio {currentStage} ({stageRangeLabel(currentStage, today)})
-              {streak > 0 && <span className="ml-2 text-amber-600 font-medium">🔥 {streak} dia{streak > 1 ? "s" : ""} seguidos</span>}
+            <h1 className="text-2xl font-extrabold text-navy">{greet.emoji} {greet.word}, {profile.full_name.split(" ")[0]}!</h1>
+            <p className="text-xs text-muted mt-1 flex items-center flex-wrap gap-2">
+              <span>{monthLabel(today)} · estágio {currentStage} ({stageRangeLabel(currentStage, today)})</span>
+              {streak > 0 && (
+                <span className="badge bg-orange/15 text-orange">🔥 {streak} dia{streak > 1 ? "s" : ""} seguidos</span>
+              )}
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="card animate-pop">
+            <div className="card animate-pop border-purple/20">
               <p className="label">🎯 Minha barra (mês)</p>
               <ProgressBar pct={individualPct} />
               <p className="text-xs text-muted mt-2">{motivationalMessage(todayPct)}</p>
             </div>
-            <div className="card animate-pop">
+            <div className="card animate-pop border-pink/20">
               <p className="label">🏆 Barra geral da equipe</p>
               <ProgressBar pct={teamPct} threshold={settings.team_threshold_pct} />
-              <p className={`text-[12px] mt-2 font-medium ${willRelease ? "text-success" : "text-muted"}`}>
+              <p className={`text-[12px] mt-2 font-bold ${willRelease ? "text-teal" : "text-muted"}`}>
                 {willRelease
                   ? `🎉 Prêmio de ${formatBRL(settings.monthly_prize)} garantido se seguir assim!`
                   : `💰 Prêmio do mês: ${formatBRL(settings.monthly_prize)} — libera com ${settings.team_threshold_pct}%+ no fim do mês.`}
@@ -321,16 +325,17 @@ export default function ColaboradorPage() {
               {tasks.map((t) => {
                 const done = !!todayCompletions[t.id]?.completed;
                 return (
-                  <li key={t.id} className="flex items-center gap-3 py-3">
+                  <li className="flex items-center gap-3 py-3" key={t.id}>
                     <button
                       onClick={() => toggleTask(t.id)}
-                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
-                        done ? "bg-success border-success text-white animate-pop" : "border-line hover:border-gold"
+                      className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all font-bold text-white ${
+                        done ? "border-transparent animate-bounce-in" : "border-line bg-white hover:border-purple"
                       }`}
+                      style={done ? { background: "linear-gradient(135deg, #84cc16, #0d9488)" } : undefined}
                     >
                       {done && "✓"}
                     </button>
-                    <span className={`text-sm ${done ? "line-through text-muted" : "text-navy"}`}>{t.title}</span>
+                    <span className={`text-sm font-medium ${done ? "line-through text-muted" : "text-navy"}`}>{t.title}</span>
                   </li>
                 );
               })}
@@ -376,15 +381,16 @@ export default function ColaboradorPage() {
                 const dailyGoal = rest / remaining;
                 const progressPct = target > 0 ? Math.min(100, (soldSoFar / target) * 100) : 0;
                 const icons = ["🎯", "🚀", "🏆"];
+                const borders = ["border-purple/25", "border-orange/25", "border-teal/25"];
                 return (
-                  <div key={goal.id} className="card animate-pop">
-                    <p className="font-semibold text-sm text-navy">{icons[i % icons.length]} {goal.name}</p>
+                  <div key={goal.id} className={`card animate-pop ${borders[i % borders.length]}`}>
+                    <p className="font-bold text-sm text-navy">{icons[i % icons.length]} {goal.name}</p>
                     <p className="text-xs text-muted mt-0.5">meta individual: {formatBRL(target)}</p>
                     <div className="mt-3"><ProgressBar pct={progressPct} showLabel={false} /></div>
                     <p className="text-xs text-muted mt-1">{formatPct(progressPct)} da meta</p>
                     <div className="mt-3 pt-3 border-t border-line">
-                      <p className="text-[11px] text-muted uppercase tracking-wider">Meta de hoje</p>
-                      <p className="text-xl font-bold text-navy mt-0.5">{formatBRL(dailyGoal)}</p>
+                      <p className="text-[11px] text-muted uppercase tracking-wider font-bold">Meta de hoje</p>
+                      <p className="text-xl font-extrabold gradient-text mt-0.5">{formatBRL(dailyGoal)}</p>
                     </div>
                   </div>
                 );

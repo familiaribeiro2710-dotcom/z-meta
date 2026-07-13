@@ -36,7 +36,9 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    router.replace(profile.role === "gestor" ? "/gestor" : "/colaborador");
+    if (profile.role === "master_admin") router.replace("/admin");
+    else if (profile.role === "gestor") router.replace("/gestor");
+    else router.replace("/colaborador");
   }
 
   return (
@@ -44,9 +46,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-10">
           <Logo size="lg" />
-          <p className="text-xs text-muted mt-3 tracking-wide">Sua rotina, seu placar, seu prêmio 🎯</p>
+          <p className="text-sm text-muted mt-3 tracking-wide font-medium">Sua rotina, seu placar, seu prêmio 🎯🏆</p>
         </div>
-        <form onSubmit={handleSubmit} className="card space-y-4">
+        <form onSubmit={handleSubmit} className="card space-y-4 border-purple/20">
           <div>
             <label className="label">Usuário</label>
             <input

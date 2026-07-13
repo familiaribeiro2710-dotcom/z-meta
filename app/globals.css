@@ -3,8 +3,13 @@
 @tailwind utilities;
 
 html, body {
-  background-color: #f5f3ee;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(124,58,237,0.10), transparent 40%),
+    radial-gradient(circle at 92% 10%, rgba(236,72,153,0.10), transparent 38%),
+    radial-gradient(circle at 50% 100%, rgba(13,148,136,0.08), transparent 45%),
+    #f5f3ee;
   color: #12203a;
+  min-height: 100vh;
 }
 
 * {
@@ -12,31 +17,47 @@ html, body {
 }
 
 .input {
-  @apply w-full border border-line bg-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition-all;
+  @apply w-full border-2 border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-purple focus:ring-4 focus:ring-purple/15 transition-all;
 }
 
 .btn {
-  @apply inline-flex items-center justify-center gap-2 bg-navy text-white rounded-full px-5 py-2.5 text-sm font-medium tracking-wide hover:bg-navylight active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-soft;
+  @apply inline-flex items-center justify-center gap-2 text-white rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-pop;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+}
+.btn:hover {
+  filter: brightness(1.08);
 }
 
 .btn-outline {
-  @apply inline-flex items-center justify-center gap-2 border-2 border-navy text-navy rounded-full px-5 py-2.5 text-sm font-medium tracking-wide hover:bg-navy hover:text-white active:scale-95 transition-all disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-2 border-2 border-purple text-purple rounded-full px-5 py-2.5 text-sm font-bold tracking-wide hover:bg-purple hover:text-white active:scale-95 transition-all disabled:opacity-40;
 }
 
 .card {
-  @apply border border-line bg-white rounded-2xl p-5 shadow-soft hover:shadow-card transition-shadow;
+  @apply border-2 border-line bg-white rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
 }
 
 .label {
-  @apply block text-xs uppercase tracking-wider text-muted mb-1.5 font-medium;
+  @apply block text-xs uppercase tracking-wider text-muted mb-1.5 font-bold;
+}
+
+.badge {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 @keyframes pop {
   0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.05); }
   100% { transform: scale(1); opacity: 1; }
 }
 .animate-pop {
-  animation: pop 0.25s ease-out;
+  animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes fadeUp {
@@ -45,4 +66,33 @@ html, body {
 }
 .animate-fadeUp {
   animation: fadeUp 0.35s ease-out;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.08); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-bounce-in {
+  animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0.9; }
+}
+.animate-confetti {
+  animation-name: confettiFall;
+  animation-timing-function: cubic-bezier(0.35, 0, 0.65, 1);
+  animation-fill-mode: forwards;
 }

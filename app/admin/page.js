@@ -155,13 +155,14 @@ export default function AdminPage() {
 
         {overview && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <MetricCard label="🏢 Empresas ativas" value={overview.empresas_ativas} sub={`${overview.total_empresas} no total`} />
-            <MetricCard label="👥 Colaboradores" value={overview.total_colaboradores} sub="em toda a plataforma" />
-            <MetricCard label="🌱 Novas (30 dias)" value={overview.empresas_novas_30d} sub="crescimento recente" />
+            <MetricCard label="🏢 Empresas ativas" value={overview.empresas_ativas} sub={`${overview.total_empresas} no total`} accent="purple" />
+            <MetricCard label="👥 Colaboradores" value={overview.total_colaboradores} sub="em toda a plataforma" accent="blue" />
+            <MetricCard label="🌱 Novas (30 dias)" value={overview.empresas_novas_30d} sub="crescimento recente" accent="teal" />
             <MetricCard
               label="⚠️ Esquecidas"
               value={overview.empresas_esquecidas}
               sub="sem atividade há 7+ dias"
+              accent="danger"
               danger={Number(overview.empresas_esquecidas) > 0}
             />
           </div>
@@ -174,8 +175,8 @@ export default function AdminPage() {
               <div key={b.key} className="flex-1 flex flex-col items-center justify-end h-full">
                 <span className="text-xs text-muted mb-1">{b.count}</span>
                 <div
-                  className="w-full bg-gold rounded-t-md transition-all"
-                  style={{ height: `${Math.max(4, (b.count / maxGrowth) * 88)}px` }}
+                  className="w-full rounded-t-xl transition-all"
+                  style={{ height: `${Math.max(4, (b.count / maxGrowth) * 88)}px`, background: "linear-gradient(180deg, #ec4899, #7c3aed)" }}
                 />
                 <span className="text-[11px] text-muted mt-1.5 capitalize">{b.label}</span>
               </div>
@@ -288,11 +289,18 @@ export default function AdminPage() {
   );
 }
 
-function MetricCard({ label, value, sub, danger }) {
+const ACCENT_BORDERS = {
+  purple: "border-purple/25",
+  blue: "border-blue/25",
+  teal: "border-teal/25",
+  danger: "border-danger/25",
+};
+
+function MetricCard({ label, value, sub, danger, accent = "purple" }) {
   return (
-    <div className="card">
-      <p className="text-[11px] uppercase tracking-wider text-muted">{label}</p>
-      <p className={`text-2xl font-bold mt-1 ${danger ? "text-danger" : "text-navy"}`}>{value ?? 0}</p>
+    <div className={`card ${ACCENT_BORDERS[accent] || ""}`}>
+      <p className="text-[11px] uppercase tracking-wider text-muted font-bold">{label}</p>
+      <p className={`text-3xl font-extrabold mt-1 ${danger ? "text-danger" : "gradient-text"}`}>{value ?? 0}</p>
       <p className="text-[11px] text-muted mt-0.5">{sub}</p>
     </div>
   );
