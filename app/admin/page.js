@@ -23,6 +23,7 @@ import {
   Pencil,
   Check,
   X,
+  Search,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -54,6 +55,7 @@ export default function AdminPage() {
   const [editingEmpresaId, setEditingEmpresaId] = useState(null);
   const [editingEmpresaName, setEditingEmpresaName] = useState("");
   const [sortKey, setSortKey] = useState("risco");
+  const [search, setSearch] = useState("");
   const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
   const [empresaName, setEmpresaName] = useState("");
@@ -157,7 +159,8 @@ export default function AdminPage() {
   }
 
   const sortedHealth = useMemo(() => {
-    const rows = [...health];
+    const q = search.trim().toLowerCase();
+    const rows = q ? health.filter((r) => r.empresa_name.toLowerCase().includes(q)) : [...health];
     if (sortKey === "risco") {
       rows.sort((a, b) => daysSince(b.last_activity) - daysSince(a.last_activity));
     } else if (sortKey === "recente") {
@@ -168,7 +171,7 @@ export default function AdminPage() {
       rows.sort((a, b) => Number(a.team_pct) - Number(b.team_pct));
     }
     return rows;
-  }, [health, sortKey]);
+  }, [health, sortKey, search]);
 
   const growthBuckets = useMemo(() => {
     const buckets = [];
@@ -310,7 +313,9 @@ export default function AdminPage() {
 
         <div className="card overflow-x-auto">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <p className="label mb-0 flex items-center gap-1.5"><Building2 size={14} /> Empresas ({health.length}) — {monthLabel(month)}</p>
+            <p className="label mb-0 flex items-center gap-1.5">
+              <Building2 size={14} /> Empresas ({sortedHealth.length}{search.trim() ? ` de ${health.length}` : ""}) — {monthLabel(month)}
+            </p>
             <div className="flex gap-2 flex-wrap">
               {[
                 { key: "risco", label: "mais em risco" },
@@ -331,7 +336,20 @@ export default function AdminPage() {
             </div>
           </div>
 
+          <div className="relative mb-4">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+            <input
+              className="input !pl-10"
+              placeholder="Buscar empresa pelo nome…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
           <div className="space-y-3">
+            {sortedHealth.length === 0 && search.trim() && (
+              <p className="text-sm text-muted py-2">Nenhuma empresa encontrada para &ldquo;{search.trim()}&rdquo;.</p>
+            )}
             {sortedHealth.map((row) => {
               const stale = daysSince(row.last_activity);
               const neverActive = stale === Infinity;
@@ -456,7 +474,7 @@ export default function AdminPage() {
                 </div>
               );
             })}
-            {sortedHealth.length === 0 && <p className="text-sm text-muted py-2">Nenhuma empresa cadastrada ainda.</p>}
+            {sortedHealth.length === 0 && !search.trim() && <p className="text-sm text-muted py-2">Nenhuma empresa cadastrada ainda.</p>}
           </div>
         </div>
       </div>
