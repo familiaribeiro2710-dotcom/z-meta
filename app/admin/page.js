@@ -223,18 +223,28 @@ export default function AdminPage() {
         </div>
 
         {overview && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <MetricCard label="Empresas ativas" Icon={Building2} value={overview.empresas_ativas} sub={`${overview.total_empresas} no total`} accent="purple" />
-            <MetricCard label="Colaboradores" Icon={Users} value={overview.total_colaboradores} sub="em toda a plataforma" accent="blue" />
-            <MetricCard label="Novas (30 dias)" Icon={Sprout} value={overview.empresas_novas_30d} sub="crescimento recente" accent="teal" />
-            <MetricCard
-              label="Esquecidas"
-              Icon={AlertTriangle}
-              value={overview.empresas_esquecidas}
-              sub="sem atividade há 7+ dias"
-              accent="danger"
-              danger={Number(overview.empresas_esquecidas) > 0}
-            />
+          <div
+            className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
+            style={{ background: "linear-gradient(135deg, #c9a15a 0%, #e4c789 100%)", boxShadow: "0 10px 28px rgba(201,161,90,0.4)" }}
+          >
+            <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
+            <div className="relative flex items-center gap-2 mb-5">
+              <Crown size={18} className="text-navy" />
+              <span className="text-xs font-bold uppercase tracking-wider text-navy">Master Admin · Visão geral</span>
+            </div>
+            <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
+              <HeroStat Icon={Building2} value={overview.empresas_ativas} label="Empresas ativas" sub={`${overview.total_empresas} no total`} />
+              <HeroStat Icon={Users} value={overview.total_colaboradores} label="Colaboradores" sub="em toda a plataforma" divider />
+              <HeroStat Icon={Sprout} value={overview.empresas_novas_30d} label="Novas (30 dias)" sub="crescimento recente" divider />
+              <HeroStat
+                Icon={AlertTriangle}
+                value={overview.empresas_esquecidas}
+                label="Esquecidas"
+                sub="sem atividade há 7+ dias"
+                divider
+                danger={Number(overview.empresas_esquecidas) > 0}
+              />
+            </div>
           </div>
         )}
 
@@ -393,21 +403,14 @@ export default function AdminPage() {
   );
 }
 
-const ACCENT_BORDERS = {
-  purple: "border-purple/25",
-  blue: "border-blue/25",
-  teal: "border-teal/25",
-  danger: "border-danger/25",
-};
-
-function MetricCard({ label, value, sub, danger, accent = "purple", Icon }) {
+function HeroStat({ Icon, value, label, sub, divider, danger }) {
+  const tone = danger ? "text-[#7a1f1f]" : "text-navy";
   return (
-    <div className={`card ${ACCENT_BORDERS[accent] || ""}`}>
-      <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
-        {Icon && <Icon size={13} />} {label}
-      </p>
-      <p className={`text-3xl font-extrabold mt-1 ${danger ? "text-danger" : "gradient-text"}`}>{value ?? 0}</p>
-      <p className="text-[11px] text-muted mt-0.5">{sub}</p>
+    <div className={divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}>
+      <Icon size={20} className={tone} />
+      <p className={`text-3xl font-extrabold mt-2 ${tone}`}>{value ?? 0}</p>
+      <p className={`text-xs font-semibold mt-0.5 ${tone}`}>{label}</p>
+      <p className={`text-[11px] mt-0.5 ${danger ? "text-[#7a1f1f]/80" : "text-navy/65"}`}>{sub}</p>
     </div>
   );
 }
