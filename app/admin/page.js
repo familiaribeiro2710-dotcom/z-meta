@@ -490,7 +490,7 @@ export default function AdminPage() {
               {filterOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setFilterOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 z-40 w-56 card !p-2 animate-pop border-purple/20">
+                  <div className="absolute right-0 top-full mt-2 z-40 w-56 max-w-[calc(100vw-1.5rem)] card !p-2 animate-pop border-purple/20">
                     {[
                       { key: "risco", label: "mais em risco" },
                       { key: "recente", label: "mais recente" },
@@ -658,9 +658,9 @@ function EmpresaAvatar({ empresaId, logoUrl, name, onChanged }) {
 function HeroStat({ Icon, value, label, sub, divider, danger }) {
   const tone = danger ? "text-[#7a1f1f]" : "text-navy";
   return (
-    <div className={divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}>
+    <div className={`min-w-0 ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`}>
       <Icon size={20} className={tone} />
-      <p className={`text-3xl font-extrabold mt-2 ${tone}`}>{value ?? 0}</p>
+      <p className={`text-xl sm:text-3xl font-extrabold mt-2 ${tone} break-words`}>{value ?? 0}</p>
       <p className={`text-xs font-semibold mt-0.5 ${tone}`}>{label}</p>
       <p className={`text-[11px] mt-0.5 ${danger ? "text-[#7a1f1f]/80" : "text-navy/65"}`}>{sub}</p>
     </div>
@@ -914,17 +914,17 @@ function DadosTab() {
                 <span className="text-xs text-muted">{r.lojas_count} loja{r.lojas_count !== 1 ? "s" : ""}</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                <div>
+                <div className="min-w-0">
                   <p className="text-[11px] text-muted">Faturamento no mês</p>
-                  <p className="text-navy font-bold">{formatBRL(r.faturamento)}</p>
+                  <p className="text-navy font-bold break-words">{formatBRL(r.faturamento)}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[11px] text-muted">Colaboradores</p>
                   <p className="text-navy font-bold">{r.colaboradores_count}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[11px] text-muted">Premiações pagas</p>
-                  <p className="text-navy font-bold">{formatBRL(r.premiacoes)}</p>
+                  <p className="text-navy font-bold break-words">{formatBRL(r.premiacoes)}</p>
                 </div>
               </div>
             </div>
@@ -1115,8 +1115,8 @@ function FaturamentoHistorico({ empresa, onBack }) {
 
 function HeroStatLight({ value, label, sub, divider }) {
   return (
-    <div className={divider ? "sm:border-l sm:border-white/25 sm:pl-4" : ""}>
-      <p className="text-2xl sm:text-3xl font-extrabold mt-0 text-white">{value ?? 0}</p>
+    <div className={`min-w-0 ${divider ? "sm:border-l sm:border-white/25 sm:pl-4" : ""}`}>
+      <p className="text-xl sm:text-3xl font-extrabold mt-0 text-white break-words">{value ?? 0}</p>
       <p className="text-xs font-semibold mt-0.5 text-white">{label}</p>
       <p className="text-[11px] mt-0.5 text-white/75">{sub}</p>
     </div>

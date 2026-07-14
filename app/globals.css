@@ -10,10 +10,24 @@ html, body {
     #f5f3ee;
   color: #12203a;
   min-height: 100vh;
+  /* trava qualquer overflow horizontal residual — em telas estreitas nunca deve
+     surgir uma barra de rolagem lateral na página inteira */
+  overflow-x: hidden;
+  width: 100%;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Utilitário: permite rolagem horizontal (menu de abas, tabelas) sem exibir a barra de
+   rolagem — mantém o visual limpo em mobile enquanto o conteúdo continua acessível via swipe. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 @layer components {
