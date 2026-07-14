@@ -66,6 +66,17 @@ html, body {
   }
 }
 
+/* input[type=date] nativo (calendário do sistema ao tocar) — sem isso, alguns Android/iOS
+   renderizam o valor bem maior que o resto do formulário quando o campo não está focado.
+   Isso força o tamanho de fonte a ficar igual aos outros inputs (.input usa text-sm). */
+input[type="date"].date-input {
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color-scheme: light;
+}
+
 .gradient-text {
   background: linear-gradient(135deg, #7c3aed, #ec4899);
   -webkit-background-clip: text;
