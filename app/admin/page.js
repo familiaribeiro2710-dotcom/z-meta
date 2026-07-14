@@ -1570,12 +1570,16 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
           const meta = ROLE_META[p.role] || {};
           const access = lojaAccess.filter((a) => a.profile_id === p.id);
           const isSocio = p.role === "socio";
-          // sócio enxerga automaticamente todas as lojas da empresa — o escopo de colaboradores
-          // é a empresa inteira; supervisor só enxerga as lojas com loja_access explícito.
+          // sócio enxerga automaticamente todas as lojas da empresa — o escopo de gestão é a
+          // empresa inteira; supervisor só enxerga as lojas com loja_access explícito.
           const scopedLojaIds = isSocio ? lojas.map((l) => l.loja_id) : access.map((a) => a.loja_id);
-          const colaboradoresScope = (allProfiles || []).filter(
-            (c) => c.role === "colaborador" && scopedLojaIds.includes(c.loja_id)
-          );
+          // "sob gestão" mostra sempre o próximo nível da hierarquia, nunca pula direto pro
+          // colaborador: sócio gerencia supervisores e gerentes (empresa inteira); supervisor
+          // gerencia só os gerentes das lojas que tem acesso.
+          const teamScope = isSocio
+            ? (allProfiles || []).filter((c) => (c.role === "supervisor" || c.role === "gerente") && c.empresa_id === p.empresa_id)
+            : (allProfiles || []).filter((c) => c.role === "gerente" && scopedLojaIds.includes(c.loja_id));
+          const teamLabel = isSocio ? "Supervisores e gerentes sob gestão" : "Gerentes sob gestão";
           const unassignedLojas = lojas.filter((l) => !access.some((a) => a.loja_id === l.loja_id));
           return (
             <div key={p.id}>
@@ -1677,13 +1681,13 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
 
                   <div>
                     <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-1 flex items-center gap-1.5">
-                      <Users size={11} /> Colaboradores sob gestão ({colaboradoresScope.length})
+                      <Users size={11} /> {teamLabel} ({teamScope.length})
                     </p>
-                    {colaboradoresScope.length === 0 ? (
-                      <p className="text-[11px] text-muted">nenhum colaborador nas lojas dessa pessoa ainda</p>
+                    {teamScope.length === 0 ? (
+                      <p className="text-[11px] text-muted">{isSocio ? "nenhum supervisor ou gerente cadastrado ainda" : "nenhum gerente nas lojas dessa pessoa ainda"}</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
-                        {colaboradoresScope.map((c) => (
+                        {teamScope.map((c) => (
                           <button
                             key={c.id}
                             type="button"
@@ -1691,7 +1695,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                             title={`Ver como ${c.full_name}`}
                             className={`badge bg-line hover:bg-purple/10 hover:text-purple transition-colors ${c.active === false ? "line-through text-muted" : "text-navy"}`}
                           >
-                            {c.full_name}
+                            {c.full_name}{isSocio ? ` · ${c.role === "supervisor" ? "supervisor" : "gerente"}` : ""}
                           </button>
                         ))}
                       </div>
