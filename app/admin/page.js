@@ -30,13 +30,28 @@ import {
   Search,
   Filter,
   Calendar,
+  Home,
+  Wallet,
+  BarChart3,
+  DollarSign,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard, { EMPRESA_TABS } from "../../lib/EmpresaDashboard";
+import ColaboradorView from "../../lib/ColaboradorView";
+import GerenteView from "../../lib/GerenteView";
+import HierarchyHome from "../../lib/HierarchyHome";
+import MonthNav from "../../lib/MonthNav";
 import { CnpjInput, PhoneInput } from "../../lib/MaskedInputs";
-import { greeting, todayStr, firstDayOfMonth } from "../../lib/date";
+import { formatBRL } from "../../lib/scoring";
+import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
+
+const MASTER_TABS = [
+  { key: "inicio", label: "Início", Icon: Home },
+  { key: "financeiro", label: "Financeiro", Icon: Wallet },
+  { key: "dados", label: "Dados", Icon: BarChart3 },
+];
 
 function daysSince(dateStr) {
   if (!dateStr) return Infinity;
@@ -59,6 +74,9 @@ export default function AdminPage() {
   const [selectedLoja, setSelectedLoja] = useState(null);
   const [lojaTab, setLojaTab] = useState("atividades");
   const [selectedEmpresaDetail, setSelectedEmpresaDetail] = useState(null);
+  const [masterTab, setMasterTab] = useState("inicio");
+  const [viewingProfile, setViewingProfile] = useState(null);
+  const [viewTab, setViewTab] = useState("atividades");
 
   const [empresaName, setEmpresaName] = useState("");
   const [cnpj, setCnpj] = useState("");
@@ -234,6 +252,45 @@ export default function AdminPage() {
     return <ChangePassword force onDone={() => setProfile({ ...profile, must_change_password: false })} />;
   }
 
+  if (viewingProfile) {
+    if (viewingProfile.role === "socio" || viewingProfile.role === "supervisor") {
+      return (
+        <HierarchyHome
+          key={viewingProfile.id}
+          role={viewingProfile.role}
+          impersonate={viewingProfile}
+          viewerProfile={profile}
+          onExitImpersonation={() => setViewingProfile(null)}
+        />
+      );
+    }
+    return (
+      <AppShell
+        userName={profile.full_name}
+        userId={profile.id}
+        userUsername={profile.username}
+        onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+        tabs={EMPRESA_TABS}
+        activeTab={viewTab === "metas" ? "metas" : "atividades"}
+        onTabChange={setViewTab}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4 p-3 rounded-xl bg-gold/10 border border-gold/30">
+          <p className="text-xs text-navy font-semibold flex items-center gap-1.5">
+            <Crown size={13} className="text-gold" /> Visualizando como Master Admin — {viewingProfile.role === "gerente" ? "Gerente" : "Colaborador"} {viewingProfile.full_name}
+          </p>
+          <button className="btn-outline !py-1.5 !text-xs whitespace-nowrap" onClick={() => setViewingProfile(null)}>
+            ← Voltar para Master Admin
+          </button>
+        </div>
+        {viewingProfile.role === "gerente" ? (
+          <GerenteView key={viewingProfile.id} profile={viewingProfile} tab={viewTab === "metas" ? "metas" : "atividades"} viewedBySupervisor onBack={() => setViewingProfile(null)} />
+        ) : (
+          <ColaboradorView key={viewingProfile.id} profile={viewingProfile} tab={viewTab === "metas" ? "metas" : "atividades"} viewedByManager onBack={() => setViewingProfile(null)} />
+        )}
+      </AppShell>
+    );
+  }
+
   if (selectedEmpresaDetail && !selectedLoja) {
     return (
       <AppShell
@@ -252,6 +309,7 @@ export default function AdminPage() {
             onOpenLojaDados={(l) => { setLojaTab("atividades"); setSelectedLoja(l); }}
             onToggleActive={toggleEmpresaActive}
             onDelete={deleteEmpresa}
+            onViewAs={setViewingProfile}
           />
         ) : (
           <p className="text-sm text-muted">Empresa não encontrada.</p>
@@ -281,7 +339,14 @@ export default function AdminPage() {
               ← Voltar para empresas
             </button>
           </div>
-          <EmpresaDashboard lojaId={selectedLoja.lojaId} empresaId={selectedLoja.empresaId} viewerRole="master_admin" tab={lojaTab} />
+          <EmpresaDashboard
+            lojaId={selectedLoja.lojaId}
+            empresaId={selectedLoja.empresaId}
+            viewerRole="master_admin"
+            tab={lojaTab}
+            onOpenEmployee={setViewingProfile}
+            onOpenGerente={setViewingProfile}
+          />
         </div>
       </AppShell>
     );
@@ -293,7 +358,13 @@ export default function AdminPage() {
       userId={profile.id}
       userUsername={profile.username}
       onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+      tabs={MASTER_TABS}
+      activeTab={masterTab}
+      onTabChange={setMasterTab}
     >
+      {masterTab === "financeiro" && <FinanceiroTab />}
+      {masterTab === "dados" && <DadosTab />}
+      {masterTab === "inicio" && (
       <div className="space-y-6">
         <div>
           <h1 className="text-xl font-bold text-navy flex items-center gap-2">
@@ -314,7 +385,7 @@ export default function AdminPage() {
             </div>
             <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
               <HeroStat Icon={Building2} value={overview.empresas_ativas} label="Empresas ativas" sub={`${overview.total_empresas} no total`} />
-              <HeroStat Icon={Users} value={overview.total_colaboradores} label="Colaboradores" sub="em toda a plataforma" divider />
+              <HeroStat Icon={Users} value={overview.total_usuarios} label="Usuários cadastrados" sub="em toda a plataforma" divider />
               <HeroStat Icon={Sprout} value={overview.empresas_novas_30d} label="Novas (30 dias)" sub="crescimento recente" divider />
               <HeroStat
                 Icon={AlertTriangle}
@@ -499,6 +570,7 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+      )}
     </AppShell>
   );
 }
@@ -580,7 +652,270 @@ const ROLE_META = {
   supervisor: { label: "Supervisor", color: "#2563eb", bg: "rgba(37,99,235,0.12)" },
 };
 
-function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, onOpenLojaDados, onToggleActive, onDelete }) {
+function FinanceiroTab() {
+  const [month, setMonth] = useState(firstDayOfMonth(todayStr()));
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const load = useCallback(async (m) => {
+    setLoading(true);
+    const { data } = await supabase.rpc("admin_financeiro", { p_month: m });
+    setRows(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(month); }, [month, load]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => r.empresa_name.toLowerCase().includes(q));
+  }, [rows, search]);
+
+  const totals = useMemo(() => {
+    let receita = 0, colaboradores = 0, usuarios = 0;
+    rows.forEach((r) => {
+      const cobrar = Math.max(0, Number(r.usuarios_count) * Number(r.valor_por_usuario) - Number(r.desconto));
+      receita += cobrar;
+      colaboradores += Number(r.colaboradores_count);
+      usuarios += Number(r.usuarios_count);
+    });
+    const ticketEmpresa = rows.length ? receita / rows.length : 0;
+    const ticketUsuario = usuarios ? receita / usuarios : 0;
+    return { receita, colaboradores, ticketEmpresa, ticketUsuario };
+  }, [rows]);
+
+  async function saveRow(empresaId, valorPorUsuario, desconto) {
+    await supabase.from("empresas").update({ valor_por_usuario: valorPorUsuario, desconto }).eq("id", empresaId);
+    await load(month);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-purple" /> Financeiro</h1>
+        <p className="text-xs text-muted mt-1">Cobrança mensal por empresa, com base na quantidade de usuários cadastrados.</p>
+      </div>
+
+      <div
+        className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
+        style={{ background: "linear-gradient(135deg, #0d9488 0%, #5eead4 100%)", boxShadow: "0 10px 28px rgba(13,148,136,0.35)" }}
+      >
+        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
+        <div className="relative flex items-center gap-2 mb-5">
+          <Wallet size={18} className="text-navy" />
+          <span className="text-xs font-bold uppercase tracking-wider text-navy">Financeiro · {monthLabel(month)}</span>
+        </div>
+        <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
+          <HeroStat Icon={DollarSign} value={formatBRL(totals.receita)} label="Receita total" sub="a cobrar no mês" />
+          <HeroStat Icon={Users} value={totals.colaboradores} label="Colaboradores" sub="cadastrados" divider />
+          <HeroStat Icon={Building2} value={formatBRL(totals.ticketEmpresa)} label="Ticket médio" sub="por empresa" divider />
+          <HeroStat Icon={User} value={formatBRL(totals.ticketUsuario)} label="Ticket médio" sub="por usuário" divider />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <input className="input !pl-10" placeholder="Buscar empresa pelo nome…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <MonthNav month={month} onChange={setMonth} maxMonth={firstDayOfMonth(todayStr())} />
+      </div>
+
+      {loading ? (
+        <p className="text-xs text-muted py-10 text-center flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" /> carregando…</p>
+      ) : (
+        <div className="space-y-3">
+          {filtered.length === 0 && <p className="text-sm text-muted py-2">Nenhuma empresa encontrada.</p>}
+          {filtered.map((r) => <FinanceiroRow key={r.empresa_id} row={r} onSave={saveRow} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinanceiroRow({ row, onSave }) {
+  const [valor, setValor] = useState(String(row.valor_por_usuario ?? 0));
+  const [desconto, setDesconto] = useState(String(row.desconto ?? 0));
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!dirty) {
+      setValor(String(row.valor_por_usuario ?? 0));
+      setDesconto(String(row.desconto ?? 0));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [row.valor_por_usuario, row.desconto]);
+
+  const cobrar = Math.max(0, Number(row.usuarios_count) * (Number(valor) || 0) - (Number(desconto) || 0));
+
+  async function save() {
+    setSaving(true);
+    await onSave(row.empresa_id, Number(valor) || 0, Number(desconto) || 0);
+    setSaving(false);
+    setDirty(false);
+  }
+
+  return (
+    <div className={`card ${!row.active ? "opacity-60" : ""}`}>
+      <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+        <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
+          <Building2 size={14} className="text-purple" /> {row.empresa_name}
+          {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+        </p>
+        <span className="text-xs text-muted">{row.usuarios_count} usuário{row.usuarios_count !== 1 ? "s" : ""} cadastrado{row.usuarios_count !== 1 ? "s" : ""}</span>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-3">
+        <div>
+          <label className="label">Valor por usuário</label>
+          <input
+            className="input !py-1.5 !text-xs"
+            type="number"
+            step="0.01"
+            value={valor}
+            onChange={(e) => { setValor(e.target.value); setDirty(true); }}
+          />
+        </div>
+        <div>
+          <label className="label">Desconto (R$)</label>
+          <input
+            className="input !py-1.5 !text-xs"
+            type="number"
+            step="0.01"
+            value={desconto}
+            onChange={(e) => { setDesconto(e.target.value); setDirty(true); }}
+          />
+        </div>
+        <div>
+          <label className="label">Quanto cobrar</label>
+          <p className="input !py-1.5 !text-xs !bg-paper font-bold text-navy flex items-center">{formatBRL(cobrar)}</p>
+        </div>
+      </div>
+      {dirty && (
+        <div className="mt-3">
+          <button className="btn-outline !py-1.5 !text-xs" onClick={save} disabled={saving}>
+            {saving ? "Salvando…" : "Salvar"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DadosTab() {
+  const [month, setMonth] = useState(firstDayOfMonth(todayStr()));
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const load = useCallback(async (m) => {
+    setLoading(true);
+    const { data } = await supabase.rpc("admin_financeiro", { p_month: m });
+    setRows(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(month); }, [month, load]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => r.empresa_name.toLowerCase().includes(q));
+  }, [rows, search]);
+
+  const totals = useMemo(() => {
+    let faturamento = 0, colaboradores = 0, premiacoes = 0, lojas = 0;
+    rows.forEach((r) => {
+      faturamento += Number(r.faturamento);
+      colaboradores += Number(r.colaboradores_count);
+      premiacoes += Number(r.premiacoes);
+      lojas += Number(r.lojas_count);
+    });
+    const ticketPorEmpresa = rows.length ? faturamento / rows.length : 0;
+    return { faturamento, colaboradores, premiacoes, lojas, ticketPorEmpresa };
+  }, [rows]);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-navy flex items-center gap-2"><BarChart3 size={20} className="text-purple" /> Dados</h1>
+        <p className="text-xs text-muted mt-1">Faturamento, colaboradores e premiações de todas as empresas.</p>
+      </div>
+
+      <div
+        className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
+        style={{ background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)", boxShadow: "0 10px 28px rgba(124,58,237,0.35)" }}
+      >
+        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
+        <div className="relative flex items-center gap-2 mb-5">
+          <TrendingUp size={18} className="text-white" />
+          <span className="text-xs font-bold uppercase tracking-wider text-white">Dados · {monthLabel(month)}</span>
+        </div>
+        <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
+          <HeroStatLight value={formatBRL(totals.faturamento)} label="Faturamento total" sub="todas as empresas" />
+          <HeroStatLight value={totals.colaboradores} label="Colaboradores" sub="cadastrados" divider />
+          <HeroStatLight value={formatBRL(totals.premiacoes)} label="Premiações" sub="pagas no mês" divider />
+          <HeroStatLight value={totals.lojas} label="Lojas" sub="cadastradas no total" divider />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <input className="input !pl-10" placeholder="Buscar empresa pelo nome…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <MonthNav month={month} onChange={setMonth} maxMonth={firstDayOfMonth(todayStr())} />
+      </div>
+
+      {loading ? (
+        <p className="text-xs text-muted py-10 text-center flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" /> carregando…</p>
+      ) : (
+        <div className="space-y-3">
+          {filtered.length === 0 && <p className="text-sm text-muted py-2">Nenhuma empresa encontrada.</p>}
+          {filtered.map((r) => (
+            <div key={r.empresa_id} className={`card ${!r.active ? "opacity-60" : ""}`}>
+              <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+                <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
+                  <Building2 size={14} className="text-purple" /> {r.empresa_name}
+                  {!r.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+                </p>
+                <span className="text-xs text-muted">{r.lojas_count} loja{r.lojas_count !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className="text-[11px] text-muted">Faturamento no mês</p>
+                  <p className="text-navy font-bold">{formatBRL(r.faturamento)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted">Colaboradores</p>
+                  <p className="text-navy font-bold">{r.colaboradores_count}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted">Premiações pagas</p>
+                  <p className="text-navy font-bold">{formatBRL(r.premiacoes)}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HeroStatLight({ value, label, sub, divider }) {
+  return (
+    <div className={divider ? "sm:border-l sm:border-white/25 sm:pl-4" : ""}>
+      <p className="text-2xl sm:text-3xl font-extrabold mt-0 text-white">{value ?? 0}</p>
+      <p className="text-xs font-semibold mt-0.5 text-white">{label}</p>
+      <p className="text-[11px] mt-0.5 text-white/75">{sub}</p>
+    </div>
+  );
+}
+
+function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, onOpenLojaDados, onToggleActive, onDelete, onViewAs }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(empresa.empresa_name);
   const [editingContact, setEditingContact] = useState(false);
@@ -750,7 +1085,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, on
       <AddUserCard empresaId={empresa.empresa_id} lojas={empresa.lojas} onChanged={onChanged} />
 
       <div className="card">
-        <HierarquiaList lojas={empresa.lojas} people={people} lojaAccess={lojaAccess} onChanged={onChanged} />
+        <HierarquiaList lojas={empresa.lojas} people={people} allProfiles={allProfiles} lojaAccess={lojaAccess} onChanged={onChanged} onViewAs={onViewAs} />
       </div>
 
       <div className="card">
@@ -760,6 +1095,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, on
           allProfiles={allProfiles}
           onChanged={onChanged}
           onOpenDados={onOpenLojaDados}
+          onViewAs={onViewAs}
         />
       </div>
     </div>
@@ -979,15 +1315,32 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
   );
 }
 
-function HierarquiaList({ lojas, people, lojaAccess, onChanged }) {
+function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onViewAs }) {
   const [openPersonId, setOpenPersonId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+  const [addingLojaFor, setAddingLojaFor] = useState(null);
 
   async function togglePermission(a) {
     const next = a.permission === "gerenciar" ? "ver" : "gerenciar";
     setTogglingId(a.id);
     await supabase.from("loja_access").update({ permission: next }).eq("id", a.id);
     setTogglingId(null);
+    onChanged();
+  }
+
+  async function removeAccess(a) {
+    if (!window.confirm("Remover o acesso dessa pessoa a essa loja?")) return;
+    setTogglingId(a.id);
+    await supabase.from("loja_access").delete().eq("id", a.id);
+    setTogglingId(null);
+    onChanged();
+  }
+
+  async function addAccess(personId, lojaId) {
+    setTogglingId(`add-${lojaId}`);
+    await supabase.from("loja_access").insert({ profile_id: personId, loja_id: lojaId, permission: "ver" });
+    setTogglingId(null);
+    setAddingLojaFor(null);
     onChanged();
   }
 
@@ -1003,48 +1356,135 @@ function HierarquiaList({ lojas, people, lojaAccess, onChanged }) {
         {people.map((p) => {
           const meta = ROLE_META[p.role] || {};
           const access = lojaAccess.filter((a) => a.profile_id === p.id);
+          const isSocio = p.role === "socio";
+          // sócio enxerga automaticamente todas as lojas da empresa — o escopo de colaboradores
+          // é a empresa inteira; supervisor só enxerga as lojas com loja_access explícito.
+          const scopedLojaIds = isSocio ? lojas.map((l) => l.loja_id) : access.map((a) => a.loja_id);
+          const colaboradoresScope = (allProfiles || []).filter(
+            (c) => c.role === "colaborador" && scopedLojaIds.includes(c.loja_id)
+          );
+          const unassignedLojas = lojas.filter((l) => !access.some((a) => a.loja_id === l.loja_id));
           return (
             <div key={p.id}>
-              <button
-                onClick={() => setOpenPersonId(openPersonId === p.id ? null : p.id)}
-                className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
-              >
-                <span className="flex items-center gap-1.5 flex-wrap">
-                  <span className="badge" style={{ color: meta.color, background: meta.bg }}>{meta.label}</span>
-                  <span className={`font-medium ${p.active === false ? "text-muted line-through" : "text-navy"}`}>{p.full_name}</span>
-                  <span className="text-muted">({p.username})</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  {p.must_change_password && <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>}
-                  {openPersonId === p.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                </span>
-              </button>
+              <div className="w-full flex items-center justify-between gap-2">
+                <button
+                  onClick={() => setOpenPersonId(openPersonId === p.id ? null : p.id)}
+                  className="flex-1 text-left text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+                >
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    <span className="badge" style={{ color: meta.color, background: meta.bg }}>{meta.label}</span>
+                    <span className={`font-medium ${p.active === false ? "text-muted line-through" : "text-navy"}`}>{p.full_name}</span>
+                    <span className="text-muted">({p.username})</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    {p.must_change_password && <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>}
+                    {openPersonId === p.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  </span>
+                </button>
+                {onViewAs && (
+                  <button
+                    title={`Ver como ${p.full_name}`}
+                    onClick={() => onViewAs(p)}
+                    className="p-1.5 rounded-lg border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
+                  >
+                    <Eye size={13} />
+                  </button>
+                )}
+              </div>
               {openPersonId === p.id && (
-                <div className="mt-1.5">
-                  <div className="mb-1.5">
-                    {access.length === 0 && <p className="text-[11px] text-muted">sem lojas atribuídas</p>}
+                <div className="mt-1.5 space-y-3">
+                  <div>
+                    {access.length === 0 && <p className="text-[11px] text-muted mb-1.5">sem lojas atribuídas</p>}
                     <div className="flex flex-wrap gap-1.5">
                       {access.map((a) => {
                         const loja = lojas.find((l) => l.loja_id === a.loja_id);
                         const isManage = a.permission === "gerenciar";
                         return (
-                          <button
+                          <span
                             key={a.loja_id}
-                            type="button"
-                            onClick={() => togglePermission(a)}
-                            disabled={togglingId === a.id}
-                            title="Clique para alternar entre ver e gerenciar"
-                            className={`badge transition-colors active:scale-95 ${
-                              isManage ? "bg-purple/15 text-purple hover:bg-purple/25" : "bg-teal/10 text-teal hover:bg-teal/20"
+                            className={`badge transition-colors ${
+                              isManage ? "bg-purple/15 text-purple" : "bg-teal/10 text-teal"
                             }`}
                           >
-                            <Store size={10} /> {loja?.loja_name || "loja"} · {isManage ? "gerenciar" : "ver"}
-                            <ArrowLeftRight size={10} />
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => togglePermission(a)}
+                              disabled={togglingId === a.id}
+                              title="Clique para alternar entre ver e gerenciar"
+                              className="flex items-center gap-1 hover:opacity-75"
+                            >
+                              <Store size={10} /> {loja?.loja_name || "loja"} · {isManage ? "gerenciar" : "ver"}
+                              <ArrowLeftRight size={10} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeAccess(a)}
+                              disabled={togglingId === a.id}
+                              title="Remover acesso a essa loja"
+                              className="hover:text-danger"
+                            >
+                              <X size={10} />
+                            </button>
+                          </span>
                         );
                       })}
                     </div>
+                    {isSocio ? (
+                      <p className="text-[11px] text-muted mt-1.5">Sócio vê automaticamente todas as lojas da empresa — não precisa vincular.</p>
+                    ) : (
+                      <div className="mt-1.5">
+                        {addingLojaFor === p.id ? (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {unassignedLojas.length === 0 && <span className="text-[11px] text-muted">todas as lojas já vinculadas</span>}
+                            {unassignedLojas.map((l) => (
+                              <button
+                                key={l.loja_id}
+                                type="button"
+                                onClick={() => addAccess(p.id, l.loja_id)}
+                                disabled={togglingId === `add-${l.loja_id}`}
+                                className="badge bg-line text-muted hover:bg-purple/10 hover:text-purple transition-colors"
+                              >
+                                <Store size={10} /> {l.loja_name}
+                              </button>
+                            ))}
+                            <button type="button" className="text-[11px] text-muted hover:text-navy" onClick={() => setAddingLojaFor(null)}>cancelar</button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setAddingLojaFor(p.id)}
+                            className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
+                          >
+                            <Plus size={11} /> vincular loja
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
+
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-1 flex items-center gap-1.5">
+                      <Users size={11} /> Colaboradores sob gestão ({colaboradoresScope.length})
+                    </p>
+                    {colaboradoresScope.length === 0 ? (
+                      <p className="text-[11px] text-muted">nenhum colaborador nas lojas dessa pessoa ainda</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {colaboradoresScope.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => onViewAs && onViewAs(c)}
+                            title={`Ver como ${c.full_name}`}
+                            className={`badge bg-line hover:bg-purple/10 hover:text-purple transition-colors ${c.active === false ? "line-through text-muted" : "text-navy"}`}
+                          >
+                            {c.full_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <EditUser user={p} onChanged={onChanged} onClose={() => setOpenPersonId(null)} />
                 </div>
               )}
@@ -1174,7 +1614,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
   );
 }
 
-function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados }) {
+function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onViewAs }) {
   const [addingLoja, setAddingLoja] = useState(false);
   const [lojaName, setLojaName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -1235,6 +1675,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados }) {
             allProfiles={allProfiles}
             onChanged={onChanged}
             onOpenDados={onOpenDados}
+            onViewAs={onViewAs}
             isOpen={openLojaId === l.loja_id}
             onToggle={() => setOpenLojaId(openLojaId === l.loja_id ? null : l.loja_id)}
           />
@@ -1244,10 +1685,11 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados }) {
   );
 }
 
-function LojaCard({ loja, allProfiles, onChanged, onOpenDados, empresaId, isOpen, onToggle }) {
+function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, empresaId, isOpen, onToggle }) {
   const [openUserId, setOpenUserId] = useState(null);
 
   const colaboradores = allProfiles.filter((p) => p.loja_id === loja.loja_id && p.role === "colaborador");
+  const gerenteProfile = allProfiles.find((p) => p.id === loja.gerente_id);
   const stale = daysSince(loja.last_activity);
   const neverActive = stale === Infinity;
 
@@ -1294,20 +1736,31 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, empresaId, isOpen
         <div className="mt-3 pt-3 border-t border-line space-y-3">
           {loja.gerente_id ? (
             <div>
-              <button
-                onClick={() => setOpenUserId(openUserId === loja.gerente_id ? null : loja.gerente_id)}
-                className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
-              >
-                <span className="text-navy font-medium flex items-center gap-1.5">
-                  <ShieldCheck size={12} /> {loja.gerente_name} <span className="text-muted font-normal">({loja.gerente_username})</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  {loja.gerente_pending_password && (
-                    <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
-                  )}
-                  {openUserId === loja.gerente_id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                </span>
-              </button>
+              <div className="w-full flex items-center justify-between gap-2">
+                <button
+                  onClick={() => setOpenUserId(openUserId === loja.gerente_id ? null : loja.gerente_id)}
+                  className="flex-1 text-left text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+                >
+                  <span className="text-navy font-medium flex items-center gap-1.5">
+                    <ShieldCheck size={12} /> {loja.gerente_name} <span className="text-muted font-normal">({loja.gerente_username})</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    {loja.gerente_pending_password && (
+                      <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
+                    )}
+                    {openUserId === loja.gerente_id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  </span>
+                </button>
+                {onViewAs && gerenteProfile && (
+                  <button
+                    title={`Ver como ${loja.gerente_name}`}
+                    onClick={() => onViewAs(gerenteProfile)}
+                    className="p-1.5 rounded-lg border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
+                  >
+                    <Eye size={12} />
+                  </button>
+                )}
+              </div>
               {openUserId === loja.gerente_id && (
                 <EditUser
                   user={{ id: loja.gerente_id, full_name: loja.gerente_name, username: loja.gerente_username }}
@@ -1327,20 +1780,31 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, empresaId, isOpen
             <ul className="space-y-1.5">
               {colaboradores.map((c) => (
                 <li key={c.id}>
-                  <button
-                    onClick={() => setOpenUserId(openUserId === c.id ? null : c.id)}
-                    className="w-full text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
-                  >
-                    <span className={`font-medium ${c.active ? "text-navy" : "text-muted line-through"}`}>
-                      {c.full_name} <span className="text-muted font-normal">({c.username})</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      {c.must_change_password && (
-                        <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
-                      )}
-                      {openUserId === c.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                    </span>
-                  </button>
+                  <div className="w-full flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => setOpenUserId(openUserId === c.id ? null : c.id)}
+                      className="flex-1 text-left text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+                    >
+                      <span className={`font-medium ${c.active ? "text-navy" : "text-muted line-through"}`}>
+                        {c.full_name} <span className="text-muted font-normal">({c.username})</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        {c.must_change_password && (
+                          <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>
+                        )}
+                        {openUserId === c.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                      </span>
+                    </button>
+                    {onViewAs && (
+                      <button
+                        title={`Ver como ${c.full_name}`}
+                        onClick={() => onViewAs(c)}
+                        className="p-1.5 rounded-lg border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
+                      >
+                        <Eye size={12} />
+                      </button>
+                    )}
+                  </div>
                   {openUserId === c.id && <EditUser user={c} onChanged={onChanged} onClose={() => setOpenUserId(null)} />}
                 </li>
               ))}
