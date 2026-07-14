@@ -400,6 +400,10 @@ Três pedidos do Felipe na lista de "Tarefas" cadastradas (`Tarefas()`, `lib/Emp
 `maxLength={18}` adicionado nos dois inputs de título de tarefa em `Tarefas()` (`lib/EmpresaDashboard.js`): o campo "nome da tarefa" do formulário de criação e o input de edição inline (adicionado na sessão anterior). Mesmo limite já usado pra nome completo em outros formulários do app. **Nota:** client-side só — o insert/update vai direto pro Supabase (não passa por rota de API), então o mesmo limite client-side-only já documentado pros nomes de usuário se aplica aqui. 18 caracteres é apertado pra descrever uma tarefa (ex.: "Organizar vitrine" já bate o limite); se cortar descrições no uso real, vale reconsiderar.
 **Build verificado:** `✓ Compiled successfully`.
 
+### Seletor de dia da semana (criar tarefa semanal) trocado de `<select>` nativo por pills
+Felipe pediu pra melhorar a aparência do seletor de dia da semana ao criar tarefa com recorrência "1 dia na semana" (`Tarefas()`, `lib/EmpresaDashboard.js`). Era um `<select>` HTML nativo genérico, destoando do resto do formulário — que logo acima já usa botões-pill (`rounded-full border-2`) pra escolher o tipo de recorrência (diária/semanal/única). Trocado pelo mesmo padrão: 7 botões-pill (`WEEKDAY_LABELS`, `text-xs font-bold px-3 py-1.5 rounded-full border-2`, ativo em roxo) com `flex-wrap`, idêntico visualmente ao seletor de recorrência logo acima.
+**Build verificado:** `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
