@@ -36,7 +36,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <body className="min-h-screen font-sans overscroll-none">{children}</body>
+      <body className="min-h-screen font-sans">{children}</body>
     </html>
   );
 }
