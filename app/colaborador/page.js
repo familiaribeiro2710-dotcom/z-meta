@@ -8,7 +8,6 @@ import {
   Trophy,
   Flame,
   PartyPopper,
-  Gamepad2,
   CheckSquare,
   Check,
   AlertTriangle,
@@ -34,8 +33,6 @@ import {
   firstDayOfMonth,
   remainingDaysInMonth,
   monthLabel,
-  stageNumberForDate,
-  stageRangeLabel,
   greeting,
   yesterdayStr,
 } from "../../lib/date";
@@ -60,13 +57,12 @@ export default function ColaboradorPage() {
   const [teamPct, setTeamPct] = useState(0);
   const [warnings, setWarnings] = useState([]);
   const [settings, setSettings] = useState({ warning_penalty_points: 10, team_threshold_pct: 95, monthly_prize: 1000 });
-  const [stages, setStages] = useState([]);
   const [streak, setStreak] = useState(0);
   const [showCongrats, setShowCongrats] = useState(false);
 
   const [goals, setGoals] = useState([]); // {goal, allocation}, ordenado por store_total crescente (Meta 1, Meta 2…)
   const [commissionSettings, setCommissionSettings] = useState({ non_achievement_colaborador_pct: 0 });
-  const [prizes, setPrizes] = useState([]); // premiações por estágio lançadas pelo gerente
+  const [prizes, setPrizes] = useState([]); // premiação mensal lançada pelo gerente (0 ou 1 linha por mês)
   const [entries, setEntries] = useState([]); // lançamentos do mês (valor vendido em cada dia), mais recente primeiro
   const [entryDate, setEntryDate] = useState("");
   const [entryValue, setEntryValue] = useState("");
@@ -162,9 +158,6 @@ export default function ColaboradorPage() {
     const { data: teamPctData } = await supabase.rpc("get_team_progress", { p_month: month, p_loja: lojaId });
     setTeamPct(Number(teamPctData) || 0);
 
-    const { data: stageRows } = await supabase.from("stage_dynamics").select("*").eq("month", month).order("stage_number");
-    setStages(stageRows || []);
-
     const { data: goalRows } = await supabase.from("sales_goals").select("*").eq("month", month).order("store_total");
     const { data: allocRows } = await supabase
       .from("sales_goal_allocations")
@@ -193,7 +186,7 @@ export default function ColaboradorPage() {
     setEntries(entryRows || []);
 
     const { data: prizeRows } = await supabase
-      .from("employee_stage_prizes")
+      .from("employee_prizes")
       .select("*")
       .eq("employee_id", uid)
       .eq("month", month);
@@ -327,7 +320,6 @@ export default function ColaboradorPage() {
   }
 
   const remaining = remainingDaysInMonth(today);
-  const currentStage = stageNumberForDate(today);
   const doneCount = tasks.filter((t) => todayCompletions[t.id]?.completed).length;
   const pendingCount = tasks.length - doneCount;
   const todayPct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0;
@@ -398,7 +390,7 @@ export default function ColaboradorPage() {
               <greet.Icon size={22} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
             </h1>
             <p className="text-xs text-muted mt-1 flex items-center flex-wrap gap-2">
-              <span>{monthLabel(today)} · estágio {currentStage} ({stageRangeLabel(currentStage, today)})</span>
+              <span>{monthLabel(today)}</span>
               {streak > 0 && (
                 <span className="badge bg-orange/15 text-orange"><Flame size={12} /> {streak} dia{streak > 1 ? "s" : ""} seguidos</span>
               )}
@@ -464,18 +456,6 @@ export default function ColaboradorPage() {
               </p>
             </div>
           </div>
-
-          {stages.some((s) => s.title || s.description) && (
-            <div className="card">
-              <p className="label mb-2 flex items-center gap-1.5"><Gamepad2 size={14} /> Dinâmica do estágio atual</p>
-              {stages.filter((s) => s.stage_number === currentStage).map((s) => (
-                <div key={s.id}>
-                  <p className="text-sm font-semibold text-navy">{s.title || `Estágio ${s.stage_number}`}</p>
-                  {s.description && <p className="text-sm text-muted mt-1">{s.description}</p>}
-                </div>
-              ))}
-            </div>
-          )}
 
           <div className="card">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">

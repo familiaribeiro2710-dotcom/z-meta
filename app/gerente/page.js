@@ -102,11 +102,11 @@ export default function GerentePage() {
     const commissionTierLabel = achievedTier ? achievedTier.name : "não atingimento";
     const commissionSoFar = soldLoja * (commissionPct / 100);
 
-    // premiações do mês lançadas pelo supervisor, somando todos os colaboradores da loja
+    // premiações do mês lançadas pelo próprio gerente (aba Premiações), somando todos os colaboradores da loja
     let prizesSoFar = 0;
     if (empIds.length) {
       const { data: prizeRows } = await supabase
-        .from("employee_stage_prizes")
+        .from("employee_prizes")
         .select("amount")
         .in("employee_id", empIds)
         .eq("month", month);
