@@ -1421,7 +1421,7 @@ function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
         </select>
       </div>
       <div className="grid sm:grid-cols-3 gap-2">
-        <input className="input !py-1.5 !text-xs" placeholder="nome do gerente" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
+        <input className="input !py-1.5 !text-xs" placeholder="nome do gerente" value={name} onChange={(e) => setName(e.target.value)} maxLength={18} />
         <input
           className="input !py-1.5 !text-xs"
           placeholder="usuário de login (opcional)"
@@ -1497,7 +1497,7 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
         </select>
       </div>
       <div className="grid sm:grid-cols-3 gap-2">
-        <input className="input !py-1.5 !text-xs" placeholder="nome do colaborador" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
+        <input className="input !py-1.5 !text-xs" placeholder="nome do colaborador" value={name} onChange={(e) => setName(e.target.value)} maxLength={18} />
         <input
           className="input !py-1.5 !text-xs"
           placeholder="usuário de login (opcional)"
@@ -1765,7 +1765,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
   return (
     <form onSubmit={submit} className="p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
       <div className="grid sm:grid-cols-3 gap-2">
-        <input className="input !py-1.5 !text-xs" placeholder={`nome do ${label}`} value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={40} />
+        <input className="input !py-1.5 !text-xs" placeholder={`nome do ${label}`} value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={18} />
         <input
           className="input !py-1.5 !text-xs"
           placeholder="usuário de login (opcional)"
@@ -2093,7 +2093,7 @@ function EditUser({ user, onChanged, onClose }) {
   return (
     <div className="mt-2 mb-1 p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
       <form onSubmit={saveName} className="flex items-center gap-2">
-        <input className="input !py-1.5 !text-xs flex-1" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
+        <input className="input !py-1.5 !text-xs flex-1" value={name} onChange={(e) => setName(e.target.value)} maxLength={18} />
         <button type="submit" className="btn-outline !px-3 !py-1.5 !text-xs whitespace-nowrap" disabled={savingName}>
           {savingName ? "Salvando…" : "Salvar nome"}
         </button>
