@@ -1242,10 +1242,12 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, on
             <p className="text-[11px] uppercase tracking-wider text-muted font-bold">Dados da empresa</p>
             {!editingContact && (
               <button
-                className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
+                className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
                 onClick={() => setEditingContact(true)}
+                title="Editar dados da empresa"
+                aria-label="Editar dados da empresa"
               >
-                <Pencil size={11} /> editar
+                <Pencil size={13} />
               </button>
             )}
           </div>
@@ -2115,7 +2117,7 @@ function EditUser({ user, onChanged, onClose }) {
       </form>
       <button
         onClick={resetPassword}
-        className="flex items-center gap-1.5 text-xs font-bold text-danger hover:text-red-700 transition-colors"
+        className="flex items-center gap-1.5 text-xs font-bold text-danger border border-danger/40 hover:bg-danger/10 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
         disabled={resetting}
       >
         <KeyRound size={13} /> {resetting ? "Redefinindo…" : "Redefinir senha para 123456789"}
