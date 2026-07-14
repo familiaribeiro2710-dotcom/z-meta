@@ -580,6 +580,14 @@ Felipe perguntou direto se a regra "valor variável nunca quebra linha" (seção
 3. **Confirmado como correto e deixado como estava:** todo `formatBRL` dentro de `<table>` (tabelas têm scroll horizontal via `overflow-x-auto` no container, padrão já aceito antes); frases de texto livre com valor embutido ("Vendido até ontem: R$X", "N colaborador(es) · R$X cada") — quebra de parágrafo normal é esperada aí, diferente de um badge/número isolado; percentuais combinados ("X% colaborador · Y% gerente") — valor é sempre limitado a 3 dígitos, risco de overflow é baixo o suficiente pra não justificar a mudança.
 **Build verificado:** `✓ Compiled successfully`.
 
+### Bug real no AutoFitText: texto cortado (não encolhia) por causa de corrida com o carregamento da fonte
+Felipe mandou print mostrando "R$ 250.000,0(" cortado no mini-stat "Falta pra meta do mês" (herocard do colaborador) — o texto estava sendo cortado pelo `overflow-hidden`, não encolhido, contrariando a regra central do componente.
+
+**Causa raiz:** a fonte do app (Inter, via `@fontsource`) carrega de forma assíncrona. O `fit()` do `AutoFitText` roda em `useLayoutEffect` logo no mount, o que pode acontecer **antes** da Inter terminar de carregar — nesse instante o navegador mede `scrollWidth` usando a fonte de fallback do sistema, que normalmente é mais estreita. Quando a Inter troca de verdade um instante depois, os glifos (principalmente números) ficam mais largos que o medido, e o texto passa a vazar do card. Como o `ResizeObserver` só dispara quando o **próprio elemento** muda de tamanho — não quando só a fonte interna troca — nada disparava um novo cálculo, e o `overflow-hidden` (necessário pra permitir encolher dentro de flex/grid) acabava cortando o texto em vez de encolher a fonte.
+
+**Fix (`lib/AutoFitText.js`):** adicionado um segundo gatilho de recálculo via `document.fonts.ready.then(fit)`, que roda `fit()` de novo assim que todas as fontes terminarem de carregar de verdade — corrige o cálculo já feito com a fonte errada. Também aumentada a margem de segurança do cálculo de 3% pra 5% (`* 0.95` em vez de `* 0.97`), dando mais folga contra pequenas variações de métrica de fonte/subpixel.
+**Build verificado:** `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
