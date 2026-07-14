@@ -43,6 +43,7 @@ import ColaboradorView from "../../lib/ColaboradorView";
 import GerenteView from "../../lib/GerenteView";
 import HierarchyHome from "../../lib/HierarchyHome";
 import MonthNav from "../../lib/MonthNav";
+import SelectField from "../../lib/SelectField";
 import { CnpjInput, PhoneInput } from "../../lib/MaskedInputs";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
@@ -1045,23 +1046,23 @@ function FaturamentoHistorico({ empresa, onBack }) {
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <label className="label">De</label>
-            <select
-              className="input !py-1.5 !text-xs"
+            <SelectField
+              className="w-full"
               value={fromMonth}
               onChange={(e) => { setFromMonth(e.target.value); setActivePreset(null); }}
             >
               {rows.map((r) => <option key={r.month} value={r.month}>{monthShortLabel(r.month)}</option>)}
-            </select>
+            </SelectField>
           </div>
           <div>
             <label className="label">Até</label>
-            <select
-              className="input !py-1.5 !text-xs"
+            <SelectField
+              className="w-full"
               value={toMonth}
               onChange={(e) => { setToMonth(e.target.value); setActivePreset(null); }}
             >
               {rows.map((r) => <option key={r.month} value={r.month}>{monthShortLabel(r.month)}</option>)}
-            </select>
+            </SelectField>
           </div>
         </div>
       </div>
@@ -1412,13 +1413,13 @@ function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
     <form onSubmit={submit} className="space-y-2">
       <div>
         <label className="label">Loja</label>
-        <select className="input !py-1.5 !text-xs" value={lojaId} onChange={(e) => setLojaId(e.target.value)}>
+        <SelectField className="w-full" value={lojaId} onChange={(e) => setLojaId(e.target.value)}>
           {lojas.map((l) => (
             <option key={l.loja_id} value={l.loja_id}>
               {l.loja_name}{l.gerente_id ? " (já tem gerente)" : ""}
             </option>
           ))}
-        </select>
+        </SelectField>
       </div>
       <div className="grid sm:grid-cols-3 gap-2">
         <input className="input !py-1.5 !text-xs" placeholder="nome do gerente" value={name} onChange={(e) => setName(e.target.value)} maxLength={18} />
@@ -1492,9 +1493,9 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
     <form onSubmit={submit} className="space-y-2">
       <div>
         <label className="label">Loja</label>
-        <select className="input !py-1.5 !text-xs" value={lojaId} onChange={(e) => setLojaId(e.target.value)}>
+        <SelectField className="w-full" value={lojaId} onChange={(e) => setLojaId(e.target.value)}>
           {lojas.map((l) => <option key={l.loja_id} value={l.loja_id}>{l.loja_name}</option>)}
-        </select>
+        </SelectField>
       </div>
       <div className="grid sm:grid-cols-3 gap-2">
         <input className="input !py-1.5 !text-xs" placeholder="nome do colaborador" value={name} onChange={(e) => setName(e.target.value)} maxLength={18} />
