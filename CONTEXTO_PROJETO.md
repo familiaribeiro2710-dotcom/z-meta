@@ -1,78 +1,162 @@
-# Z META — Contexto completo do projeto (para continuar em outro chat)
+# Z META — Documento de Contexto do Projeto
 
-> Cole este arquivo inteiro como primeira mensagem de um novo chat para retomar o desenvolvimento exatamente de onde parou.
+> **Como usar este documento:** cole o conteúdo abaixo como primeira mensagem em um novo chat com o Claude para retomar o trabalho no Z Meta com contexto completo. Este arquivo vive em `Z Meta/CONTEXTO_PROJETO.md` dentro da pasta do projeto e deve ser mantido atualizado ao final de cada sessão relevante. **Esta versão substitui integralmente qualquer versão anterior deste arquivo** — o projeto evoluiu muito desde os primeiros rascunhos de contexto (redesign do colaborador, tabela `employee_stage_prizes`, "estágios" do mês etc. são histórico morto, já removidos do sistema).
 
-## 1. O que é o projeto
+---
 
-**Z Meta** é um SaaS multi-tenant (Next.js 14 App Router + Supabase) para gestão de equipes de lojas de varejo, sendo construído por **Felipe dos Santos Ribeiro**, fundador da **FORGE GROUP** (holding com ZENITHBR — moda masculina premium, MOVA — produtos escaláveis/viral, Z FINANCE — fintech SaaS). O Z Meta é o produto de tecnologia interna do grupo, com objetivo final de **ser vendido para outras empresas** também (multi-tenant desde o início).
+## 1. O que é o Z Meta
 
-O sistema gerencia uma hierarquia de papéis dentro de cada empresa cliente:
-- **master_admin** — Felipe, dono do sistema, vê e gerencia tudo.
-- **sócio** — acesso cross-loja (múltiplas lojas de uma empresa), permissão "ver" ou "gerenciar" por loja via tabela `loja_access`.
-- **supervisor** — mesmo modelo do sócio (multi-loja, `loja_access`).
-- **gerente** — vinculado a UMA loja (`profiles.loja_id`), gerencia colaboradores dessa loja.
-- **colaborador** — vinculado a UMA loja, é quem bate metas, faz tarefas, recebe advertências.
+Z Meta é um SaaS de gestão de equipes de varejo (moda/atacado), multi-tenant, construído por **Felipe dos Santos Ribeiro**, fundador da **FORGE GROUP**. Ele organiza tarefas diárias, metas de vendas em camadas, comissionamento, advertências e premiações de colaboradores, gerentes, supervisores e sócios de empresas-cliente, com um painel de Master Admin no topo para operar o negócio como um todo (faturamento, cobrança por usuário cadastrado, saúde das lojas). O produto é pensado para ser vendido a outras empresas (multi-tenant desde a fundação).
 
-Ordem de rollout combinada com Felipe: **redesenhar a experiência de cada papel de baixo pra cima** — colaborador (mais simples, ACABOU DE SER FINALIZADO) → gerente (PRÓXIMO PASSO) → sócio/supervisor → master_admin.
+## 2. Stack técnica
 
-## 2. Stack técnico e infraestrutura
+- **Frontend/Backend:** Next.js 14 (App Router), JavaScript puro (sem TypeScript).
+- **Estilo:** Tailwind CSS. Fonte do app inteiro: **Inter**, auto-hospedada via `@fontsource/inter` (decisão deliberada — `next/font/google` falha no ambiente de build usado pra verificação, que não tem acesso à internet do Google Fonts; `@fontsource` resolve via npm e é mais robusto em produção também, sem dependência de CDN externo em runtime).
+- **Backend de dados:** Supabase (Postgres + Auth + RLS + Storage).
+  - **project_id:** `fjscwmrjkxgygdzwwrdh`
+- **Local do repositório no computador do Felipe:** `/Users/feliperibeiro/Desktop/Z Meta`
+- **Deploy:** Vercel a partir do `git push` na branch principal (o Claude nunca roda `git push` — ver seção 7).
+- **Login interno:** usuários entram com `username` + senha; internamente vira `email = ${username}@zmeta.local` no Supabase Auth.
 
-- **Next.js 14 App Router**, JavaScript (não TypeScript), Tailwind CSS.
-- **Deploy**: Vercel, conectado ao GitHub. Felipe roda `git add -A && git commit -m "..." && git push` ele mesmo no terminal dele depois que eu (Claude) verifico que o build passa. **Eu nunca faço o push** — só entrego os comandos prontos.
-- **Supabase**: Postgres + Auth + RLS (Row Level Security). Project ID: `fjscwmrjkxgygdzwwrdh`. Acesso via MCP tools (`mcp__<id>__execute_sql`, `apply_migration`, `list_tables`, `get_advisors`, etc. — nome do server prefixado com um UUID que muda por sessão, procurar via ToolSearch por "supabase" ou pelo nome das funções).
-- **Pasta conectada no Cowork**: `/Users/feliperibeiro/Desktop/Z Meta` (Read/Write/Edit tools usam esse path Mac direto; via `mcp__workspace__bash` o mesmo caminho aparece em `/sessions/.../mnt/Z Meta`).
-- **Login interno**: usuários usam `username` + senha; internamente vira `email = ${username}@zmeta.local` no Supabase Auth.
+## 3. Hierarquia de papéis (roles)
 
-### Workflow padrão de verificação ANTES de pedir push pro Felipe (sempre seguir esses passos):
-```bash
-rsync -a --exclude='.git' --exclude='node_modules' --exclude='.next' "/sessions/.../mnt/Z Meta/" /tmp/zmeta/
-cd /tmp/zmeta
-# se node_modules não existir:
-npm install --silent
-# recriar .env.local (não existe de verdade no sandbox, é normal):
-cat > .env.local <<'EOF'
-NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
-EOF
-npm run build 2>&1 | tail -40
 ```
-Depois, checar `.git/index.lock` (não deve existir) e `git status --short` na pasta real do projeto antes de dar as instruções de commit pro Felipe. O erro "supabaseUrl is required" durante o build é esperado no sandbox (falta de env var real) e não indica bug real — só recriar o `.env.local`.
-
-Sempre que eu mexer em schema/RLS do Supabase, rodar `get_advisors(type: "security")` depois pra confirmar que não introduzi um buraco de segurança novo (warnings pré-existentes sobre funções SECURITY DEFINER e o bucket `empresa-logos` são esperados/benignos, documentados abaixo).
-
-## 3. Modelo de dados (schema atual relevante)
-
-### Tabelas principais
-- `empresas` — empresas clientes (id, nome, cnpj, telefone, email, ativo, created_at, plano — campo plano não é mais exibido na UI).
-- `lojas` — lojas de uma empresa (id, empresa_id, nome, ativo).
-- `profiles` — perfis de usuário (id = auth.users.id, role em `['master_admin','socio','supervisor','gerente','colaborador']`, empresa_id, loja_id — null pra sócio/supervisor, full_name, username, must_change_password).
-- `loja_access` — permissões cross-loja de sócio/supervisor: `id, profile_id, loja_id, permission ('ver'|'gerenciar'), created_at`, unique(profile_id, loja_id).
-- `tasks` — tarefas ativas atribuídas a um colaborador (employee_id, loja_id, title, active).
-- `task_completions` — conclusão diária de tarefa (task_id, completion_date, completed, completed_at), unique(task_id, completion_date).
-- `warnings` — advertências (employee_id, loja_id, warning_date, reason, points).
-- `app_settings` — configurações por loja (loja_id, warning_penalty_points, team_threshold_pct, monthly_prize).
-- `stage_dynamics` — dinâmica de cada estágio do mês (month, stage_number 1/2/3, title, description, empresa_id, loja_id). Estágios: dias 1-10, 11-20, 21-fim do mês.
-- `sales_goals` — metas de venda da loja no mês (id, month, name, store_total, distribution_mode, empresa_id, loja_id, created_by).
-- `sales_goal_allocations` — meta individual por colaborador (goal_id, employee_id, amount, percentage, commission_pct numeric default 0, empresa_id, loja_id).
-- `sales_entries` — lançamento diário de venda (**IMPORTANTE: coluna é `daily_amount`, não `cumulative_amount`** — foi renomeada nesta sessão; representa o valor vendido NAQUELE dia específico, não acumulado). Campos: employee_id, entry_date, daily_amount, edited_by_manager, created_by, updated_by, empresa_id, loja_id. unique(employee_id, entry_date).
-- `employee_stage_prizes` (**NOVA, criada nesta sessão, ainda sem UI de lançamento**) — premiação que o gerente vai lançar por colaborador ao final de cada estágio: `id, employee_id, empresa_id, loja_id, month, stage_number (1/2/3), amount, note, created_by, updated_by, created_at, updated_at`, unique(employee_id, month, stage_number). RLS já criada (ver seção 3.2) mas **NÃO existe ainda nenhuma tela/form pra gerente lançar esse valor** — isso é a próxima conversa pendente com Felipe (ver seção 6).
-
-### 3.1 Funções helper de RLS (security definer, chamáveis por `authenticated`/`anon` — warnings esperados nos advisors)
-- `is_master_admin()`, `is_gerente()`, `is_socio()`, `is_supervisor()`
-- `my_loja_id()`, `my_empresa_id()`, `my_empresa_active()`
-- `can_view_loja(uuid)` = `is_master_admin() or (is_gerente() and my_loja_id()=p_loja) or exists(select 1 from loja_access where profile_id=auth.uid() and loja_id=p_loja)`
-- `can_manage_loja(uuid)` = igual, mas exige `permission='gerenciar'`
-
-### 3.2 Padrão de RLS usado em TODAS as tabelas operacionais (tasks, warnings, sales_goals, sales_goal_allocations, sales_entries, stage_dynamics, app_settings, task_completions, employee_stage_prizes)
-```sql
--- SELECT
-is_master_admin() OR employee_id = auth.uid() OR (is_gerente() AND loja_id = my_loja_id()) OR can_view_loja(loja_id)
--- WRITE (insert/update/delete, "ALL")
-is_master_admin() OR (is_gerente() AND loja_id = my_loja_id()) OR can_manage_loja(loja_id)
+master_admin  → dono do Z Meta (Felipe/FORGE GROUP). Vê e opera todas as empresas-cliente.
+   └── socio         → dono de uma empresa-cliente. Vê automaticamente TODAS as lojas da empresa (sem precisar de loja_access).
+         └── supervisor  → escopo definido por loja_access (linhas explícitas com permission "ver"/"gerenciar").
+               └── gerente     → dono de uma equipe dentro de uma loja (profiles.gerente_id aponta pra ele). Uma loja pode ter vários gerentes com equipes diferentes.
+                     └── colaborador → nível operacional. Marca tarefas, lança vendas, vê sua própria meta/comissão.
 ```
-Sempre seguir esse padrão exato ao criar tabela nova relacionada a colaborador/loja — já foi a causa de um bug real (RLS esquecida em algumas tabelas ao adicionar sócio/supervisor, corrigida na migration `loja_access_rls_operational_tables`).
 
-### 3.3 Técnica de simulação de RLS (útil pra debugar "por que esse usuário não vê X")
+Cada papel tem sua própria rota (`/colaborador`, `/gerente`, `/socio`, `/supervisor`, `/admin`), mas os quatro primeiros reaproveitam os **mesmos componentes de experiência completa**:
+
+| Papel | Componente reaproveitado | Onde mora |
+|---|---|---|
+| colaborador | `ColaboradorView` | `lib/ColaboradorView.js` |
+| gerente | `GerenteView` (dentro renderiza `EmpresaDashboard`) | `lib/GerenteView.js` |
+| sócio/supervisor | `HierarchyHome` (dentro renderiza `EmpresaDashboard` por loja selecionada) | `lib/HierarchyHome.js` |
+| loja (Placar/Colaboradores/Tarefas/Advertências/Premiações/Metas/Lançamentos) | `EmpresaDashboard` | `lib/EmpresaDashboard.js` |
+
+## 4. Padrão "Ver como" (view-as / impersonation)
+
+Usado extensivamente: gerente vê como um colaborador da própria equipe; supervisor/sócio veem como gerente ou colaborador das lojas sob gestão; **master_admin vê como qualquer usuário de qualquer nível**, inclusive sócio/supervisor.
+
+- `ColaboradorView({ profile, tab, viewedByManager, onBack })` e `GerenteView({ profile, tab, viewedBySupervisor, onBack })` recebem o `profile` da pessoa sendo visualizada e devem ser montados com `key={profile.id}` pra garantir estado limpo por pessoa.
+- `HierarchyHome({ role, impersonate, viewerProfile, onExitImpersonation })` — quando `impersonate` é passado (só usado pelo master_admin), a tela inteira vira a experiência daquele sócio/supervisor, com um banner dourado "Visualizando como Master Admin" no topo e botão de voltar.
+
+### ⚠️ Padrão de segurança de identidade (crítico — não regredir)
+
+O cabeçalho (`AppShell`) — nome, avatar e username exibidos em "Meu perfil" — **precisa SEMPRE representar quem está de fato logado**, nunca a pessoa sendo visualizada. A rota `/api/account/update-username` resolve o alvo pelo JWT real da sessão (`callerClient.auth.getUser(token)`), não por qualquer id vindo do cliente. Se o AppShell mostrasse a identidade da pessoa impersonada, "editar meu perfil" mudaria silenciosamente as credenciais reais do Master Admin.
+
+Implementação: dentro de `HierarchyHome.js` existem `shellName`, `shellId`, `shellUsername`, `shellAvatarUrl`, `shellOnNameChange`, `shellOnAvatarChange`, que caem para `viewerProfile.*` (e os callbacks viram `undefined`) somente quando `impersonate` é truthy. Em `app/admin/page.js`, todos os `<AppShell>` sempre usam `profile.*` do próprio master (nunca `viewingProfile.*`). **Qualquer nova tela que suporte impersonation precisa seguir esse mesmo padrão.** Esse foi um bug real já encontrado e corrigido numa varredura — não reintroduzir.
+
+## 5. Modelo de metas em camadas (não somam)
+
+As metas de uma loja/mês (`Meta`, `Super Meta`, `Hiper Meta`...) **não são cumulativas**. A meta "em jogo" é sempre o próximo nível ainda não batido; se todos os níveis já foram batidos, vale o último. Calculado por `currentGoalTarget(sortedTotals, sold)` em `lib/scoring.js`, usado em todo lugar que precisa saber "qual é a meta atual" (herocards de colaborador/gerente/sócio, cálculo de comissão). A comissão aplicada é a da **maior camada efetivamente atingida** (`achievedTier`), não da camada "em jogo". Essa foi uma correção crítica feita depois de um bug real (o sistema estava somando os níveis, o que inflava a meta).
+
+## 6. Estrutura de arquivos principais
+
+```
+app/
+  layout.js                  → RootLayout, importa fontes Inter (@fontsource) + globals.css.
+                                Exporta `metadata` (title/description/manifest/icons/appleWebApp)
+                                e `viewport` (width=device-width, initialScale=1, maximumScale=1,
+                                userScalable=false, viewportFit=cover, themeColor) — ver seção 8 (PWA).
+  page.js                    → redireciona pra rota certa conforme profile.role
+  login/page.js
+  colaborador/page.js        → busca profile, monta <AppShell><ColaboradorView/></AppShell>
+  gerente/page.js            → idem, com <GerenteView/>
+  socio/page.js               → idem, com <HierarchyHome role="socio"/>
+  supervisor/page.js          → idem, com <HierarchyHome role="supervisor"/>
+  admin/page.js                → PÁGINA GIGANTE (~2100 linhas). Início/Financeiro/Dados,
+                                  CRUD de empresas/lojas/usuários, view-as universal,
+                                  hierarquia de sócios/supervisores. Ver seção 9.
+  api/
+    account/update-username/route.js
+    admin/
+      create-empresa, create-loja, create-employee, create-gerente,
+      create-hierarchy, update-employee, delete-employee, delete-empresa,
+      hierarchy-access  (route.js em cada pasta)
+  globals.css                 → base Tailwind + utilitário .scrollbar-hide + overflow-x:hidden defensivo
+                                 + overscroll-behavior-y:none, -webkit-tap-highlight-color:transparent,
+                                 touch-action:manipulation em html/body (sensação de app nativo — ver seção 8)
+public/
+  manifest.json                → PWA manifest (name, display:"standalone", theme_color #7c3aed,
+                                  background_color #f5f3ee, ícones any + maskable)
+  icon-192.png / icon-512.png / icon-maskable-512.png / apple-touch-icon.png / favicon-32.png / favicon-16.png
+                                → gerados a partir do monograma de lib/Logo.js (círculos + seta, gradiente
+                                  purple→pink) sobre fundo arredondado (any) e fundo full-bleed (maskable)
+
+lib/
+  AppShell.js                 → header global (logo, avatar/nome, sair, nav de abas). Usado por TODAS as telas.
+  EditProfile.js               → dropdown "Meu perfil" (nome, username, foto de perfil, trocar senha)
+  ChangePassword.js
+  ColaboradorView.js
+  GerenteView.js
+  HierarchyHome.js             → sócio/supervisor + impersonation do master
+  EmpresaDashboard.js          → dashboard completo de uma loja (~1650 linhas), reaproveitado por
+                                  gerente/supervisor/sócio/master admin
+  DateNav.js / MonthNav.js     → navegação de dia/mês
+  ProgressBar.js / Led.js
+  scoring.js                   → calcIndividualPct, calcTeamPct, currentGoalTarget, formatBRL, formatPct, motivationalMessage
+  date.js                      → todayStr, firstDayOfMonth, remainingDaysInMonth, monthLabel, greeting, yesterdayStr
+  MaskedInputs.js               → CurrencyInput, CnpjInput, PhoneInput
+  Logo.js / Confetti.js
+  supabaseClient.js             → client anon (browser)
+  supabaseAdmin.js               → client service-role (só usado dentro de app/api/*)
+```
+
+## 7. Regras operacionais fixas (NÃO desviar)
+
+1. **Nunca rodar `git push`.** O Claude só verifica que o build passa e entrega ao Felipe um comando pronto pra colar: `git add -A && git commit -m "..." && git push`.
+2. **Fluxo de verificação de build:**
+   ```bash
+   rsync -a --delete --exclude node_modules --exclude .next --exclude .git "<pasta do projeto>/" ~/zmeta_build/
+   cd ~/zmeta_build && npm run build
+   ```
+   Procurar por `✓ Compiled successfully`. Erros de prerender do tipo `Error: supabaseUrl is required` na fase de "Generating static pages" são **esperados** nesse ambiente de sandbox (não existe `.env.local` ali) — não indicam regressão, desde que a compilação em si tenha sido bem-sucedida.
+3. **Se `package.json` mudar** (nova dependência): rodar `npm install` dentro de `~/zmeta_build` (por último, depois de já ter copiado os arquivos do repo pra lá) e então copiar o `package-lock.json` resultante de volta pro repositório real — senão o lockfile fica dessincronizado e quebra `npm ci` em produção. Cuidado com a ordem: um `rsync` do repo pra a pasta de build DEPOIS de rodar `npm install` sobrescreve o lockfile atualizado com o antigo — sempre `npm install` por último, e só então copiar o lockfile de volta.
+4. **Depois de qualquer mudança de schema/RLS/storage no Supabase**, rodar `get_advisors(type:"security")` e confirmar que não surgiu nenhum alerta novo. O conjunto de avisos abaixo é **esperado e benigno** (não mexer):
+   - `public_bucket_allows_listing` nos buckets `empresa-logos` e `avatars` (buckets públicos por design).
+   - `anon_security_definer_function_executable` / `authenticated_security_definer_function_executable` em todas as funções `admin_*`, `is_*`, `can_*`, `my_*`, `get_team_progress`, `prevent_gerente_edit_monthly_prize` — todas são `SECURITY DEFINER` mas verificam a role do caller internamente (`is_master_admin()` etc.) antes de fazer qualquer coisa, então o alerta do linter é um falso positivo conhecido.
+   - `auth_leaked_password_protection` desabilitado.
+5. **Master admin tem bypass de RLS** (`is_master_admin()`) em `empresas`, `loja_access`, `profiles`, `sales_entries`, `employee_prizes` — por isso várias ações do master em `app/admin/page.js` chamam o Supabase client diretamente (sem passar por `/api/admin/*`).
+6. **Padrão de RLS usado nas tabelas operacionais** (tasks, warnings, sales_goals, sales_goal_allocations, sales_entries, app_settings, task_completions, employee_prizes):
+   ```sql
+   -- SELECT
+   is_master_admin() OR employee_id = auth.uid() OR (is_gerente() AND loja_id = my_loja_id()) OR can_view_loja(loja_id)
+   -- WRITE (insert/update/delete)
+   is_master_admin() OR (is_gerente() AND loja_id = my_loja_id()) OR can_manage_loja(loja_id)
+   ```
+   Seguir esse padrão exato ao criar qualquer tabela nova ligada a colaborador/loja.
+7. **Inputs mascarados** (`lib/MaskedInputs.js`): `<CurrencyInput value={number|""} onChange={...} />` pode ter `value === 0` (falsy em JS) — nunca validar com `if (!value)`, sempre `if (value === "" || value === null || value === undefined)`. Já foi um bug real (bloqueava lançar venda zerada).
+
+## 8. Padrões de mobile-first estabelecidos (seguir em qualquer tela nova)
+
+Auditoria mobile completa foi feita em todo o app numa sessão recente. Convenções fixadas:
+
+- **Grids CSS com números/valores dinâmicos** (herocards de estatística) precisam de `min-w-0` no filho do grid + `break-words` no texto do valor + fonte reduzida em mobile (`text-lg sm:text-xl` ou `text-xl sm:text-3xl`, dependendo do contexto) — grid tracks não encolhem abaixo do conteúdo por padrão, diferente de flex.
+- **Linhas flex com texto dinâmico + botões de ação** (nome de pessoa + badges + editar/excluir) levam `flex-wrap gap-2` como padrão de segurança, mesmo que `flex-shrink` já ajude na maioria dos casos.
+- **Tabelas** (`<table>`) sempre dentro de `<div className="card overflow-x-auto">`.
+- **Dropdowns/popovers posicionados com `absolute right-0`** levam `max-w-[calc(100vw-1.5rem)]` pra nunca vazar da viewport em telas de 320-360px.
+- **Nav de abas do `AppShell`** usa `overflow-x-auto scrollbar-hide` com cada botão de aba em `shrink-0 whitespace-nowrap` — importante porque sócio chega a ter 5 abas (Início/Metas/Rankings/Faturamento/Supervisores).
+- **O círculo de avatar/iniciais do header nunca deve ficar `hidden` em telas pequenas** — é o único gatilho visível pra abrir "Meu perfil" (bug real já corrigido uma vez, não reintroduzir).
+- Utilitário `.scrollbar-hide` e `overflow-x: hidden` defensivo no `html, body` vivem em `app/globals.css`.
+- **PWA / sensação de app nativo (fixado nesta sessão):** antes desta correção o app não tinha `public/manifest.json`, nenhum ícone e nenhuma meta viewport explícita — por isso o PWA instalado abria com zoom errado e com a barra de navegação do navegador visível (Android/iOS tratavam o "Adicionar à tela de início" como um bookmark comum, não como app instalável). Corrigido com: `export const viewport` em `app/layout.js` (width=device-width, initialScale=1, maximumScale=1, userScalable=false, viewportFit=cover), `manifest.json` com `display: "standalone"`, `appleWebApp: { capable: true, statusBarStyle: "black-translucent" }` no `metadata`, e `overscroll-behavior-y: none` + `-webkit-tap-highlight-color: transparent` + `touch-action: manipulation` em `html, body` no `globals.css` (elimina o "bounce" de scroll de navegador e o flash cinza de toque). **Importante: PWAs já instalados no celular do Felipe precisam ser removidos da tela de início e reinstalados (`Adicionar à Tela de Início` de novo) depois do deploy** — o modo de exibição (`standalone`) e os ícones são capturados no momento da instalação, não são aplicados retroativamente a um ícone já instalado.
+
+## 9. Banco de dados — visão geral
+
+**Tabelas principais:** `profiles` (id, full_name, role, active, username, empresa_id, loja_id, gerente_id, must_change_password, avatar_url), `empresas` (id, name, cnpj, telefone, email, logo_url, active, plano, valor_por_usuario, desconto, created_at), `lojas`, `sales_goals` (metas em camadas, por loja/mês), `sales_goal_allocations` (meta individual por colaborador), `sales_entries` (**coluna `daily_amount`** — valor vendido NAQUELE dia, não acumulado), `employee_prizes` (premiação livre por colaborador/mês — pode haver várias por mês), `warnings`, `tasks`, `task_completions`, `commission_settings`, `app_settings`, `loja_access`.
+
+> Nota histórica: a tabela `employee_stage_prizes` (premiação "por estágio do mês") e o conceito de "estágios" (dias 1-10/11-20/21-fim) que apareciam em rascunhos antigos deste documento **foram removidos do sistema**. O modelo atual de premiação é `employee_prizes`, simples, sem noção de estágio, lançado livremente pelo supervisor/master_admin.
+
+**RPCs principais:** `admin_overview()`, `admin_lojas_health(p_month)`, `admin_financeiro(p_month)`, `admin_faturamento_mensal(p_empresa_id)`, `admin_delete_empresa(p_empresa)`, `get_team_progress(p_month, p_loja)`, `is_master_admin()` / `is_socio()` / `is_supervisor()` / `is_gerente()`, `can_view_loja()` / `can_manage_loja()`, `is_my_team_member()`.
+
+**Storage buckets:**
+- `empresa-logos` — público, só master_admin escreve.
+- `avatars` — público (leitura), cada usuário só escreve/edita/apaga dentro da própria pasta (`{uid}/avatar.ext`), master_admin com bypass.
+
+### Técnica de simulação de RLS (útil pra debugar "por que esse usuário não vê X")
 ```sql
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub','<uuid-do-usuario>','role','authenticated')::text, true);
@@ -80,68 +164,77 @@ select set_config('request.jwt.claims', json_build_object('sub','<uuid-do-usuari
 ```
 Rodar cada verificação como uma chamada separada de `execute_sql` — múltiplos statements com `;` só retornam confiavelmente o último result set.
 
-## 4. Design tokens
-- Navy `#12203a` (texto principal), gold `#c9a15a`/goldlight `#e4c789`, purple `#7c3aed`, pink `#ec4899` (gradiente principal purple→pink em botões/gradient-text), verde (gerente) `#16a34a`/`#4ade80`, lilás (colaborador) `#a78bfa`/`#ddd6fe`, prata (sócio) `#9ca3af`/`#e5e7eb`, azul (supervisor) `#2563eb`/`#60a5fa`, teal `#0d9488`.
-- Hero cards de cada papel usam gradiente próprio (ex: colaborador usa `linear-gradient(135deg, #a78bfa 0%, #ddd6fe 100%)`).
+## 10. Design tokens
 
-### 4.1 CSS — bug recorrente já corrigido na raiz
-Classes customizadas (`.input`, `.btn`, `.btn-outline`, `.card`, `.label`, `.badge`) em `app/globals.css` foram envolvidas em `@layer components { ... }`. Antes disso, `.label` (que tem `display:block`) vencia utilities `flex`/`inline-flex` aplicadas junto na mesma className, quebrando ícone+texto em duas linhas. **Se esse bug aparecer de novo em algum lugar, é porque uma classe nova foi adicionada FORA do `@layer components` — sempre colocar dentro dele.**
+Navy `#12203a` (texto principal), gold `#c9a15a`/goldlight `#e4c789`, purple `#7c3aed`, pink `#ec4899` (gradiente principal purple→pink em botões/gradient-text), verde (gerente) `#16a34a`/`#4ade80`, lilás (colaborador) `#a78bfa`/`#ddd6fe`, prata (sócio) `#94a3b8`/`#cbd5e1`, azul (supervisor) `#2563eb`/`#60a5fa`, teal `#0d9488`/`#5eead4`.
 
-## 5. Inputs mascarados (`lib/MaskedInputs.js`)
-- `maskCNPJ` / `<CnpjInput>` — formata `00.000.000/0000-00` incrementalmente.
-- `maskPhone` / `<PhoneInput>` — formata `(00) 00000-0000`.
-- `<CurrencyInput value={number|""} onChange={(number|"")=>{}} />` — prefixo "R$" fixo, mascara da direita pra esquerda em centavos, `toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2})`. **Cuidado**: `value` pode ser `0` (número), que é falsy em JS — nunca validar com `if (!value)`, sempre `if (value === "" || value === null || value === undefined)`. Esse foi um bug real corrigido nesta sessão (bloqueava lançar venda zerada).
+**Bug de CSS recorrente já corrigido na raiz:** classes customizadas (`.input`, `.btn`, `.btn-outline`, `.card`, `.label`, `.badge`) em `app/globals.css` precisam estar dentro de `@layer components { ... }`. Fora disso, `.label` (que tem `display:block`) vence utilities `flex`/`inline-flex` aplicadas junto na mesma className, quebrando ícone+texto em duas linhas. Se esse bug reaparecer, é porque uma classe nova foi adicionada fora do `@layer components`.
 
-## 6. Estado atual — o que ACABOU DE SER FINALIZADO (colaborador)
+## 11. Histórico completo de features já construídas
 
-A tela do colaborador (`app/colaborador/page.js`) foi totalmente redesenhada nesta sessão:
+### Fundação e comissionamento
+- Comissão em camadas (colaborador/gerente + taxa de "não atingimento"), metas como níveis não-cumulativos (correção crítica, ver seção 5).
+- RLS revisado e restrito por papel em várias rodadas; padrão fixado na seção 7.6.
 
-1. Aba "Atividades" renomeada pra **"Início"** (key interna continua `atividades`).
-2. Modelo de venda mudou de acumulado pra **delta diário**: colaborador lança quanto vendeu NO DIA anterior (`daily_amount`), sistema calcula o acumulado do mês somando as linhas.
-3. **Meta diária calculada automaticamente**: `metaDoMes` (soma das alocações de meta do colaborador) − `soldSoFar` (soma de daily_amount no mês) ÷ dias restantes no mês (contando hoje).
-4. **Comissão** (`commission_pct` em `sales_goal_allocations`, definida pelo gerente por meta/colaborador): sistema calcula média ponderada quando há múltiplas metas, e `comissão até agora = vendido no mês × comissão%`.
-5. **Hero card** ("Meta de hoje") tem 5 métricas: meta diária (número grande), falta pra meta do mês, dias restantes no mês, atividades pendentes, comissão até agora, **e agora também Premiações** (soma de `employee_stage_prizes` do mês — hoje sempre R$0,00 porque ainda não existe UI pro gerente lançar).
-6. Aba "Metas" tem cards por meta individual, cada um mostrando: progresso, "Meta de hoje" (valor diário daquela meta específica) **e, ao lado, "Falta pra bater"** (quanto falta em R$ pra bater aquela meta específica) — adicionado nesta sessão. Grid só vira 2 colunas quando há mais de 1 meta (senão o card fica esticado ocupando a largura toda).
-7. Nova seção "Registros do mês" — tabela com data / vendido no dia / acumulado no mês (ledger correndo).
-8. Lançamento de venda agora aceita **valor zero** (colaborador pode não ter vendido nada no dia).
-9. Removido o valor em R$ do prêmio mensal da equipe no card "Barra geral da equipe" (só mostra a mensagem de status, sem expor o valor).
+### Colaborador
+- Herocard com meta do dia, falta pra meta do mês, dias restantes no mês, atividades pendentes, comissão até agora, premiações.
+- Checklist de tarefas com navegação por dia (`DateNav`), lançamento de venda (data sempre hoje, exceto correções feitas por gestor), aceita valor zero.
+- Dashboards de metas do mês com barra de progresso por nível + "falta pra bater" por meta.
+- Modal de parabéns/confete ao completar 100% das tarefas do dia (sem streak/foguinho — feature removida a pedido do Felipe).
 
-Todas essas mudanças já foram testadas com build limpo e estão prontas pra Felipe dar `git push` (ele mesmo faz).
+### Gerente
+- Herocard agregado da equipe (não da loja inteira — `gerente_id` escopa "minha equipe", já que uma loja pode ter vários gerentes com equipes diferentes).
+- Pode ver como qualquer colaborador da própria equipe.
+- Dashboard "Metas da loja" (read-only) e "Comissionamentos".
+- Painel pessoal (tarefas/advertências/premiações atribuídas a ele mesmo pelo supervisor).
 
-### 6.1 Pendência explícita, NÃO resolvida — Premiações por estágio
-Felipe pediu pra adicionar "Premiações" no hero card do colaborador, mas disse explicitamente: **"essa premiação é o gerente que vai lançar ao final de cada estágio, já já vamos falar mais sobre isso"**. Ou seja:
-- Criei a tabela `employee_stage_prizes` com RLS completa (ver seção 3) pra já deixar o dado real fluindo quando a feature for construída.
-- **NÃO construí** nenhuma tela/formulário pro gerente lançar o valor da premiação por estágio — isso é conversa em aberto, a ser retomada quando entrarmos na fase do gerente.
-- Perguntas que provavelmente precisam ser esclarecidas com Felipe quando essa conversa continuar: a premiação é um valor fixo por estágio batido (meta do estágio) ou livre/arbitrário do gerente? É por colaborador individual ou dividido pela equipe? Tem alguma regra de quando ela é liberada (ex: só se bateu a meta do estágio)? Vai aparecer em algum lugar pro gerente ver quanto já lançou/quanto falta lançar no mês?
+### Supervisor / Sócio (`HierarchyHome`)
+- Sócio vê automaticamente todas as lojas da empresa (sem precisar de `loja_access`); supervisor só as lojas com acesso explícito.
+- Seletor de loja + seletor de mês no topo.
+- Abas: Início, Metas, Rankings (top vendedores / mais premiados / melhor barra / mais comissionados), Faturamento (por loja), e — só pra sócio — Supervisores (cadastro e gestão de acesso).
+- Pode ver como qualquer gerente/colaborador das lojas sob gestão.
 
-## 7. Funcionalidade recusada (ainda em aberto, sem follow-up do Felipe)
-Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Isso foi recusado explicitamente por mim com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade LGPD — ainda mais relevante porque o Z Meta será vendido pra outras empresas). Ofereci uma alternativa (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa) — **essa alternativa foi proposta mas nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
+### Master Admin (`app/admin/page.js`)
+- Abas: **Início** (visão geral: empresas ativas, usuários cadastrados, novas empresas, empresas esquecidas + gráfico de crescimento + form colapsável "Nova empresa" + lista de empresas com busca/ordenação), **Financeiro** (cobrança por empresa: usuários cadastrados × valor por usuário − desconto = quanto cobrar, editável), **Dados** (faturamento/usuários/premiações/lojas por empresa, com drill-down pra histórico mensal completo de faturamento por período, com presets 3/6/12 meses/tudo).
+- **Ver como qualquer usuário** de qualquer nível hierárquico (colaborador/gerente via componentes existentes; sócio/supervisor via `HierarchyHome` com `impersonate`).
+- Dashboard "Sócios e Supervisores" por empresa: vincular/desvincular lojas, ver colaboradores sob gestão, editar/resetar senha.
+- Upload de logo por empresa (`EmpresaAvatar`).
 
-## 8. Estrutura de arquivos-chave
+### Perfil e conta
+- **Foto de perfil pra todos os níveis** (bucket `avatars`, upload no dropdown "Meu perfil", exibida no círculo do header).
+- Fonte do app trocada pra **Inter** (self-hosted via `@fontsource/inter`).
 
-- `app/admin/page.js` (~1400+ linhas) — painel do master_admin. Lista de empresas → clique leva pra página de detalhe da empresa (`EmpresaDetail`, componente interno) com dados editáveis (nome, CNPJ, telefone, email — usando os inputs mascarados), botão único "Cadastrar novo usuário" com seletor de 4 papéis (sócio/supervisor/gerente/colaborador), lista de hierarquia (sócios/supervisores com badges clicáveis de permissão ver↔gerenciar por loja) e lista de lojas.
-- `app/colaborador/page.js` — ver seção 6.
-- `app/gerente/page.js` + `lib/EmpresaDashboard.js` — painel do gerente (ainda no formato antigo, **próximo alvo do redesign**). `EmpresaDashboard.js` tem os componentes `Metas` (definir metas e comissão por colaborador) e `Lancamentos` (gerente corrige/lança venda de qualquer colaborador da loja).
-- `lib/HierarchyHome.js` — usado por `/socio` e `/supervisor`, mostra visão combinada de TODAS as lojas que o usuário tem acesso (scoreboard geral, barra combinada, tabela de colaboradores de todas as lojas juntas).
-- `lib/MaskedInputs.js` — inputs de CNPJ/telefone/moeda (seção 5).
-- `lib/date.js` — helpers de data (`todayStr`, `yesterdayStr`, `firstDayOfMonth`, `remainingDaysInMonth`, `stageNumberForDate`, `monthLabel`, `greeting`, timezone fixo `America/Sao_Paulo`).
-- `lib/scoring.js` — `calcIndividualPct`, `calcTeamPct`, `formatBRL`, `formatPct`, `motivationalMessage`.
-- `lib/ProgressBar.js`, `lib/AppShell.js`, `lib/ChangePassword.js`, `lib/EditProfile.js`, `lib/Confetti.js`, `lib/generateUsername.js` (`resolveUsername` — valida/normaliza username escolhido no cadastro, com fallback pra auto-geração).
-- `app/api/admin/create-gerente/route.js`, `create-employee/route.js`, `create-hierarchy/route.js` (sócio/supervisor), `update-employee/route.js`, `create-empresa/route.js`, `create-loja/route.js`, `delete-employee/route.js`, `delete-empresa/route.js` — todas master-admin-only, todas aceitam `username` opcional.
-- `app/globals.css` — ver seção 4.1.
+### Varredura geral de bugs (sweep completo)
+Auditoria de todas as páginas/papéis/rotas de API/RLS já foi feita. Dois bugs reais foram encontrados e corrigidos (ambos em `HierarchyHome.js`, ligados à feature de impersonation do master): vazamento de identidade no header durante impersonation (ver seção 4), e aba Supervisores quebrada quando acessada via impersonation (faltava `empresaId` no payload da API).
 
-## 9. Próximo passo combinado com Felipe
+### Otimização mobile (mais recente)
+Auditoria completa de responsividade em todo o app — ver seção 8 pros padrões fixados. Bugs reais corrigidos: avatar do header invisível em mobile (`hidden sm:flex` no gatilho de "Meu perfil"), nav de abas sem scroll horizontal, herocards com risco de overflow em telas estreitas (grids CSS sem `min-w-0`), dropdowns sem clamp de largura (`w-80`/`w-56` vazando em telas de 320px).
 
-**Redesenhar a experiência do GERENTE**, seguindo o mesmo espírito do redesign do colaborador (simplificar, deixar cálculos automáticos, hero card claro com as métricas mais importantes). Pontos que provavelmente vão entrar nessa conversa:
-- Tela de definir metas + comissão por colaborador (já existe em `lib/EmpresaDashboard.js`, componente `Metas` — avaliar se o fluxo atual é bom o suficiente ou precisa de UX melhor).
-- Tela de lançar/corrigir venda de colaboradores (componente `Lancamentos` — já aceita valor zero corretamente, criado antes desta sessão).
-- **A conversa pendente da seção 6.1**: como o gerente vai lançar a premiação por estágio de cada colaborador (tabela `employee_stage_prizes` já existe e está com RLS pronta, só falta a UI e as regras de negócio).
-- Advertências, tarefas atribuídas aos colaboradores, visão geral da loja (colaboradores, % da equipe, etc.) — avaliar se o dashboard atual do gerente já está bom ou precisa do mesmo tipo de revisão.
+### PWA — manifest, ícones e viewport (sessão mais recente)
+O app nunca teve `public/manifest.json` nem ícones — o "PWA" instalado por Felipe era, na prática, um bookmark do navegador. Dois bugs reais corrigidos, ver seção 8 pro detalhe técnico completo:
+1. **Zoom incorreto ao abrir** — não havia `export const viewport` em `app/layout.js`. Adicionado com `initialScale: 1, maximumScale: 1, userScalable: false, viewportFit: "cover"`.
+2. **Barra de navegador visível em vez de tela cheia** — sem manifest com `display: "standalone"` e sem `appleWebApp` no `metadata`, tanto Android quanto iOS tratam "Adicionar à Tela de Início" como atalho comum. Criado `public/manifest.json` (ícones 192/512/maskable-512 gerados a partir do monograma de `lib/Logo.js`) + `apple-touch-icon.png` + `manifest`/`icons`/`appleWebApp` em `metadata`.
+Bônus de sensação nativa: `overscroll-behavior-y: none`, `-webkit-tap-highlight-color: transparent`, `touch-action: manipulation` em `html, body` (`globals.css`) — elimina bounce de scroll estilo navegador e o flash cinza ao tocar em botões.
+**Pendência do lado do Felipe:** reinstalar o PWA (remover da tela de início + "Adicionar à Tela de Início" de novo) depois do deploy, já que ícone/modo de exibição não atualizam num atalho já instalado.
 
-Depois do gerente, seguir pra sócio/supervisor (o combinado cross-loja já foi feito, mas talvez precise de ajustes visuais no mesmo espírito) e por último master_admin.
+## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
-## 10. Convenções de comunicação com o Felipe
+Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
+
+## 13. Coisas a saber / possíveis próximos passos
+
+- O app não tem testes automatizados — toda verificação é manual (build + leitura de código + advisors do Supabase).
+- Não há ambiente de staging conectado ao Claude — a única verificação local possível é `npm run build` num diretório sandbox; teste visual real em dispositivo mobile depende do Felipe abrir o app depois do deploy.
+- A auditoria mobile foi 100% estática (leitura de código + padrões defensivos de CSS) — não houve captura de tela real de um dispositivo físico. Vale pedir pro Felipe testar em um iPhone/Android real e reportar qualquer quebra visual específica.
+- Não há CHANGELOG nem versionamento semântico — o controle de progresso vem sendo feito via lista de tarefas da sessão do Claude (efêmera) e mensagens de commit. **Este documento (`CONTEXTO_PROJETO.md`) é a fonte de verdade persistente.**
+
+## 14. Convenções de comunicação com o Felipe
+
 - Felipe é direto, não gosta de burocracia nem textão. Respostas devem ser objetivas, sem enrolação.
-- Ele pede pra eu ser crítico e apontar pontos fracos/cegos, não só concordar — mas isso é mais sobre estratégia de negócio do que sobre este projeto técnico especificamente.
-- Ele mesmo roda os comandos de git (`add`/`commit`/`push`) — eu só entrego prontos pra copiar/colar depois de verificar o build.
-- Sempre que uma correção de bug for na verdade um padrão repetido em vários lugares do código (como o bug do CSS), vale a pena resolver na raiz e avisar quantos lugares isso afeta, em vez de corrigir só o caso reportado.
+- Ele pede pra ser tratado com espírito crítico — apontar pontos fracos/cegos, não só concordar (mais relevante em decisões de negócio/estratégia do que neste projeto técnico especificamente, mas vale mesmo aqui: se uma solicitação tiver um jeito melhor de ser feita tecnicamente, dizer isso antes de simplesmente executar).
+- Ele mesmo roda os comandos de git (`add`/`commit`/`push`) — o Claude só entrega prontos pra copiar/colar depois de verificar o build.
+- Quando uma correção de bug for na verdade um padrão repetido em vários lugares do código (como o bug do CSS ou o padrão de RLS), vale resolver na raiz/no componente compartilhado e avisar quantos lugares isso afeta, em vez de corrigir só o caso reportado.
+
+---
+
+**Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.

@@ -14,6 +14,11 @@ html, body {
      surgir uma barra de rolagem lateral na página inteira */
   overflow-x: hidden;
   width: 100%;
+  /* sensação de app nativo no PWA instalado: sem "elastic bounce" de página do
+     navegador ao puxar pra baixo/lados, sem flash cinza de tap, sem delay de toque */
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 * {
