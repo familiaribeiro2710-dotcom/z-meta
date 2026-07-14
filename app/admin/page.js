@@ -703,7 +703,7 @@ function FinanceiroTab() {
     });
     const ticketEmpresa = rows.length ? receita / rows.length : 0;
     const ticketUsuario = usuarios ? receita / usuarios : 0;
-    return { receita, colaboradores, ticketEmpresa, ticketUsuario };
+    return { receita, colaboradores, usuarios, ticketEmpresa, ticketUsuario };
   }, [rows]);
 
   async function saveRow(empresaId, valorPorUsuario, desconto) {
