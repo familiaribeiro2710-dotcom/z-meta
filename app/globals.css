@@ -14,11 +14,12 @@ html, body {
      surgir uma barra de rolagem lateral na página inteira */
   overflow-x: hidden;
   width: 100%;
-  /* sensação de app nativo no PWA instalado: sem "elastic bounce" de página do
-     navegador ao puxar pra baixo/lados, sem flash cinza de tap, sem delay de toque */
-  overscroll-behavior-y: none;
+  /* sensação de app nativo no PWA instalado: sem flash cinza ao tocar em botões.
+     Removido daqui: overscroll-behavior-y e touch-action — travavam o scroll
+     vertical inteiro da página no PWA instalado no Android (bug conhecido do
+     Chrome/WebView quando essas props ficam no elemento raiz de scroll). Não
+     reintroduzir sem testar explicitamente em Android de verdade. */
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 
 * {
