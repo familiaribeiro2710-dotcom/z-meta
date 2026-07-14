@@ -480,6 +480,10 @@ Felipe reportou que a "Barra geral da equipe — Julho de 2026" mostrava 96,7% m
    - **Exceção cuidadosa em `HierarchyHome.js`:** o aviso "Você tem apenas visualização nessa loja" (pra supervisor com permissão só de ver) foi deixado **fora** do bloco `atSub === "placar"` — ele é relevante em qualquer sub-aba (é justamente nas sub-abas de edição, tipo Colaboradores/Tarefas, que essa informação mais importa), então continua aparecendo em todas.
 **Build verificado:** `✓ Compiled successfully`. `get_advisors(security)` rodado depois de tudo — mesma baseline conhecida, sem alertas novos (inclusive confirmado que sobrou só 1 versão de `get_team_progress` depois do `DROP FUNCTION`).
 
+### "Barra do mês" renomeada para "Barra Individual"
+Título do card de barra individual do colaborador (`ColaboradorView.js`, ao lado da "Barra Geral de Atividades" renomeada na sessão anterior) trocado de "Barra do mês" pra "Barra Individual" — só o texto, sem mudança de cálculo. Único lugar do app com esse título.
+**Build verificado:** `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
