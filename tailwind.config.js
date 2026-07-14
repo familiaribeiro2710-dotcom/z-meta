@@ -28,7 +28,7 @@ module.exports = {
         lime: "#84cc16",
       },
       fontFamily: {
-        sans: ["Helvetica Neue", "Arial", "sans-serif"],
+        sans: ["Inter", "Helvetica Neue", "Arial", "sans-serif"],
       },
       boxShadow: {
         soft: "0 2px 10px rgba(18,32,58,0.06)",
