@@ -13,7 +13,7 @@ import {
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
-import EmpresaDashboard from "../../lib/EmpresaDashboard";
+import EmpresaDashboard, { EMPRESA_TABS } from "../../lib/EmpresaDashboard";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, remainingDaysInMonth } from "../../lib/date";
 
@@ -21,6 +21,7 @@ export default function GerentePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const [tab, setTab] = useState("atividades");
   const [lojaName, setLojaName] = useState("");
   const [hero, setHero] = useState({ metaLoja: 0, soldLoja: 0, pendingToday: 0, commissionSoFar: 0, prizesSoFar: 0, commissionPct: 0, commissionTierLabel: "não atingimento" });
   const greet = greeting();
@@ -157,52 +158,59 @@ export default function GerentePage() {
       userId={profile.id}
       userUsername={profile.username}
       onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+      tabs={EMPRESA_TABS}
+      activeTab={tab}
+      onTabChange={setTab}
     >
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-navy flex items-center gap-2">
-          <greet.Icon size={20} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
-        </h1>
+        {tab === "atividades" && (
+          <>
+            <h1 className="text-xl font-bold text-navy flex items-center gap-2">
+              <greet.Icon size={20} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
+            </h1>
 
-        <div
-          className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
-          style={{ background: "linear-gradient(135deg, #16a34a 0%, #4ade80 100%)", boxShadow: "0 10px 28px rgba(22,163,74,0.35)" }}
-        >
-          <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/15" />
-          <div className="relative flex items-center gap-2 mb-3">
-            <Store size={18} className="text-white" />
-            <span className="text-xs font-bold uppercase tracking-wider text-white">Meta de hoje · {lojaName || "sua loja"}</span>
-          </div>
-          <p className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(dailyGoal)}</p>
-          <p className="relative text-xs font-semibold text-white/80 mt-1">pra bater a meta da loja nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
+            <div
+              className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
+              style={{ background: "linear-gradient(135deg, #16a34a 0%, #4ade80 100%)", boxShadow: "0 10px 28px rgba(22,163,74,0.35)" }}
+            >
+              <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/15" />
+              <div className="relative flex items-center gap-2 mb-3">
+                <Store size={18} className="text-white" />
+                <span className="text-xs font-bold uppercase tracking-wider text-white">Meta de hoje · {lojaName || "sua loja"}</span>
+              </div>
+              <p className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(dailyGoal)}</p>
+              <p className="relative text-xs font-semibold text-white/80 mt-1">pra bater a meta da loja nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
 
-          <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-white/25">
-            <div>
-              <p className="text-xl font-extrabold text-white">{formatBRL(restoDaMeta)}</p>
-              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Rocket size={11} /> Falta pra meta do mês</p>
+              <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-white/25">
+                <div>
+                  <p className="text-xl font-extrabold text-white">{formatBRL(restoDaMeta)}</p>
+                  <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Rocket size={11} /> Falta pra meta do mês</p>
+                </div>
+                <div>
+                  <p className="text-xl font-extrabold text-white">{remaining}</p>
+                  <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><CalendarClock size={11} /> Dias restantes no mês</p>
+                </div>
+                <div>
+                  <p className="text-xl font-extrabold text-white">{hero.pendingToday}</p>
+                  <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><ListTodo size={11} /> Atividades pendentes</p>
+                </div>
+                <div>
+                  <p className="text-xl font-extrabold text-white">{formatBRL(hero.commissionSoFar)}</p>
+                  <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Coins size={11} /> Comissão até agora</p>
+                  {hero.metaLoja > 0 && (
+                    <p className="text-[10px] text-white/70 mt-0.5">{hero.commissionPct}% · {hero.commissionTierLabel}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xl font-extrabold text-white">{formatBRL(hero.prizesSoFar)}</p>
+                  <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Gift size={11} /> Premiações</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-xl font-extrabold text-white">{remaining}</p>
-              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><CalendarClock size={11} /> Dias restantes no mês</p>
-            </div>
-            <div>
-              <p className="text-xl font-extrabold text-white">{hero.pendingToday}</p>
-              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><ListTodo size={11} /> Atividades pendentes</p>
-            </div>
-            <div>
-              <p className="text-xl font-extrabold text-white">{formatBRL(hero.commissionSoFar)}</p>
-              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Coins size={11} /> Comissão até agora</p>
-              {hero.metaLoja > 0 && (
-                <p className="text-[10px] text-white/70 mt-0.5">{hero.commissionPct}% · {hero.commissionTierLabel}</p>
-              )}
-            </div>
-            <div>
-              <p className="text-xl font-extrabold text-white">{formatBRL(hero.prizesSoFar)}</p>
-              <p className="text-[11px] font-semibold text-white/80 mt-0.5 flex items-center gap-1"><Gift size={11} /> Premiações</p>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
-        <EmpresaDashboard lojaId={profile.loja_id} empresaId={profile.empresa_id} viewerRole="gerente" />
+        <EmpresaDashboard lojaId={profile.loja_id} empresaId={profile.empresa_id} viewerRole="gerente" tab={tab} />
       </div>
     </AppShell>
   );

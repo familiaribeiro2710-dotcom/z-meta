@@ -34,7 +34,7 @@ import {
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
-import EmpresaDashboard from "../../lib/EmpresaDashboard";
+import EmpresaDashboard, { EMPRESA_TABS } from "../../lib/EmpresaDashboard";
 import { CnpjInput, PhoneInput } from "../../lib/MaskedInputs";
 import { greeting, todayStr, firstDayOfMonth } from "../../lib/date";
 
@@ -57,6 +57,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedLoja, setSelectedLoja] = useState(null);
+  const [lojaTab, setLojaTab] = useState("atividades");
   const [selectedEmpresaDetail, setSelectedEmpresaDetail] = useState(null);
 
   const [empresaName, setEmpresaName] = useState("");
@@ -248,7 +249,7 @@ export default function AdminPage() {
             lojaAccess={lojaAccess}
             onBack={() => setSelectedEmpresaDetail(null)}
             onChanged={loadAll}
-            onOpenLojaDados={setSelectedLoja}
+            onOpenLojaDados={(l) => { setLojaTab("atividades"); setSelectedLoja(l); }}
             onToggleActive={toggleEmpresaActive}
             onDelete={deleteEmpresa}
           />
@@ -266,6 +267,9 @@ export default function AdminPage() {
         userId={profile.id}
         userUsername={profile.username}
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+        tabs={EMPRESA_TABS}
+        activeTab={lojaTab}
+        onTabChange={setLojaTab}
       >
         <div className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -277,7 +281,7 @@ export default function AdminPage() {
               ← Voltar para empresas
             </button>
           </div>
-          <EmpresaDashboard lojaId={selectedLoja.lojaId} empresaId={selectedLoja.empresaId} viewerRole="master_admin" />
+          <EmpresaDashboard lojaId={selectedLoja.lojaId} empresaId={selectedLoja.empresaId} viewerRole="master_admin" tab={lojaTab} />
         </div>
       </AppShell>
     );
