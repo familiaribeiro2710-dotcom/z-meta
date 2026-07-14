@@ -920,8 +920,8 @@ function DadosTab() {
                   <p className="text-navy font-bold break-words">{formatBRL(r.faturamento)}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-muted">Colaboradores</p>
-                  <p className="text-navy font-bold">{r.colaboradores_count}</p>
+                  <p className="text-[11px] text-muted">Usuários</p>
+                  <p className="text-navy font-bold">{r.usuarios_count}</p>
                 </div>
                 <div className="min-w-0">
                   <p className="text-[11px] text-muted">Premiações pagas</p>
