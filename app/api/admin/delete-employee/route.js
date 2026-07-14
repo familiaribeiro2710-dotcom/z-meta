@@ -52,11 +52,16 @@ export async function POST(req) {
       .eq("id", employeeId)
       .single();
 
-    if (!target || target.role !== "colaborador") {
-      return NextResponse.json({ error: "Colaborador não encontrado." }, { status: 404 });
+    if (!target || !["colaborador", "gerente"].includes(target.role)) {
+      return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
     }
-    if (isGerente && target.gerente_id !== callerProfile.id) {
+    // gerente só exclui colaboradores da própria equipe — nunca outro gerente
+    if (isGerente && (target.role !== "colaborador" || target.gerente_id !== callerProfile.id)) {
       return NextResponse.json({ error: "Esse colaborador não pertence à sua equipe." }, { status: 403 });
+    }
+    // excluir um gerente só pode master admin, supervisor ou sócio (nunca outro gerente)
+    if (target.role === "gerente" && !isMasterAdmin && !isHierarquia) {
+      return NextResponse.json({ error: "Apenas supervisor, sócio ou Master Admin podem excluir um gerente." }, { status: 403 });
     }
     if (isHierarquia) {
       const { data: access } = await callerClient
