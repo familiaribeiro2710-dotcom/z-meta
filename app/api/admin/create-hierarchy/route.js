@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { resolveUsername } from "../../../../lib/generateUsername";
 
 const ALLOWED_ROLES = ["socio", "supervisor"];
+const DEFAULT_PASSWORD = "123456789";
 
 export async function POST(req) {
   try {
@@ -30,21 +31,33 @@ export async function POST(req) {
 
     const { data: callerProfile } = await callerClient
       .from("profiles")
-      .select("role")
+      .select("role, empresa_id")
       .eq("id", userData.user.id)
       .single();
 
-    if (!callerProfile || callerProfile.role !== "master_admin") {
-      return NextResponse.json({ error: "Apenas o Master Admin pode cadastrar sócios e supervisores." }, { status: 403 });
+    const isMasterAdmin = callerProfile?.role === "master_admin";
+    const isSocio = callerProfile?.role === "socio";
+
+    if (!callerProfile || (!isMasterAdmin && !isSocio)) {
+      return NextResponse.json({ error: "Apenas o sócio ou o Master Admin podem cadastrar sócios e supervisores." }, { status: 403 });
     }
+
+    // sócio só cadastra supervisores (nunca outro sócio) e sempre dentro da própria empresa —
+    // o empresaId enviado pelo cliente é ignorado nesse caso, por segurança.
+    if (isSocio && role !== "supervisor") {
+      return NextResponse.json({ error: "Sócio só pode cadastrar supervisores." }, { status: 403 });
+    }
+    const targetEmpresaId = isMasterAdmin ? empresaId : callerProfile.empresa_id;
 
     if (!ALLOWED_ROLES.includes(role)) {
       return NextResponse.json({ error: "Papel inválido." }, { status: 400 });
     }
-    if (!empresaId || !fullName || !password) {
-      return NextResponse.json({ error: "Preencha empresa, nome e senha." }, { status: 400 });
+    if (!targetEmpresaId || !fullName) {
+      return NextResponse.json({ error: "Preencha empresa e nome." }, { status: 400 });
     }
-    if (String(password).length < 6) {
+    // senha é opcional — se não vier, usa a senha padrão do sistema (mesmo padrão de colaborador/gerente).
+    const finalPassword = password || DEFAULT_PASSWORD;
+    if (String(finalPassword).length < 6) {
       return NextResponse.json({ error: "A senha precisa ter pelo menos 6 caracteres." }, { status: 400 });
     }
     const access = Array.isArray(lojaAccess) ? lojaAccess.filter((a) => a && a.lojaId) : [];
@@ -61,7 +74,7 @@ export async function POST(req) {
 
     const lojaIds = access.map((a) => a.lojaId);
     const { data: lojas } = await admin.from("lojas").select("id, empresa_id").in("id", lojaIds);
-    if (!lojas || lojas.length !== lojaIds.length || lojas.some((l) => l.empresa_id !== empresaId)) {
+    if (!lojas || lojas.length !== lojaIds.length || lojas.some((l) => l.empresa_id !== targetEmpresaId)) {
       return NextResponse.json({ error: "Uma ou mais lojas selecionadas são inválidas para essa empresa." }, { status: 400 });
     }
 
@@ -75,7 +88,7 @@ export async function POST(req) {
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
-      password,
+      password: finalPassword,
       email_confirm: true,
     });
     if (createErr) {
@@ -87,7 +100,7 @@ export async function POST(req) {
       full_name: fullName,
       role,
       username,
-      empresa_id: empresaId,
+      empresa_id: targetEmpresaId,
       loja_id: null,
       must_change_password: true,
     });
@@ -108,7 +121,7 @@ export async function POST(req) {
       return NextResponse.json({ error: accessErr.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, userId: created.user.id, username });
+    return NextResponse.json({ ok: true, userId: created.user.id, username, defaultPassword: password ? undefined : DEFAULT_PASSWORD });
   } catch (e) {
     return NextResponse.json({ error: e.message || "Erro inesperado." }, { status: 500 });
   }

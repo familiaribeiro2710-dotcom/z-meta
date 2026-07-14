@@ -8,11 +8,11 @@ const DEFAULT_PASSWORD = "123456789";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { employeeId, fullName, resetPassword, newUsername, newGerenteId } = body || {};
+    const { employeeId, fullName, resetPassword, newUsername, newGerenteId, newActive } = body || {};
     if (!employeeId) {
       return NextResponse.json({ error: "Informe o usuário." }, { status: 400 });
     }
-    if (!fullName && !resetPassword && !newUsername && newGerenteId === undefined) {
+    if (!fullName && !resetPassword && !newUsername && newGerenteId === undefined && newActive === undefined) {
       return NextResponse.json({ error: "Nada para atualizar." }, { status: 400 });
     }
 
@@ -65,8 +65,15 @@ export async function POST(req) {
     if (isGerente && (target.role !== "colaborador" || target.gerente_id !== callerProfile.id)) {
       return NextResponse.json({ error: "Você só pode editar colaboradores da sua equipe." }, { status: 403 });
     }
-    // supervisor/sócio só editam usuários de lojas que gerenciam
-    if (isHierarquia) {
+    // sócio edita supervisores da própria empresa (esses não têm loja_id — não passam pelo loja_access)
+    if (isHierarquia && (target.role === "socio" || target.role === "supervisor")) {
+      const isSocio = callerProfile.role === "socio";
+      if (!isSocio || target.role !== "supervisor" || target.empresa_id !== callerProfile.empresa_id) {
+        return NextResponse.json({ error: "Você não tem permissão para editar esse usuário." }, { status: 403 });
+      }
+    }
+    // supervisor/sócio editando colaborador/gerente só em lojas que gerenciam
+    else if (isHierarquia) {
       const { data: access } = await callerClient
         .from("loja_access")
         .select("permission")
@@ -140,6 +147,13 @@ export async function POST(req) {
         .eq("id", employeeId);
       if (gerenteErr) {
         return NextResponse.json({ error: gerenteErr.message }, { status: 400 });
+      }
+    }
+
+    if (newActive !== undefined) {
+      const { error: activeErr } = await admin.from("profiles").update({ active: !!newActive }).eq("id", employeeId);
+      if (activeErr) {
+        return NextResponse.json({ error: activeErr.message }, { status: 400 });
       }
     }
 
