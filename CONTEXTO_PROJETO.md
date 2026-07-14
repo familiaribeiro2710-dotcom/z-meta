@@ -511,6 +511,10 @@ Felipe pediu que o card de lançamento de venda usado pelo gerente (aba **Metas 
 - Como `Lancamentos` é um componente compartilhado dentro de `EmpresaDashboard.js`, o ajuste vale automaticamente pra todo mundo que usa esse dashboard pra corrigir venda de colaborador (gerente, master_admin, supervisor/sócio quando gerenciando uma loja) — sem precisar duplicar em nenhum outro arquivo.
 **Build verificado:** `✓ Compiled successfully`.
 
+### Avatar (foto ou iniciais) na aba Colaboradores
+Criado `lib/Avatar.js` — componente reutilizável que replica o padrão já usado no header (`AppShell.js`): mostra a foto cadastrada (`profiles.avatar_url`) se existir, senão um círculo com gradiente roxo/rosa e as iniciais do nome. Aplicado nas duas listas do componente `Colaboradores()` em `EmpresaDashboard.js` — "Gerentes" e "Equipe" — em todos os estados de cada linha (visualização normal, modo "ver como" com `onOpenGerente`/`onOpenEmployee`, e modo edição). Como `Colaboradores()` é compartilhado por gerente/master_admin/supervisor/sócio (regra de ouro), o avatar aparece igual pra todo mundo sem precisar duplicar em outro arquivo. `avatar_url` já vinha nas queries (`select("*")` em `profiles`), não precisou mudar nenhuma busca. Confirmado via SQL: os 4 colaboradores de teste têm foto cadastrada (testa o caminho da `<img>`) e o gerente não tem (testa o fallback de iniciais).
+**Build verificado:** `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
