@@ -355,6 +355,19 @@ Felipe pediu, especificamente na visão do gerente, um dashboard mostrando de ca
 **Verificação:** confirmado via SQL que tarefas recém-criadas hoje (13/07 e antes) têm `start_date` batendo com `created_date`; `get_advisors(security)` rodado após a migração não mostrou nenhum alerta novo além dos já conhecidos (buckets públicos com listagem e funções SECURITY DEFINER, ambos pré-existentes).
 **Build verificado:** `✓ Compiled successfully`.
 
+### Modal de celebração ao bater cada nível de meta (colaborador)
+**Pedido:** um modal precisa aparecer toda vez que o colaborador bate a meta do mês — bateu o 1º nível (ex.: "Meta") aparece, bateu o 2º nível (ex.: "Super Meta"), se existir, aparece de novo, e assim por diante pra quantos níveis a loja tiver configurado.
+
+**Onde plugou:** `lib/ColaboradorView.js`, que já tinha um mecanismo idêntico pronto pra outra coisa (modal de "concluiu 100% das tarefas de hoje", com `Confetti` + card `PartyPopper` + flag no `localStorage` pra não repetir) — reaproveitei exatamente o mesmo padrão visual e de estado, só trocando o gatilho e o texto.
+
+1. **Detecção:** `goals` (estado já existente) é a lista de níveis de meta do colaborador no mês (`sales_goals` + `sales_goal_allocations`, já vinha ordenada por `store_total` — ou seja, do nível mais baixo pro mais alto). Um novo `useEffect` roda sempre que `goals`, `soldSoFar` (total vendido no mês) ou o mês mudam: para cada nível em que `soldSoFar >= allocation.amount`, verifica uma flag no `localStorage` (`zmeta_goalhit_{profile.id}_{mês}_{goal.id}`) — se ainda não tiver sido marcada, marca e enfileira aquele nível pra celebrar.
+2. **Fila, não só um modal:** os níveis batidos entram numa fila (`goalCelebrations`, array de estado). Se o colaborador pular direto de R$0 pra um valor que bate dois ou três níveis de uma vez (um lançamento grande, ou vários lançamentos somados antes de abrir o app), os modais aparecem um atrás do outro — o botão do modal mostra "Bora pra próxima!" quando ainda tem mais na fila, e "Show de bola!" no último.
+3. **Só pro mês corrente e só pro próprio colaborador:** não dispara ao navegar por meses passados (bater uma meta de mês fechado não devia gerar pop-up agora) nem quando o gerente está "vendo como" aquele colaborador (`viewedByManager`) — mesma regra já usada no modal de tarefas 100%.
+4. **Primeira vez que a funcionalidade roda:** quem já tinha batido algum nível de meta antes dessa atualização vai ver o(s) modal(is) na próxima vez que abrir o app (porque a flag ainda não existe no `localStorage` dele) — é esperado, é um efeito colateral normal de introduzir uma flag nova, e só acontece uma vez por pessoa.
+5. Os dois modais (tarefas 100% e meta batida) não aparecem sobrepostos — o de meta só renderiza quando o de tarefas não está aberto.
+
+**Build verificado:** `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
