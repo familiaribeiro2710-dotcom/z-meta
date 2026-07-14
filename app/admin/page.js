@@ -339,7 +339,7 @@ export default function AdminPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Store size={20} className="text-purple" /> {selectedLoja.lojaName}</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Store size={20} className="text-purple" /> {selectedLoja.lojaName}</h1>
               <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><Crown size={13} className="text-gold" /> Visualizando como Master Admin — dados completos desta loja</p>
             </div>
             <button className="btn-outline whitespace-nowrap" onClick={() => setSelectedLoja(null)}>
@@ -376,7 +376,7 @@ export default function AdminPage() {
       {masterTab === "inicio" && (
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-navy flex items-center gap-2">
+          <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2">
             <greet.Icon size={20} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
           </h1>
           <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><Crown size={13} className="text-gold" /> Master Admin — gestão de empresas clientes do Z Meta</p>
@@ -714,7 +714,7 @@ function FinanceiroTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-purple" /> Financeiro</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-purple" /> Financeiro</h1>
         <p className="text-xs text-muted mt-1">Cobrança mensal por empresa, com base na quantidade de usuários cadastrados.</p>
       </div>
 
@@ -865,7 +865,7 @@ function DadosTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-navy flex items-center gap-2"><BarChart3 size={20} className="text-purple" /> Dados</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><BarChart3 size={20} className="text-purple" /> Dados</h1>
         <p className="text-xs text-muted mt-1">Faturamento, usuários cadastrados e premiações de todas as empresas. Clique numa empresa pra ver o histórico completo de faturamento.</p>
       </div>
 
@@ -1006,7 +1006,7 @@ function FaturamentoHistorico({ empresa, onBack }) {
       </button>
 
       <div>
-        <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Building2 size={20} className="text-purple" /> {empresa.name}</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Building2 size={20} className="text-purple" /> {empresa.name}</h1>
         <p className="text-xs text-muted mt-1">Histórico de faturamento mês a mês.</p>
       </div>
 
@@ -1201,7 +1201,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, on
                   </button>
                 </div>
               ) : (
-                <h1 className="text-xl font-bold text-navy flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2">
                   {empresa.empresa_name}
                   <button className="text-muted hover:text-purple transition-colors" onClick={() => setEditingName(true)} title="Editar nome">
                     <Pencil size={14} />
