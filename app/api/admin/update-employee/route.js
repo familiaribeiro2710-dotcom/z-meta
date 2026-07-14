@@ -76,12 +76,7 @@ export async function POST(req) {
     }
 
     if (newUsername) {
-      if (!isMasterAdmin) {
-        return NextResponse.json(
-          { error: "Apenas o Master Admin pode alterar o usuário de login." },
-          { status: 403 }
-        );
-      }
+      // gerente pode alterar o usuário de login dos seus próprios colaboradores; master admin, de qualquer um.
       const clean = slugBase(newUsername);
       if (!clean) {
         return NextResponse.json({ error: "Usuário inválido." }, { status: 400 });

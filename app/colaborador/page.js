@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Home,
@@ -27,6 +27,7 @@ import ChangePassword from "../../lib/ChangePassword";
 import Confetti from "../../lib/Confetti";
 import { CurrencyInput } from "../../lib/MaskedInputs";
 import DateNav from "../../lib/DateNav";
+import MonthNav from "../../lib/MonthNav";
 import { calcIndividualPct, formatBRL, formatPct, motivationalMessage } from "../../lib/scoring";
 import {
   todayStr,
@@ -49,6 +50,9 @@ export default function ColaboradorPage() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
 
+  const [selectedMonth, setSelectedMonth] = useState(""); // mês visualizado no dashboard (só permite meses anteriores ao atual)
+  const didInit = useRef(false);
+
   const [tasks, setTasks] = useState([]);
   const [todayCompletions, setTodayCompletions] = useState({});
   const [viewDate, setViewDate] = useState(""); // dia visualizado no checklist de tarefas (pode navegar pra dias anteriores)
@@ -70,15 +74,16 @@ export default function ColaboradorPage() {
   const [entryMsg, setEntryMsg] = useState("");
 
   const today = todayStr();
-  const month = firstDayOfMonth(today);
+  const month = selectedMonth || firstDayOfMonth(today);
+  const isCurrentMonth = month === firstDayOfMonth(today);
   const greet = greeting();
 
-  const loadAll = useCallback(async (uid, lojaId) => {
+  const loadAll = useCallback(async (uid, lojaId, monthArg) => {
     const { data: settingsRow } = await supabase.from("app_settings").select("*").eq("loja_id", lojaId).single();
     if (settingsRow) setSettings(settingsRow);
     const penalty = settingsRow?.warning_penalty_points ?? 10;
 
-    const nextMonth = new Date(month + "T00:00:00");
+    const nextMonth = new Date(monthArg + "T00:00:00");
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     const nextMonthStr = nextMonth.toISOString().slice(0, 10);
 
@@ -112,31 +117,36 @@ export default function ColaboradorPage() {
         .from("task_completions")
         .select("completed, completion_date")
         .in("task_id", taskIds)
-        .gte("completion_date", month)
+        .gte("completion_date", monthArg)
         .lt("completion_date", nextMonthStr);
       const expected = (monthRows || []).length;
       const completed = (monthRows || []).filter((r) => r.completed).length;
 
-      // streak: dias consecutivos (voltando de ontem) com 100% das tarefas concluídas
-      const byDate = {};
-      (monthRows || []).forEach((r) => {
-        if (!byDate[r.completion_date]) byDate[r.completion_date] = { total: 0, done: 0 };
-        byDate[r.completion_date].total += 1;
-        if (r.completed) byDate[r.completion_date].done += 1;
-      });
-      let s = 0;
-      let cursor = yesterdayStr(today);
-      while (byDate[cursor] && byDate[cursor].total > 0 && byDate[cursor].done === byDate[cursor].total) {
-        s += 1;
-        cursor = yesterdayStr(cursor);
+      // streak: dias consecutivos (voltando de ontem) com 100% das tarefas concluídas — só faz sentido pro mês atual
+      if (monthArg === firstDayOfMonth(today)) {
+        const byDate = {};
+        (monthRows || []).forEach((r) => {
+          if (!byDate[r.completion_date]) byDate[r.completion_date] = { total: 0, done: 0 };
+          byDate[r.completion_date].total += 1;
+          if (r.completed) byDate[r.completion_date].done += 1;
+        });
+        let s = 0;
+        let cursor = yesterdayStr(today);
+        while (byDate[cursor] && byDate[cursor].total > 0 && byDate[cursor].done === byDate[cursor].total) {
+          s += 1;
+          cursor = yesterdayStr(cursor);
+        }
+        setStreak(s);
+      } else {
+        setStreak(0);
       }
-      setStreak(s);
 
       const { data: monthWarnings } = await supabase
         .from("warnings")
         .select("*")
         .eq("employee_id", uid)
-        .gte("warning_date", month)
+        .gte("warning_date", monthArg)
+        .lt("warning_date", nextMonthStr)
         .order("warning_date", { ascending: false });
       setWarnings(monthWarnings || []);
 
@@ -148,17 +158,18 @@ export default function ColaboradorPage() {
         .from("warnings")
         .select("*")
         .eq("employee_id", uid)
-        .gte("warning_date", month)
+        .gte("warning_date", monthArg)
+        .lt("warning_date", nextMonthStr)
         .order("warning_date", { ascending: false });
       setWarnings(monthWarnings || []);
       setIndividualPct(calcIndividualPct({ completed: 0, expected: 0, warningsCount: (monthWarnings || []).length, penaltyPerWarning: penalty }));
       setStreak(0);
     }
 
-    const { data: teamPctData } = await supabase.rpc("get_team_progress", { p_month: month, p_loja: lojaId });
+    const { data: teamPctData } = await supabase.rpc("get_team_progress", { p_month: monthArg, p_loja: lojaId });
     setTeamPct(Number(teamPctData) || 0);
 
-    const { data: goalRows } = await supabase.from("sales_goals").select("*").eq("month", month).order("store_total");
+    const { data: goalRows } = await supabase.from("sales_goals").select("*").eq("month", monthArg).order("store_total");
     const { data: allocRows } = await supabase
       .from("sales_goal_allocations")
       .select("*")
@@ -172,7 +183,7 @@ export default function ColaboradorPage() {
       .from("commission_settings")
       .select("*")
       .eq("loja_id", lojaId)
-      .eq("month", month)
+      .eq("month", monthArg)
       .maybeSingle();
     setCommissionSettings(commissionRow || { non_achievement_colaborador_pct: 0 });
 
@@ -180,7 +191,7 @@ export default function ColaboradorPage() {
       .from("sales_entries")
       .select("*")
       .eq("employee_id", uid)
-      .gte("entry_date", month)
+      .gte("entry_date", monthArg)
       .lt("entry_date", nextMonthStr)
       .order("entry_date", { ascending: false });
     setEntries(entryRows || []);
@@ -189,9 +200,9 @@ export default function ColaboradorPage() {
       .from("employee_prizes")
       .select("*")
       .eq("employee_id", uid)
-      .eq("month", month);
+      .eq("month", monthArg);
     setPrizes(prizeRows || []);
-  }, [today, month]);
+  }, [today]);
 
   useEffect(() => {
     let active = true;
@@ -218,13 +229,23 @@ export default function ColaboradorPage() {
       setProfile(prof);
       setEntryDate(yesterdayStr(todayStr()));
       setViewDate(todayStr());
+      const initialMonth = firstDayOfMonth(todayStr());
+      setSelectedMonth(initialMonth);
       if (!prof.must_change_password) {
-        await loadAll(session.user.id, prof.loja_id);
+        await loadAll(session.user.id, prof.loja_id, initialMonth);
       }
+      didInit.current = true;
       setLoading(false);
     })();
     return () => { active = false; };
   }, [router, loadAll]);
+
+  // recarrega tudo quando o usuário navega pra outro mês (o primeiro carregamento já é feito acima)
+  useEffect(() => {
+    if (!didInit.current || !user || !profile || !selectedMonth) return;
+    loadAll(user.id, profile.loja_id, selectedMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth]);
 
   async function toggleTask(taskId) {
     const current = todayCompletions[taskId];
@@ -234,7 +255,7 @@ export default function ColaboradorPage() {
       .update({ completed: newVal, completed_at: newVal ? new Date().toISOString() : null })
       .eq("task_id", taskId)
       .eq("completion_date", today);
-    await loadAll(user.id, profile.loja_id);
+    await loadAll(user.id, profile.loja_id, month);
 
     if (newVal) {
       const willAllBeDone = tasks.length > 0 && tasks.every((t) => (t.id === taskId ? true : todayCompletions[t.id]?.completed));
@@ -294,7 +315,7 @@ export default function ColaboradorPage() {
     } else {
       setEntryMsg("Lançamento salvo.");
       setEntryValue("");
-      await loadAll(user.id, profile.loja_id);
+      await loadAll(user.id, profile.loja_id, month);
     }
   }
 
@@ -313,15 +334,15 @@ export default function ColaboradorPage() {
         onDone={async () => {
           const updated = { ...profile, must_change_password: false };
           setProfile(updated);
-          await loadAll(user.id, updated.loja_id);
+          await loadAll(user.id, updated.loja_id, month);
         }}
       />
     );
   }
 
-  const remaining = remainingDaysInMonth(today);
+  const remaining = isCurrentMonth ? remainingDaysInMonth(today) : 0;
   const doneCount = tasks.filter((t) => todayCompletions[t.id]?.completed).length;
-  const pendingCount = tasks.length - doneCount;
+  const pendingCount = isCurrentMonth ? tasks.length - doneCount : 0;
   const todayPct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0;
   const willRelease = teamPct >= Number(settings.team_threshold_pct);
 
@@ -385,16 +406,19 @@ export default function ColaboradorPage() {
 
       {tab === "atividades" && (
         <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-extrabold text-navy flex items-center gap-2">
-              <greet.Icon size={22} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
-            </h1>
-            <p className="text-xs text-muted mt-1 flex items-center flex-wrap gap-2">
-              <span>{monthLabel(today)}</span>
-              {streak > 0 && (
-                <span className="badge bg-orange/15 text-orange"><Flame size={12} /> {streak} dia{streak > 1 ? "s" : ""} seguidos</span>
-              )}
-            </p>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-extrabold text-navy flex items-center gap-2">
+                <greet.Icon size={22} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
+              </h1>
+              <p className="text-xs text-muted mt-1 flex items-center flex-wrap gap-2">
+                <span>{monthLabel(month)}</span>
+                {streak > 0 && (
+                  <span className="badge bg-orange/15 text-orange"><Flame size={12} /> {streak} dia{streak > 1 ? "s" : ""} seguidos</span>
+                )}
+              </p>
+            </div>
+            <MonthNav month={month} onChange={setSelectedMonth} maxMonth={firstDayOfMonth(today)} />
           </div>
 
           <div
@@ -407,8 +431,10 @@ export default function ColaboradorPage() {
               <span className="text-xs font-bold uppercase tracking-wider text-navy">Meta de hoje</span>
             </div>
             <p className="relative text-4xl sm:text-5xl font-extrabold text-navy leading-tight">{formatBRL(dailyGoal)}</p>
-            <p className="relative text-xs font-semibold text-navy/70 mt-1">pra bater a meta do mês nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
-            <p className="relative text-xs font-semibold text-navy/70 mt-1">Vendido até ontem: {formatBRL(soldSoFar)}</p>
+            <p className="relative text-xs font-semibold text-navy/70 mt-1">
+              {isCurrentMonth ? `pra bater a meta do mês nos ${remaining} dia${remaining !== 1 ? "s" : ""} restantes` : `mês fechado — ${monthLabel(month)}`}
+            </p>
+            <p className="relative text-xs font-semibold text-navy/70 mt-1">{isCurrentMonth ? "Vendido até ontem" : "Vendido no mês"}: {formatBRL(soldSoFar)}</p>
 
             <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-navy/15">
               <div>
@@ -510,11 +536,15 @@ export default function ColaboradorPage() {
 
       {tab === "metas" && (
         <div className="space-y-6">
-          <div>
-            <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-purple" /> Minhas metas — {monthLabel(today)}</h1>
-            <p className="text-xs text-muted mt-1">
-              Vendido no mês até {latestEntry ? latestEntry.entry_date : "—"}: {formatBRL(soldSoFar)} · faltam {remaining} dia(s) no mês
-            </p>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-purple" /> Minhas metas — {monthLabel(month)}</h1>
+              <p className="text-xs text-muted mt-1">
+                Vendido no mês até {latestEntry ? latestEntry.entry_date : "—"}: {formatBRL(soldSoFar)}
+                {isCurrentMonth ? ` · faltam ${remaining} dia(s) no mês` : " · mês fechado"}
+              </p>
+            </div>
+            <MonthNav month={month} onChange={setSelectedMonth} maxMonth={firstDayOfMonth(today)} />
           </div>
 
           {goals.length === 0 ? (
@@ -554,23 +584,29 @@ export default function ColaboradorPage() {
             </div>
           )}
 
-          <div className="card">
-            <p className="label mb-3 flex items-center gap-1.5"><FileText size={14} /> Lançar valor vendido ontem</p>
-            <form onSubmit={saveEntry} className="flex flex-col sm:flex-row gap-3 items-end">
-              <div className="flex-1 w-full">
-                <label className="label">Dia da venda</label>
-                <input type="date" className="input" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} required />
-              </div>
-              <div className="flex-1 w-full">
-                <label className="label">Valor vendido nesse dia</label>
-                <CurrencyInput value={entryValue} onChange={setEntryValue} required />
-              </div>
-              <button type="submit" className="btn whitespace-nowrap" disabled={savingEntry}>
-                {savingEntry ? "Salvando…" : "Salvar"}
-              </button>
-            </form>
-            {entryMsg && <p className="text-xs text-muted mt-2">{entryMsg}</p>}
-          </div>
+          {isCurrentMonth ? (
+            <div className="card">
+              <p className="label mb-3 flex items-center gap-1.5"><FileText size={14} /> Lançar valor vendido ontem</p>
+              <form onSubmit={saveEntry} className="flex flex-col sm:flex-row gap-3 items-end">
+                <div className="flex-1 w-full">
+                  <label className="label">Dia da venda</label>
+                  <input type="date" className="input" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} required />
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="label">Valor vendido nesse dia</label>
+                  <CurrencyInput value={entryValue} onChange={setEntryValue} required />
+                </div>
+                <button type="submit" className="btn whitespace-nowrap" disabled={savingEntry}>
+                  {savingEntry ? "Salvando…" : "Salvar"}
+                </button>
+              </form>
+              {entryMsg && <p className="text-xs text-muted mt-2">{entryMsg}</p>}
+            </div>
+          ) : (
+            <div className="card">
+              <p className="text-sm text-muted">Visualização de um mês anterior — lançamentos só podem ser feitos no mês atual.</p>
+            </div>
+          )}
 
           <div className="card overflow-x-auto">
             <p className="label mb-3">Registros do mês</p>

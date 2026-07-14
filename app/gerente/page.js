@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Loader2,
@@ -14,8 +14,9 @@ import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard, { EMPRESA_TABS } from "../../lib/EmpresaDashboard";
+import MonthNav from "../../lib/MonthNav";
 import { formatBRL } from "../../lib/scoring";
-import { greeting, todayStr, firstDayOfMonth, remainingDaysInMonth } from "../../lib/date";
+import { greeting, todayStr, firstDayOfMonth, remainingDaysInMonth, monthLabel } from "../../lib/date";
 
 export default function GerentePage() {
   const router = useRouter();
@@ -23,12 +24,15 @@ export default function GerentePage() {
   const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState("atividades");
   const [lojaName, setLojaName] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(""); // mês visualizado no dashboard (só permite meses anteriores ao atual)
+  const didInit = useRef(false);
   const [hero, setHero] = useState({ metaLoja: 0, soldLoja: 0, pendingToday: 0, commissionSoFar: 0, prizesSoFar: 0, commissionPct: 0, commissionTierLabel: "não atingimento" });
   const greet = greeting();
   const today = todayStr();
-  const month = firstDayOfMonth(today);
+  const month = selectedMonth || firstDayOfMonth(today);
+  const isCurrentMonth = month === firstDayOfMonth(today);
 
-  const loadStats = useCallback(async (prof) => {
+  const loadStats = useCallback(async (prof, monthArg) => {
     const { data: loja } = await supabase.from("lojas").select("name").eq("id", prof.loja_id).single();
     setLojaName(loja?.name || "");
 
@@ -40,26 +44,28 @@ export default function GerentePage() {
       .eq("active", true);
     const empIds = (emps || []).map((e) => e.id);
 
-    const nextMonth = new Date(month + "T00:00:00");
+    const nextMonth = new Date(monthArg + "T00:00:00");
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     const nextMonthStr = nextMonth.toISOString().slice(0, 10);
 
-    // atividades pendentes hoje, somando todos os colaboradores da loja
+    // atividades pendentes hoje, somando todos os colaboradores da loja — só faz sentido pro mês atual
     let pendingToday = 0;
-    const { data: activeTasks } = await supabase
-      .from("tasks")
-      .select("id")
-      .eq("loja_id", prof.loja_id)
-      .eq("active", true);
-    const taskIds = (activeTasks || []).map((t) => t.id);
-    if (taskIds.length) {
-      const { data: todayRows } = await supabase
-        .from("task_completions")
-        .select("task_id, completed")
-        .in("task_id", taskIds)
-        .eq("completion_date", today);
-      const doneTaskIds = new Set((todayRows || []).filter((r) => r.completed).map((r) => r.task_id));
-      pendingToday = taskIds.filter((id) => !doneTaskIds.has(id)).length;
+    if (monthArg === firstDayOfMonth(todayStr())) {
+      const { data: activeTasks } = await supabase
+        .from("tasks")
+        .select("id")
+        .eq("loja_id", prof.loja_id)
+        .eq("active", true);
+      const taskIds = (activeTasks || []).map((t) => t.id);
+      if (taskIds.length) {
+        const { data: todayRows } = await supabase
+          .from("task_completions")
+          .select("task_id, completed")
+          .in("task_id", taskIds)
+          .eq("completion_date", todayStr());
+        const doneTaskIds = new Set((todayRows || []).filter((r) => r.completed).map((r) => r.task_id));
+        pendingToday = taskIds.filter((id) => !doneTaskIds.has(id)).length;
+      }
     }
 
     // meta da loja no mês (soma de todas as metas ativas), ordenadas por valor crescente (meta 1, meta 2…)
@@ -67,7 +73,7 @@ export default function GerentePage() {
       .from("sales_goals")
       .select("id, name, store_total, commission_pct_gerente")
       .eq("loja_id", prof.loja_id)
-      .eq("month", month)
+      .eq("month", monthArg)
       .order("store_total", { ascending: true });
     const metaLoja = (goalRows || []).reduce((s, g) => s + Number(g.store_total || 0), 0);
 
@@ -77,7 +83,7 @@ export default function GerentePage() {
         .from("sales_entries")
         .select("employee_id, daily_amount")
         .in("employee_id", empIds)
-        .gte("entry_date", month)
+        .gte("entry_date", monthArg)
         .lt("entry_date", nextMonthStr);
       entryRows = data || [];
     }
@@ -87,7 +93,7 @@ export default function GerentePage() {
       .from("commission_settings")
       .select("*")
       .eq("loja_id", prof.loja_id)
-      .eq("month", month)
+      .eq("month", monthArg)
       .maybeSingle();
 
     // comissão por nível de meta da loja: quem passa do valor de uma meta, comissiona na taxa (gerente) daquele
@@ -109,12 +115,12 @@ export default function GerentePage() {
         .from("employee_prizes")
         .select("amount")
         .in("employee_id", empIds)
-        .eq("month", month);
+        .eq("month", monthArg);
       prizesSoFar = (prizeRows || []).reduce((s, p) => s + Number(p.amount || 0), 0);
     }
 
     setHero({ metaLoja, soldLoja, pendingToday, commissionSoFar, prizesSoFar, commissionPct, commissionTierLabel });
-  }, [month, today]);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -130,11 +136,21 @@ export default function GerentePage() {
       }
       if (!active) return;
       setProfile(prof);
-      if (!prof.must_change_password) await loadStats(prof);
+      const initialMonth = firstDayOfMonth(todayStr());
+      setSelectedMonth(initialMonth);
+      if (!prof.must_change_password) await loadStats(prof, initialMonth);
+      didInit.current = true;
       setLoading(false);
     })();
     return () => { active = false; };
   }, [router, loadStats]);
+
+  // recarrega quando o gerente navega pra outro mês (o primeiro carregamento já é feito acima)
+  useEffect(() => {
+    if (!didInit.current || !profile || !selectedMonth) return;
+    loadStats(profile, selectedMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth]);
 
   if (loading) {
     return (
@@ -148,9 +164,9 @@ export default function GerentePage() {
     return <ChangePassword force onDone={() => setProfile({ ...profile, must_change_password: false })} />;
   }
 
-  const remaining = remainingDaysInMonth(today);
+  const remaining = isCurrentMonth ? remainingDaysInMonth(today) : 0;
   const restoDaMeta = Math.max(0, hero.metaLoja - hero.soldLoja);
-  const dailyGoal = remaining > 0 ? restoDaMeta / remaining : 0;
+  const dailyGoal = isCurrentMonth && remaining > 0 ? restoDaMeta / remaining : 0;
 
   return (
     <AppShell
@@ -165,9 +181,12 @@ export default function GerentePage() {
       <div className="space-y-6">
         {tab === "atividades" && (
           <>
-            <h1 className="text-xl font-bold text-navy flex items-center gap-2">
-              <greet.Icon size={20} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
-            </h1>
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <h1 className="text-xl font-bold text-navy flex items-center gap-2">
+                <greet.Icon size={20} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
+              </h1>
+              <MonthNav month={month} onChange={setSelectedMonth} maxMonth={firstDayOfMonth(today)} />
+            </div>
 
             <div
               className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
@@ -179,8 +198,10 @@ export default function GerentePage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-navy">Meta de hoje · {lojaName || "sua loja"}</span>
               </div>
               <p className="relative text-4xl sm:text-5xl font-extrabold text-navy leading-tight">{formatBRL(dailyGoal)}</p>
-              <p className="relative text-xs font-semibold text-navy/70 mt-1">pra bater a meta da loja nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
-              <p className="relative text-xs font-semibold text-navy/70 mt-1">Vendido até ontem: {formatBRL(hero.soldLoja)}</p>
+              <p className="relative text-xs font-semibold text-navy/70 mt-1">
+                {isCurrentMonth ? `pra bater a meta da loja nos ${remaining} dia${remaining !== 1 ? "s" : ""} restantes` : `mês fechado — ${monthLabel(month)}`}
+              </p>
+              <p className="relative text-xs font-semibold text-navy/70 mt-1">{isCurrentMonth ? "Vendido até ontem" : "Vendido no mês"}: {formatBRL(hero.soldLoja)}</p>
 
               <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-navy/15">
                 <div>
@@ -211,7 +232,7 @@ export default function GerentePage() {
           </>
         )}
 
-        <EmpresaDashboard lojaId={profile.loja_id} empresaId={profile.empresa_id} viewerRole="gerente" tab={tab} />
+        <EmpresaDashboard lojaId={profile.loja_id} empresaId={profile.empresa_id} viewerRole="gerente" tab={tab} month={month} />
       </div>
     </AppShell>
   );
