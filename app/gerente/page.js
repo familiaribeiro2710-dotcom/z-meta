@@ -180,6 +180,7 @@ export default function GerentePage() {
               </div>
               <p className="relative text-4xl sm:text-5xl font-extrabold text-navy leading-tight">{formatBRL(dailyGoal)}</p>
               <p className="relative text-xs font-semibold text-navy/70 mt-1">pra bater a meta da loja nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
+              <p className="relative text-xs font-semibold text-navy/70 mt-1">Vendido até ontem: {formatBRL(hero.soldLoja)}</p>
 
               <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-navy/15">
                 <div>

@@ -27,6 +27,7 @@ import ProgressBar from "../../lib/ProgressBar";
 import ChangePassword from "../../lib/ChangePassword";
 import Confetti from "../../lib/Confetti";
 import { CurrencyInput } from "../../lib/MaskedInputs";
+import DateNav from "../../lib/DateNav";
 import { calcIndividualPct, formatBRL, formatPct, motivationalMessage } from "../../lib/scoring";
 import {
   todayStr,
@@ -53,6 +54,8 @@ export default function ColaboradorPage() {
 
   const [tasks, setTasks] = useState([]);
   const [todayCompletions, setTodayCompletions] = useState({});
+  const [viewDate, setViewDate] = useState(""); // dia visualizado no checklist de tarefas (pode navegar pra dias anteriores)
+  const [dayCompletions, setDayCompletions] = useState({});
   const [individualPct, setIndividualPct] = useState(0);
   const [teamPct, setTeamPct] = useState(0);
   const [warnings, setWarnings] = useState([]);
@@ -221,6 +224,7 @@ export default function ColaboradorPage() {
       setUser(session.user);
       setProfile(prof);
       setEntryDate(yesterdayStr(todayStr()));
+      setViewDate(todayStr());
       if (!prof.must_change_password) {
         await loadAll(session.user.id, prof.loja_id);
       }
@@ -250,6 +254,27 @@ export default function ColaboradorPage() {
       }
     }
   }
+
+  // checklist de tarefas por dia navegável — "hoje" reaproveita todayCompletions (já vem do loadAll),
+  // dias anteriores buscam sob demanda. Só o dia de hoje é editável (toggleTask sempre grava em "today").
+  useEffect(() => {
+    if (!viewDate || !tasks.length) { setDayCompletions(viewDate === today ? todayCompletions : {}); return; }
+    if (viewDate === today) { setDayCompletions(todayCompletions); return; }
+    let active = true;
+    (async () => {
+      const taskIds = tasks.map((t) => t.id);
+      const { data } = await supabase
+        .from("task_completions")
+        .select("*")
+        .in("task_id", taskIds)
+        .eq("completion_date", viewDate);
+      if (!active) return;
+      const map = {};
+      (data || []).forEach((r) => { map[r.task_id] = r; });
+      setDayCompletions(map);
+    })();
+    return () => { active = false; };
+  }, [viewDate, tasks, today, todayCompletions]);
 
   async function saveEntry(e) {
     e.preventDefault();
@@ -391,6 +416,7 @@ export default function ColaboradorPage() {
             </div>
             <p className="relative text-4xl sm:text-5xl font-extrabold text-navy leading-tight">{formatBRL(dailyGoal)}</p>
             <p className="relative text-xs font-semibold text-navy/70 mt-1">pra bater a meta do mês nos {remaining} dia{remaining !== 1 ? "s" : ""} restantes</p>
+            <p className="relative text-xs font-semibold text-navy/70 mt-1">Vendido até ontem: {formatBRL(soldSoFar)}</p>
 
             <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-5 border-t border-navy/15">
               <div>
@@ -452,21 +478,27 @@ export default function ColaboradorPage() {
           )}
 
           <div className="card">
-            <div className="flex items-center justify-between mb-3">
-              <p className="label mb-0 flex items-center gap-1.5"><CheckSquare size={14} /> Tarefas de hoje</p>
-              {tasks.length > 0 && <span className="text-xs text-muted">{doneCount}/{tasks.length}</span>}
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <p className="label mb-0 flex items-center gap-1.5"><CheckSquare size={14} /> Tarefas {viewDate === today ? "de hoje" : ""}</p>
+              <div className="flex items-center gap-3">
+                <DateNav date={viewDate || today} onChange={setViewDate} maxDate={today} />
+                {tasks.length > 0 && <span className="text-xs text-muted">{tasks.filter((t) => dayCompletions[t.id]?.completed).length}/{tasks.length}</span>}
+              </div>
             </div>
             {tasks.length === 0 && <p className="text-sm text-muted">Nenhuma tarefa cadastrada ainda.</p>}
+            {viewDate !== today && <p className="text-[11px] text-muted mb-2">Visualização de um dia anterior — só é possível marcar tarefas no dia de hoje.</p>}
             <ul className="divide-y divide-line">
               {tasks.map((t) => {
-                const done = !!todayCompletions[t.id]?.completed;
+                const done = !!dayCompletions[t.id]?.completed;
+                const editable = viewDate === today;
                 return (
                   <li className="flex items-center gap-3 py-3" key={t.id}>
                     <button
-                      onClick={() => toggleTask(t.id)}
+                      onClick={() => editable && toggleTask(t.id)}
+                      disabled={!editable}
                       className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all font-bold text-white ${
                         done ? "border-transparent animate-bounce-in" : "border-line bg-white hover:border-purple"
-                      }`}
+                      } ${!editable ? "pointer-events-none opacity-80" : ""}`}
                       style={done ? { background: "linear-gradient(135deg, #84cc16, #0d9488)" } : undefined}
                     >
                       {done && <Check size={16} strokeWidth={3} />}
