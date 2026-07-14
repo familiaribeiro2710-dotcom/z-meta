@@ -442,7 +442,7 @@ export default function AdminPage() {
               <form onSubmit={handleCreate} className="grid sm:grid-cols-2 gap-4 mt-3">
                 <div>
                   <label className="label">Nome da empresa</label>
-                  <input className="input" value={empresaName} onChange={(e) => setEmpresaName(e.target.value)} required />
+                  <input className="input" value={empresaName} onChange={(e) => setEmpresaName(e.target.value)} maxLength={50} required />
                 </div>
                 <div>
                   <label className="label">CNPJ</label>
@@ -1421,12 +1421,13 @@ function AddGerenteForm({ empresaId, lojas, onDone, onCancel }) {
         </select>
       </div>
       <div className="grid sm:grid-cols-3 gap-2">
-        <input className="input !py-1.5 !text-xs" placeholder="nome do gerente" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="input !py-1.5 !text-xs" placeholder="nome do gerente" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
         <input
           className="input !py-1.5 !text-xs"
           placeholder="usuário de login (opcional)"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          maxLength={20}
           autoCapitalize="none"
           autoCorrect="off"
         />
@@ -1496,12 +1497,13 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
         </select>
       </div>
       <div className="grid sm:grid-cols-3 gap-2">
-        <input className="input !py-1.5 !text-xs" placeholder="nome do colaborador" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="input !py-1.5 !text-xs" placeholder="nome do colaborador" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
         <input
           className="input !py-1.5 !text-xs"
           placeholder="usuário de login (opcional)"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          maxLength={20}
           autoCapitalize="none"
           autoCorrect="off"
         />
@@ -1763,12 +1765,13 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
   return (
     <form onSubmit={submit} className="p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
       <div className="grid sm:grid-cols-3 gap-2">
-        <input className="input !py-1.5 !text-xs" placeholder={`nome do ${label}`} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <input className="input !py-1.5 !text-xs" placeholder={`nome do ${label}`} value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={40} />
         <input
           className="input !py-1.5 !text-xs"
           placeholder="usuário de login (opcional)"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          maxLength={20}
           autoCapitalize="none"
           autoCorrect="off"
         />
@@ -2090,7 +2093,7 @@ function EditUser({ user, onChanged, onClose }) {
   return (
     <div className="mt-2 mb-1 p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
       <form onSubmit={saveName} className="flex items-center gap-2">
-        <input className="input !py-1.5 !text-xs flex-1" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="input !py-1.5 !text-xs flex-1" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
         <button type="submit" className="btn-outline !px-3 !py-1.5 !text-xs whitespace-nowrap" disabled={savingName}>
           {savingName ? "Salvando…" : "Salvar nome"}
         </button>
@@ -2101,6 +2104,7 @@ function EditUser({ user, onChanged, onClose }) {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="usuário de login"
+          maxLength={20}
           autoCapitalize="none"
           autoCorrect="off"
         />
