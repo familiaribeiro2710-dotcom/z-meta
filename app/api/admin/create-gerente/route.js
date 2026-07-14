@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { resolveUsername } from "../../../../lib/generateUsername";
+import { hierarquiaCanManageLoja } from "../../../../lib/serverPermissions";
 
 export async function POST(req) {
   try {
@@ -55,13 +56,14 @@ export async function POST(req) {
     }
 
     if (isHierarquia) {
-      const { data: access } = await callerClient
-        .from("loja_access")
-        .select("permission")
-        .eq("profile_id", userData.user.id)
-        .eq("loja_id", lojaId)
-        .maybeSingle();
-      if (access?.permission !== "gerenciar") {
+      const allowed = await hierarquiaCanManageLoja({
+        callerClient,
+        callerProfile,
+        userId: userData.user.id,
+        lojaId,
+        lojaEmpresaId: loja.empresa_id,
+      });
+      if (!allowed) {
         return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
       }
     }

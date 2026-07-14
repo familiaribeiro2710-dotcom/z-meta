@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { hierarquiaCanManageLoja } from "../../../../lib/serverPermissions";
 
 export async function POST(req) {
   try {
@@ -64,13 +65,14 @@ export async function POST(req) {
       return NextResponse.json({ error: "Apenas supervisor, sócio ou Master Admin podem excluir um gerente." }, { status: 403 });
     }
     if (isHierarquia) {
-      const { data: access } = await callerClient
-        .from("loja_access")
-        .select("permission")
-        .eq("profile_id", userData.user.id)
-        .eq("loja_id", target.loja_id)
-        .maybeSingle();
-      if (access?.permission !== "gerenciar") {
+      const allowed = await hierarquiaCanManageLoja({
+        callerClient,
+        callerProfile,
+        userId: userData.user.id,
+        lojaId: target.loja_id,
+        lojaEmpresaId: target.empresa_id,
+      });
+      if (!allowed) {
         return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
       }
     }

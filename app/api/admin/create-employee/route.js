@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { resolveUsername } from "../../../../lib/generateUsername";
+import { hierarquiaCanManageLoja } from "../../../../lib/serverPermissions";
 
 const DEFAULT_PASSWORD = "123456789";
 
@@ -71,13 +72,14 @@ export async function POST(req) {
         return NextResponse.json({ error: "Loja inválida para essa empresa." }, { status: 400 });
       }
       if (isHierarquia) {
-        const { data: access } = await callerClient
-          .from("loja_access")
-          .select("permission")
-          .eq("profile_id", userData.user.id)
-          .eq("loja_id", targetLojaId)
-          .maybeSingle();
-        if (access?.permission !== "gerenciar") {
+        const allowed = await hierarquiaCanManageLoja({
+          callerClient,
+          callerProfile,
+          userId: userData.user.id,
+          lojaId: targetLojaId,
+          lojaEmpresaId: lojaRow.empresa_id,
+        });
+        if (!allowed) {
           return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
         }
       }

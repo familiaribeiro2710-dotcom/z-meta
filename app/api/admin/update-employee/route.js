@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { slugBase } from "../../../../lib/generateUsername";
+import { hierarquiaCanManageLoja } from "../../../../lib/serverPermissions";
 
 const DEFAULT_PASSWORD = "123456789";
 
@@ -72,15 +73,17 @@ export async function POST(req) {
         return NextResponse.json({ error: "Você não tem permissão para editar esse usuário." }, { status: 403 });
       }
     }
-    // supervisor/sócio editando colaborador/gerente só em lojas que gerenciam
+    // supervisor/sócio editando colaborador/gerente só em lojas que gerenciam (sócio gerencia
+    // qualquer loja da própria empresa implicitamente; supervisor só onde tiver loja_access='gerenciar')
     else if (isHierarquia) {
-      const { data: access } = await callerClient
-        .from("loja_access")
-        .select("permission")
-        .eq("profile_id", userData.user.id)
-        .eq("loja_id", target.loja_id)
-        .maybeSingle();
-      if (access?.permission !== "gerenciar") {
+      const allowed = await hierarquiaCanManageLoja({
+        callerClient,
+        callerProfile,
+        userId: userData.user.id,
+        lojaId: target.loja_id,
+        lojaEmpresaId: target.empresa_id,
+      });
+      if (!allowed) {
         return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
       }
     }
