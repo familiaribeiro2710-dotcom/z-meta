@@ -809,6 +809,7 @@ function DadosTab() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
   const load = useCallback(async (m) => {
     setLoading(true);
@@ -837,11 +838,15 @@ function DadosTab() {
     return { faturamento, colaboradores, premiacoes, lojas, ticketPorEmpresa };
   }, [rows]);
 
+  if (selectedEmpresa) {
+    return <FaturamentoHistorico empresa={selectedEmpresa} onBack={() => setSelectedEmpresa(null)} />;
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-navy flex items-center gap-2"><BarChart3 size={20} className="text-purple" /> Dados</h1>
-        <p className="text-xs text-muted mt-1">Faturamento, colaboradores e premiações de todas as empresas.</p>
+        <p className="text-xs text-muted mt-1">Faturamento, colaboradores e premiações de todas as empresas. Clique numa empresa pra ver o histórico completo de faturamento.</p>
       </div>
 
       <div
@@ -875,10 +880,15 @@ function DadosTab() {
         <div className="space-y-3">
           {filtered.length === 0 && <p className="text-sm text-muted py-2">Nenhuma empresa encontrada.</p>}
           {filtered.map((r) => (
-            <div key={r.empresa_id} className={`card ${!r.active ? "opacity-60" : ""}`}>
+            <div
+              key={r.empresa_id}
+              className={`card cursor-pointer transition-colors hover:border-purple/40 ${!r.active ? "opacity-60" : ""}`}
+              onClick={() => setSelectedEmpresa({ id: r.empresa_id, name: r.empresa_name })}
+            >
               <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
                 <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
                   <Building2 size={14} className="text-purple" /> {r.empresa_name}
+                  <ChevronRight size={14} className="text-muted" />
                   {!r.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
                 </p>
                 <span className="text-xs text-muted">{r.lojas_count} loja{r.lojas_count !== 1 ? "s" : ""}</span>
@@ -900,6 +910,184 @@ function DadosTab() {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function monthShortLabel(monthStr) {
+  const [y, m] = monthStr.split("-").map(Number);
+  const d = new Date(y, m - 1, 1);
+  const label = d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+const PERIOD_PRESETS = [
+  { key: "3m", label: "3 meses", months: 3 },
+  { key: "6m", label: "6 meses", months: 6 },
+  { key: "12m", label: "12 meses", months: 12 },
+  { key: "all", label: "Tudo", months: null },
+];
+
+function shiftMonth(monthStr, delta) {
+  const [y, m] = monthStr.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function FaturamentoHistorico({ empresa, onBack }) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fromMonth, setFromMonth] = useState("");
+  const [toMonth, setToMonth] = useState("");
+  const [activePreset, setActivePreset] = useState("12m");
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.rpc("admin_faturamento_mensal", { p_empresa_id: empresa.id });
+      if (!active) return;
+      const sorted = (data || []).slice().sort((a, b) => a.month.localeCompare(b.month));
+      setRows(sorted);
+      const currentMonth = firstDayOfMonth(todayStr());
+      const last = sorted.length ? sorted[sorted.length - 1].month : currentMonth;
+      setToMonth(last);
+      setFromMonth(shiftMonth(last, -11));
+      setActivePreset("12m");
+      setLoading(false);
+    })();
+    return () => { active = false; };
+  }, [empresa.id]);
+
+  function applyPreset(preset) {
+    setActivePreset(preset.key);
+    const currentMonth = firstDayOfMonth(todayStr());
+    const last = rows.length ? rows[rows.length - 1].month : currentMonth;
+    setToMonth(last);
+    if (preset.months === null) {
+      setFromMonth(rows.length ? rows[0].month : last);
+    } else {
+      setFromMonth(shiftMonth(last, -(preset.months - 1)));
+    }
+  }
+
+  const filtered = useMemo(
+    () => rows.filter((r) => (!fromMonth || r.month >= fromMonth) && (!toMonth || r.month <= toMonth)),
+    [rows, fromMonth, toMonth]
+  );
+  const totalPeriodo = filtered.reduce((s, r) => s + Number(r.faturamento), 0);
+  const maxVal = Math.max(1, ...filtered.map((r) => Number(r.faturamento)));
+
+  return (
+    <div className="space-y-6">
+      <button className="text-xs font-bold text-muted hover:text-navy flex items-center gap-1.5" onClick={onBack}>
+        <ChevronLeft size={14} /> Voltar para Dados
+      </button>
+
+      <div>
+        <h1 className="text-xl font-bold text-navy flex items-center gap-2"><Building2 size={20} className="text-purple" /> {empresa.name}</h1>
+        <p className="text-xs text-muted mt-1">Histórico de faturamento mês a mês.</p>
+      </div>
+
+      <div
+        className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
+        style={{ background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)", boxShadow: "0 10px 28px rgba(124,58,237,0.35)" }}
+      >
+        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
+        <div className="relative flex items-center gap-2 mb-3">
+          <TrendingUp size={18} className="text-white" />
+          <span className="text-xs font-bold uppercase tracking-wider text-white">Faturamento no período</span>
+        </div>
+        <p className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(totalPeriodo)}</p>
+        <p className="relative text-xs font-semibold text-white/75 mt-1">
+          {fromMonth && toMonth ? `${monthShortLabel(fromMonth)} até ${monthShortLabel(toMonth)}` : "sem dados no período"}
+        </p>
+      </div>
+
+      <div className="card space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <p className="text-[11px] uppercase tracking-wider text-muted font-bold">Filtrar período</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {PERIOD_PRESETS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => applyPreset(p)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
+                  activePreset === p.key ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className="label">De</label>
+            <select
+              className="input !py-1.5 !text-xs"
+              value={fromMonth}
+              onChange={(e) => { setFromMonth(e.target.value); setActivePreset(null); }}
+            >
+              {rows.map((r) => <option key={r.month} value={r.month}>{monthShortLabel(r.month)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Até</label>
+            <select
+              className="input !py-1.5 !text-xs"
+              value={toMonth}
+              onChange={(e) => { setToMonth(e.target.value); setActivePreset(null); }}
+            >
+              {rows.map((r) => <option key={r.month} value={r.month}>{monthShortLabel(r.month)}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="text-xs text-muted py-10 text-center flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" /> carregando…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted py-2">Nenhum lançamento de vendas registrado ainda para essa empresa.</p>
+      ) : (
+        <>
+          <div className="card">
+            <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-3">Faturamento por mês</p>
+            <div className="flex items-end gap-3 h-32 overflow-x-auto pb-1">
+              {filtered.map((r) => (
+                <div key={r.month} className="flex-1 min-w-[40px] flex flex-col items-center justify-end h-full">
+                  <span className="text-[10px] text-muted mb-1 whitespace-nowrap">{formatBRL(r.faturamento).replace("R$", "").trim()}</span>
+                  <div
+                    className="w-full rounded-t-xl transition-all"
+                    style={{ height: `${Math.max(4, (Number(r.faturamento) / maxVal) * 96)}px`, background: "linear-gradient(180deg, #ec4899, #7c3aed)" }}
+                  />
+                  <span className="text-[11px] text-muted mt-1.5 whitespace-nowrap">{monthShortLabel(r.month)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card overflow-x-auto">
+            <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-3">Detalhe por mês</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-muted border-b border-line">
+                  <th className="pb-2">Mês</th>
+                  <th className="pb-2">Faturamento</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.slice().reverse().map((r) => (
+                  <tr key={r.month} className="border-b border-line last:border-0">
+                    <td className="py-2.5 font-medium text-navy">{monthLabel(r.month)}</td>
+                    <td className="py-2.5 text-navy">{formatBRL(r.faturamento)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
