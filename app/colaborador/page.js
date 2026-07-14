@@ -6,7 +6,6 @@ import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import ColaboradorView from "../../lib/ColaboradorView";
-import { greeting } from "../../lib/date";
 
 const TABS = [
   { key: "atividades", label: "Início", Icon: Home },
@@ -18,7 +17,6 @@ export default function ColaboradorPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("atividades");
   const [profile, setProfile] = useState(null);
-  const greet = greeting();
 
   useEffect(() => {
     let active = true;
@@ -74,11 +72,6 @@ export default function ColaboradorPage() {
       activeTab={tab}
       onTabChange={setTab}
     >
-      {tab === "atividades" && (
-        <h1 className="text-2xl font-extrabold text-navy flex items-center gap-2 mb-6">
-          <greet.Icon size={22} className="text-orange" /> {greet.word}, {profile.full_name.split(" ")[0]}!
-        </h1>
-      )}
       <ColaboradorView key={profile.id} profile={profile} tab={tab} />
     </AppShell>
   );
