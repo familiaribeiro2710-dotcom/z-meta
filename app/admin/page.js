@@ -45,6 +45,7 @@ import HierarchyHome from "../../lib/HierarchyHome";
 import MonthNav from "../../lib/MonthNav";
 import SelectField from "../../lib/SelectField";
 import { CnpjInput, PhoneInput } from "../../lib/MaskedInputs";
+import AutoFitText from "../../lib/AutoFitText";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
 
@@ -661,7 +662,7 @@ function HeroStat({ Icon, value, label, sub, divider, danger }) {
   return (
     <div className={`min-w-0 ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`}>
       <Icon size={20} className={tone} />
-      <p className={`text-xl sm:text-3xl font-extrabold mt-2 ${tone} break-words`}>{value ?? 0}</p>
+      <AutoFitText className={`text-xl sm:text-3xl font-extrabold mt-2 ${tone}`}>{value ?? 0}</AutoFitText>
       <p className={`text-xs font-semibold mt-0.5 ${tone}`}>{label}</p>
       <p className={`text-[11px] mt-0.5 ${danger ? "text-[#7a1f1f]/80" : "text-navy/65"}`}>{sub}</p>
     </div>
@@ -811,7 +812,9 @@ function FinanceiroRow({ row, onSave }) {
         </div>
         <div>
           <label className="label">Quanto cobrar</label>
-          <p className="input !py-1.5 !text-xs !bg-paper font-bold text-navy flex items-center">{formatBRL(cobrar)}</p>
+          <p className="input !py-1.5 !text-xs !bg-paper font-bold text-navy flex items-center">
+            <AutoFitText as="span">{formatBRL(cobrar)}</AutoFitText>
+          </p>
         </div>
       </div>
       {dirty && (
@@ -917,7 +920,7 @@ function DadosTab() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                 <div className="min-w-0">
                   <p className="text-[11px] text-muted">Faturamento no mês</p>
-                  <p className="text-navy font-bold break-words">{formatBRL(r.faturamento)}</p>
+                  <AutoFitText className="text-navy font-bold">{formatBRL(r.faturamento)}</AutoFitText>
                 </div>
                 <div className="min-w-0">
                   <p className="text-[11px] text-muted">Usuários</p>
@@ -925,7 +928,7 @@ function DadosTab() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[11px] text-muted">Premiações pagas</p>
-                  <p className="text-navy font-bold break-words">{formatBRL(r.premiacoes)}</p>
+                  <AutoFitText className="text-navy font-bold">{formatBRL(r.premiacoes)}</AutoFitText>
                 </div>
               </div>
             </div>
@@ -1020,7 +1023,7 @@ function FaturamentoHistorico({ empresa, onBack }) {
           <TrendingUp size={18} className="text-white" />
           <span className="text-xs font-bold uppercase tracking-wider text-white">Faturamento no período</span>
         </div>
-        <p className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(totalPeriodo)}</p>
+        <AutoFitText className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(totalPeriodo)}</AutoFitText>
         <p className="relative text-xs font-semibold text-white/75 mt-1">
           {fromMonth && toMonth ? `${monthShortLabel(fromMonth)} até ${monthShortLabel(toMonth)}` : "sem dados no período"}
         </p>
@@ -1078,7 +1081,7 @@ function FaturamentoHistorico({ empresa, onBack }) {
             <div className="flex items-end gap-3 h-32 overflow-x-auto pb-1">
               {filtered.map((r) => (
                 <div key={r.month} className="flex-1 min-w-[40px] flex flex-col items-center justify-end h-full">
-                  <span className="text-[10px] text-muted mb-1 whitespace-nowrap">{formatBRL(r.faturamento).replace("R$", "").trim()}</span>
+                  <AutoFitText className="text-[10px] text-muted mb-1" minPx={7}>{formatBRL(r.faturamento).replace("R$", "").trim()}</AutoFitText>
                   <div
                     className="w-full rounded-t-xl transition-all"
                     style={{ height: `${Math.max(4, (Number(r.faturamento) / maxVal) * 96)}px`, background: "linear-gradient(180deg, #ec4899, #7c3aed)" }}
@@ -1117,7 +1120,7 @@ function FaturamentoHistorico({ empresa, onBack }) {
 function HeroStatLight({ value, label, sub, divider }) {
   return (
     <div className={`min-w-0 ${divider ? "sm:border-l sm:border-white/25 sm:pl-4" : ""}`}>
-      <p className="text-xl sm:text-3xl font-extrabold mt-0 text-white break-words">{value ?? 0}</p>
+      <AutoFitText className="text-xl sm:text-3xl font-extrabold mt-0 text-white">{value ?? 0}</AutoFitText>
       <p className="text-xs font-semibold mt-0.5 text-white">{label}</p>
       <p className="text-[11px] mt-0.5 text-white/75">{sub}</p>
     </div>
