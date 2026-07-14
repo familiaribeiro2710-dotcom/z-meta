@@ -36,9 +36,10 @@ export async function POST(req) {
 
     const isMasterAdmin = callerProfile?.role === "master_admin";
     const isGerente = callerProfile?.role === "gerente" && !!callerProfile.loja_id;
-    if (!callerProfile || (!isMasterAdmin && !isGerente)) {
+    const isHierarquia = callerProfile?.role === "supervisor" || callerProfile?.role === "socio";
+    if (!callerProfile || (!isMasterAdmin && !isGerente && !isHierarquia)) {
       return NextResponse.json(
-        { error: "Apenas o gerente ou o Master Admin podem excluir colaboradores." },
+        { error: "Apenas o gerente, supervisor, sócio ou o Master Admin podem excluir colaboradores." },
         { status: 403 }
       );
     }
@@ -47,15 +48,26 @@ export async function POST(req) {
 
     const { data: target } = await admin
       .from("profiles")
-      .select("id, role, empresa_id, loja_id")
+      .select("id, role, empresa_id, loja_id, gerente_id")
       .eq("id", employeeId)
       .single();
 
     if (!target || target.role !== "colaborador") {
       return NextResponse.json({ error: "Colaborador não encontrado." }, { status: 404 });
     }
-    if (isGerente && target.loja_id !== callerProfile.loja_id) {
-      return NextResponse.json({ error: "Esse colaborador não pertence à sua loja." }, { status: 403 });
+    if (isGerente && target.gerente_id !== callerProfile.id) {
+      return NextResponse.json({ error: "Esse colaborador não pertence à sua equipe." }, { status: 403 });
+    }
+    if (isHierarquia) {
+      const { data: access } = await callerClient
+        .from("loja_access")
+        .select("permission")
+        .eq("profile_id", userData.user.id)
+        .eq("loja_id", target.loja_id)
+        .maybeSingle();
+      if (access?.permission !== "gerenciar") {
+        return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
+      }
     }
 
     const { error: profileDeleteErr } = await admin.from("profiles").delete().eq("id", employeeId);

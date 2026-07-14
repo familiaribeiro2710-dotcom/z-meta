@@ -6,7 +6,7 @@ import { resolveUsername } from "../../../../lib/generateUsername";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { empresaId, lojaId, gerenteName, password, username: desiredUsername } = body || {};
+    const { empresaId, lojaId, gerenteName, password, username: desiredUsername, teamEmployeeIds } = body || {};
 
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
@@ -28,15 +28,19 @@ export async function POST(req) {
 
     const { data: callerProfile } = await callerClient
       .from("profiles")
-      .select("role")
+      .select("role, empresa_id")
       .eq("id", userData.user.id)
       .single();
 
-    if (!callerProfile || callerProfile.role !== "master_admin") {
-      return NextResponse.json({ error: "Apenas o Master Admin pode cadastrar gerentes." }, { status: 403 });
+    const isMasterAdmin = callerProfile?.role === "master_admin";
+    const isHierarquia = callerProfile?.role === "supervisor" || callerProfile?.role === "socio";
+
+    if (!callerProfile || (!isMasterAdmin && !isHierarquia)) {
+      return NextResponse.json({ error: "Apenas supervisor, sócio ou o Master Admin podem cadastrar gerentes." }, { status: 403 });
     }
 
-    if (!empresaId || !lojaId || !gerenteName || !password) {
+    const targetEmpresaId = isMasterAdmin ? empresaId : callerProfile.empresa_id;
+    if (!targetEmpresaId || !lojaId || !gerenteName || !password) {
       return NextResponse.json({ error: "Preencha empresa, loja, nome do gerente e senha." }, { status: 400 });
     }
     if (String(password).length < 6) {
@@ -46,8 +50,33 @@ export async function POST(req) {
     const admin = getSupabaseAdmin();
 
     const { data: loja } = await admin.from("lojas").select("id, empresa_id").eq("id", lojaId).single();
-    if (!loja || loja.empresa_id !== empresaId) {
+    if (!loja || loja.empresa_id !== targetEmpresaId) {
       return NextResponse.json({ error: "Loja inválida para essa empresa." }, { status: 400 });
+    }
+
+    if (isHierarquia) {
+      const { data: access } = await callerClient
+        .from("loja_access")
+        .select("permission")
+        .eq("profile_id", userData.user.id)
+        .eq("loja_id", lojaId)
+        .maybeSingle();
+      if (access?.permission !== "gerenciar") {
+        return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
+      }
+    }
+
+    // valida que os colaboradores escolhidos pra equipe já pertencem a essa loja
+    const teamIds = Array.isArray(teamEmployeeIds) ? teamEmployeeIds.filter(Boolean) : [];
+    if (teamIds.length) {
+      const { data: teamRows } = await admin
+        .from("profiles")
+        .select("id, role, loja_id")
+        .in("id", teamIds);
+      const invalid = (teamRows || []).some((r) => r.role !== "colaborador" || r.loja_id !== lojaId);
+      if (invalid || (teamRows || []).length !== teamIds.length) {
+        return NextResponse.json({ error: "Um ou mais colaboradores selecionados não pertencem a essa loja." }, { status: 400 });
+      }
     }
 
     let username;
@@ -72,13 +101,17 @@ export async function POST(req) {
       full_name: gerenteName,
       role: "gerente",
       username,
-      empresa_id: empresaId,
+      empresa_id: targetEmpresaId,
       loja_id: lojaId,
       must_change_password: true,
     });
     if (profileErr) {
       await admin.auth.admin.deleteUser(created.user.id);
       return NextResponse.json({ error: profileErr.message }, { status: 400 });
+    }
+
+    if (teamIds.length) {
+      await admin.from("profiles").update({ gerente_id: created.user.id }).in("id", teamIds);
     }
 
     // garante uma linha de configurações para a loja (não duplica se já existir)
@@ -90,7 +123,7 @@ export async function POST(req) {
     if (!existingSettings) {
       await admin.from("app_settings").insert({
         loja_id: lojaId,
-        empresa_id: empresaId,
+        empresa_id: targetEmpresaId,
         warning_penalty_points: 10,
         team_threshold_pct: 95,
         monthly_prize: 1000,

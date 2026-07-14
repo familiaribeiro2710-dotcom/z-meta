@@ -8,7 +8,7 @@ const DEFAULT_PASSWORD = "123456789";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { fullName, empresaId, lojaId, username: desiredUsername } = body || {};
+    const { fullName, empresaId, lojaId, gerenteId, username: desiredUsername } = body || {};
     const password = DEFAULT_PASSWORD;
 
     const authHeader = req.headers.get("authorization") || "";
@@ -37,23 +37,27 @@ export async function POST(req) {
 
     const isMasterAdmin = callerProfile?.role === "master_admin";
     const isGerente = callerProfile?.role === "gerente" && !!callerProfile.loja_id;
+    const isHierarquia = callerProfile?.role === "supervisor" || callerProfile?.role === "socio";
 
-    if (!callerProfile || (!isMasterAdmin && !isGerente)) {
+    if (!callerProfile || (!isMasterAdmin && !isGerente && !isHierarquia)) {
       return NextResponse.json(
-        { error: "Apenas o gerente ou o Master Admin podem cadastrar colaboradores." },
+        { error: "Apenas o gerente, supervisor, sócio ou o Master Admin podem cadastrar colaboradores." },
         { status: 403 }
       );
     }
+
+    const admin = getSupabaseAdmin();
 
     const targetEmpresaId = isMasterAdmin ? empresaId : callerProfile.empresa_id;
     if (!targetEmpresaId) {
       return NextResponse.json({ error: "Informe a empresa." }, { status: 400 });
     }
 
-    const admin = getSupabaseAdmin();
-
     let targetLojaId;
-    if (isMasterAdmin) {
+    if (isGerente) {
+      targetLojaId = callerProfile.loja_id;
+    } else {
+      // master_admin e supervisor/sócio escolhem a loja explicitamente
       targetLojaId = lojaId;
       if (!targetLojaId) {
         return NextResponse.json({ error: "Informe a loja desse colaborador." }, { status: 400 });
@@ -66,8 +70,33 @@ export async function POST(req) {
       if (!lojaRow || lojaRow.empresa_id !== targetEmpresaId) {
         return NextResponse.json({ error: "Loja inválida para essa empresa." }, { status: 400 });
       }
-    } else {
-      targetLojaId = callerProfile.loja_id;
+      if (isHierarquia) {
+        const { data: access } = await callerClient
+          .from("loja_access")
+          .select("permission")
+          .eq("profile_id", userData.user.id)
+          .eq("loja_id", targetLojaId)
+          .maybeSingle();
+        if (access?.permission !== "gerenciar") {
+          return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
+        }
+      }
+    }
+
+    // gerente_id: qual gerente (equipe) esse colaborador vai integrar — separado da loja.
+    let targetGerenteId = null;
+    if (isGerente) {
+      targetGerenteId = callerProfile.id;
+    } else if (gerenteId) {
+      const { data: gerenteRow } = await admin
+        .from("profiles")
+        .select("id, role, loja_id")
+        .eq("id", gerenteId)
+        .single();
+      if (!gerenteRow || gerenteRow.role !== "gerente" || gerenteRow.loja_id !== targetLojaId) {
+        return NextResponse.json({ error: "Gerente inválido para essa loja." }, { status: 400 });
+      }
+      targetGerenteId = gerenteId;
     }
 
     if (!fullName) {
@@ -98,6 +127,7 @@ export async function POST(req) {
       username,
       empresa_id: targetEmpresaId,
       loja_id: targetLojaId,
+      gerente_id: targetGerenteId,
       must_change_password: true,
     });
     if (profileErr) {

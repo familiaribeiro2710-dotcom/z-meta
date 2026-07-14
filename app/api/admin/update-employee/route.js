@@ -8,11 +8,11 @@ const DEFAULT_PASSWORD = "123456789";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { employeeId, fullName, resetPassword, newUsername } = body || {};
+    const { employeeId, fullName, resetPassword, newUsername, newGerenteId } = body || {};
     if (!employeeId) {
       return NextResponse.json({ error: "Informe o usuário." }, { status: 400 });
     }
-    if (!fullName && !resetPassword && !newUsername) {
+    if (!fullName && !resetPassword && !newUsername && newGerenteId === undefined) {
       return NextResponse.json({ error: "Nada para atualizar." }, { status: 400 });
     }
 
@@ -42,9 +42,10 @@ export async function POST(req) {
 
     const isMasterAdmin = callerProfile?.role === "master_admin";
     const isGerente = callerProfile?.role === "gerente" && !!callerProfile.loja_id;
-    if (!callerProfile || (!isMasterAdmin && !isGerente)) {
+    const isHierarquia = callerProfile?.role === "supervisor" || callerProfile?.role === "socio";
+    if (!callerProfile || (!isMasterAdmin && !isGerente && !isHierarquia)) {
       return NextResponse.json(
-        { error: "Apenas o gerente ou o Master Admin podem editar usuários." },
+        { error: "Apenas o gerente, supervisor, sócio ou o Master Admin podem editar usuários." },
         { status: 403 }
       );
     }
@@ -53,16 +54,28 @@ export async function POST(req) {
 
     const { data: target } = await admin
       .from("profiles")
-      .select("id, role, empresa_id, loja_id")
+      .select("id, role, empresa_id, loja_id, gerente_id")
       .eq("id", employeeId)
       .single();
 
     if (!target || !["colaborador", "gerente", "socio", "supervisor"].includes(target.role)) {
       return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
     }
-    // gerente só pode editar colaboradores da própria loja — nunca outro gerente, sócio, supervisor nem loja alheia
-    if (isGerente && (target.role !== "colaborador" || target.loja_id !== callerProfile.loja_id)) {
-      return NextResponse.json({ error: "Você só pode editar colaboradores da sua loja." }, { status: 403 });
+    // gerente só pode editar colaboradores da própria equipe — nunca outro gerente, sócio, supervisor nem colaborador de outra equipe
+    if (isGerente && (target.role !== "colaborador" || target.gerente_id !== callerProfile.id)) {
+      return NextResponse.json({ error: "Você só pode editar colaboradores da sua equipe." }, { status: 403 });
+    }
+    // supervisor/sócio só editam usuários de lojas que gerenciam
+    if (isHierarquia) {
+      const { data: access } = await callerClient
+        .from("loja_access")
+        .select("permission")
+        .eq("profile_id", userData.user.id)
+        .eq("loja_id", target.loja_id)
+        .maybeSingle();
+      if (access?.permission !== "gerenciar") {
+        return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
+      }
     }
 
     if (fullName && fullName.trim()) {
@@ -76,7 +89,7 @@ export async function POST(req) {
     }
 
     if (newUsername) {
-      // gerente pode alterar o usuário de login dos seus próprios colaboradores; master admin, de qualquer um.
+      // gerente pode alterar o usuário de login dos seus próprios colaboradores; master admin/supervisor/sócio, de quem gerenciam.
       const clean = slugBase(newUsername);
       if (!clean) {
         return NextResponse.json({ error: "Usuário inválido." }, { status: 400 });
@@ -103,6 +116,30 @@ export async function POST(req) {
         .eq("id", employeeId);
       if (unameErr) {
         return NextResponse.json({ error: unameErr.message }, { status: 400 });
+      }
+    }
+
+    if (newGerenteId !== undefined && target.role === "colaborador") {
+      // só supervisor/sócio/master admin reatribuem a equipe (o gerente da equipe atual não pode se auto-transferir colaboradores)
+      if (!isMasterAdmin && !isHierarquia) {
+        return NextResponse.json({ error: "Apenas supervisor, sócio ou Master Admin podem trocar a equipe de um colaborador." }, { status: 403 });
+      }
+      if (newGerenteId) {
+        const { data: gerenteRow } = await admin
+          .from("profiles")
+          .select("id, role, loja_id")
+          .eq("id", newGerenteId)
+          .single();
+        if (!gerenteRow || gerenteRow.role !== "gerente" || gerenteRow.loja_id !== target.loja_id) {
+          return NextResponse.json({ error: "Gerente inválido para a loja desse colaborador." }, { status: 400 });
+        }
+      }
+      const { error: gerenteErr } = await admin
+        .from("profiles")
+        .update({ gerente_id: newGerenteId || null })
+        .eq("id", employeeId);
+      if (gerenteErr) {
+        return NextResponse.json({ error: gerenteErr.message }, { status: 400 });
       }
     }
 
