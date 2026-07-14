@@ -84,6 +84,7 @@ export default function AdminPage() {
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState("");
   const [creating, setCreating] = useState(false);
+  const [newEmpresaOpen, setNewEmpresaOpen] = useState(false);
 
   const greet = greeting();
   const month = firstDayOfMonth(todayStr());
@@ -269,7 +270,9 @@ export default function AdminPage() {
         userName={profile.full_name}
         userId={profile.id}
         userUsername={profile.username}
+        userAvatarUrl={profile.avatar_url}
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+        onAvatarChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
         tabs={EMPRESA_TABS}
         activeTab={viewTab === "metas" ? "metas" : "atividades"}
         onTabChange={setViewTab}
@@ -297,7 +300,9 @@ export default function AdminPage() {
         userName={profile.full_name}
         userId={profile.id}
         userUsername={profile.username}
+        userAvatarUrl={profile.avatar_url}
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+        onAvatarChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
       >
         {empresaDetail ? (
           <EmpresaDetail
@@ -324,7 +329,9 @@ export default function AdminPage() {
         userName={profile.full_name}
         userId={profile.id}
         userUsername={profile.username}
+        userAvatarUrl={profile.avatar_url}
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+        onAvatarChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
         tabs={EMPRESA_TABS}
         activeTab={lojaTab}
         onTabChange={setLojaTab}
@@ -357,7 +364,9 @@ export default function AdminPage() {
       userName={profile.full_name}
       userId={profile.id}
       userUsername={profile.username}
+      userAvatarUrl={profile.avatar_url}
       onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+      onAvatarChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
       tabs={MASTER_TABS}
       activeTab={masterTab}
       onTabChange={setMasterTab}
@@ -418,37 +427,48 @@ export default function AdminPage() {
         </div>
 
         <div className="card">
-          <p className="inline-flex items-center gap-1.5 whitespace-nowrap m-0 mb-3 text-xs uppercase tracking-wider text-muted font-bold">
-            <Plus size={14} className="shrink-0" /> Nova empresa
-          </p>
-          <form onSubmit={handleCreate} className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="label">Nome da empresa</label>
-              <input className="input" value={empresaName} onChange={(e) => setEmpresaName(e.target.value)} required />
-            </div>
-            <div>
-              <label className="label">CNPJ</label>
-              <CnpjInput value={cnpj} onChange={setCnpj} />
-            </div>
-            <div>
-              <label className="label">Telefone</label>
-              <PhoneInput value={telefone} onChange={setTelefone} />
-            </div>
-            <div>
-              <label className="label">E-mail principal</label>
-              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contato@empresa.com" />
-            </div>
-            <div className="sm:col-span-2">
-              <button className="btn" type="submit" disabled={creating}>
-                {creating ? "Criando…" : "Criar empresa"}
-              </button>
-            </div>
-          </form>
-          {msg && (
-            <p className="text-xs text-muted mt-2 flex items-center gap-1.5">
-              {msg.startsWith("Erro") ? <AlertTriangle size={13} className="text-danger" /> : <CheckCircle2 size={13} className="text-success" />}
-              {msg}
+          <button
+            type="button"
+            onClick={() => setNewEmpresaOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-2"
+          >
+            <p className="inline-flex items-center gap-1.5 whitespace-nowrap m-0 text-xs uppercase tracking-wider text-muted font-bold">
+              <Plus size={14} className="shrink-0" /> Nova empresa
             </p>
+            {newEmpresaOpen ? <ChevronUp size={15} className="text-muted" /> : <ChevronDown size={15} className="text-muted" />}
+          </button>
+          {newEmpresaOpen && (
+            <>
+              <form onSubmit={handleCreate} className="grid sm:grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label className="label">Nome da empresa</label>
+                  <input className="input" value={empresaName} onChange={(e) => setEmpresaName(e.target.value)} required />
+                </div>
+                <div>
+                  <label className="label">CNPJ</label>
+                  <CnpjInput value={cnpj} onChange={setCnpj} />
+                </div>
+                <div>
+                  <label className="label">Telefone</label>
+                  <PhoneInput value={telefone} onChange={setTelefone} />
+                </div>
+                <div>
+                  <label className="label">E-mail principal</label>
+                  <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contato@empresa.com" />
+                </div>
+                <div className="sm:col-span-2">
+                  <button className="btn" type="submit" disabled={creating}>
+                    {creating ? "Criando…" : "Criar empresa"}
+                  </button>
+                </div>
+              </form>
+              {msg && (
+                <p className="text-xs text-muted mt-2 flex items-center gap-1.5">
+                  {msg.startsWith("Erro") ? <AlertTriangle size={13} className="text-danger" /> : <CheckCircle2 size={13} className="text-success" />}
+                  {msg}
+                </p>
+              )}
+            </>
           )}
         </div>
 
@@ -709,7 +729,7 @@ function FinanceiroTab() {
         </div>
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
           <HeroStat Icon={DollarSign} value={formatBRL(totals.receita)} label="Receita total" sub="a cobrar no mês" />
-          <HeroStat Icon={Users} value={totals.colaboradores} label="Colaboradores" sub="cadastrados" divider />
+          <HeroStat Icon={Users} value={totals.usuarios} label="Usuários cadastrados" sub="em todas as empresas" divider />
           <HeroStat Icon={Building2} value={formatBRL(totals.ticketEmpresa)} label="Ticket médio" sub="por empresa" divider />
           <HeroStat Icon={User} value={formatBRL(totals.ticketUsuario)} label="Ticket médio" sub="por usuário" divider />
         </div>
@@ -827,15 +847,15 @@ function DadosTab() {
   }, [rows, search]);
 
   const totals = useMemo(() => {
-    let faturamento = 0, colaboradores = 0, premiacoes = 0, lojas = 0;
+    let faturamento = 0, usuarios = 0, premiacoes = 0, lojas = 0;
     rows.forEach((r) => {
       faturamento += Number(r.faturamento);
-      colaboradores += Number(r.colaboradores_count);
+      usuarios += Number(r.usuarios_count);
       premiacoes += Number(r.premiacoes);
       lojas += Number(r.lojas_count);
     });
     const ticketPorEmpresa = rows.length ? faturamento / rows.length : 0;
-    return { faturamento, colaboradores, premiacoes, lojas, ticketPorEmpresa };
+    return { faturamento, usuarios, premiacoes, lojas, ticketPorEmpresa };
   }, [rows]);
 
   if (selectedEmpresa) {
@@ -846,7 +866,7 @@ function DadosTab() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-navy flex items-center gap-2"><BarChart3 size={20} className="text-purple" /> Dados</h1>
-        <p className="text-xs text-muted mt-1">Faturamento, colaboradores e premiações de todas as empresas. Clique numa empresa pra ver o histórico completo de faturamento.</p>
+        <p className="text-xs text-muted mt-1">Faturamento, usuários cadastrados e premiações de todas as empresas. Clique numa empresa pra ver o histórico completo de faturamento.</p>
       </div>
 
       <div
@@ -860,7 +880,7 @@ function DadosTab() {
         </div>
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
           <HeroStatLight value={formatBRL(totals.faturamento)} label="Faturamento total" sub="todas as empresas" />
-          <HeroStatLight value={totals.colaboradores} label="Colaboradores" sub="cadastrados" divider />
+          <HeroStatLight value={totals.usuarios} label="Usuários cadastrados" sub="em todas as empresas" divider />
           <HeroStatLight value={formatBRL(totals.premiacoes)} label="Premiações" sub="pagas no mês" divider />
           <HeroStatLight value={totals.lojas} label="Lojas" sub="cadastradas no total" divider />
         </div>

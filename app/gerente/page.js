@@ -49,7 +49,9 @@ export default function GerentePage() {
       userName={profile.full_name}
       userId={profile.id}
       userUsername={profile.username}
+      userAvatarUrl={profile.avatar_url}
       onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
+      onAvatarChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
       tabs={EMPRESA_TABS}
       activeTab={tab}
       onTabChange={setTab}
