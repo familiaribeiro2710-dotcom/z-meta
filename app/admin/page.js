@@ -46,6 +46,7 @@ import MonthNav from "../../lib/MonthNav";
 import SelectField from "../../lib/SelectField";
 import { CnpjInput, PhoneInput } from "../../lib/MaskedInputs";
 import AutoFitText from "../../lib/AutoFitText";
+import Avatar from "../../lib/Avatar";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
 
@@ -1533,8 +1534,12 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
 
 function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onViewAs }) {
   const [openPersonId, setOpenPersonId] = useState(null);
+  const [editingPersonId, setEditingPersonId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
   const [addingLojaFor, setAddingLojaFor] = useState(null);
+
+  const lojaNameById = {};
+  lojas.forEach((l) => { lojaNameById[l.loja_id] = l.loja_name; });
 
   async function togglePermission(a) {
     const next = a.permission === "gerenciar" ? "ver" : "gerenciar";
@@ -1560,15 +1565,25 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
     onChanged();
   }
 
+  async function toggleActive(p) {
+    setTogglingId(`active-${p.id}`);
+    const { data: { session } } = await supabase.auth.getSession();
+    await fetch("/api/admin/update-employee", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ employeeId: p.id, newActive: p.active === false }),
+    });
+    setTogglingId(null);
+    onChanged();
+  }
+
   return (
     <div className="space-y-3">
-      <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
-        <ShieldCheck size={13} /> Sócios e supervisores ({people.length})
-      </p>
+      <p className="label mb-0 flex items-center gap-1.5"><ShieldCheck size={14} /> Sócios e supervisores ({people.length})</p>
 
       {people.length === 0 && <p className="text-xs text-muted">Nenhum sócio ou supervisor cadastrado ainda.</p>}
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {people.map((p) => {
           const meta = ROLE_META[p.role] || {};
           const access = lojaAccess.filter((a) => a.profile_id === p.id);
@@ -1584,128 +1599,180 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
             : (allProfiles || []).filter((c) => c.role === "gerente" && scopedLojaIds.includes(c.loja_id));
           const teamLabel = isSocio ? "Supervisores e gerentes sob gestão" : "Gerentes sob gestão";
           const unassignedLojas = lojas.filter((l) => !access.some((a) => a.loja_id === l.loja_id));
+          const isOpen = openPersonId === p.id;
+          const isEditing = editingPersonId === p.id;
+
           return (
-            <div key={p.id}>
-              <div className="w-full flex items-center justify-between gap-2">
+            <div key={p.id} className="border border-line rounded-2xl p-3">
+              <div className="flex items-center justify-between gap-2">
                 <button
-                  onClick={() => setOpenPersonId(openPersonId === p.id ? null : p.id)}
-                  className="flex-1 text-left text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+                  type="button"
+                  onClick={() => setOpenPersonId(isOpen ? null : p.id)}
+                  className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-75 transition-opacity"
                 >
-                  <span className="flex items-center gap-1.5 flex-wrap">
-                    <span className="badge" style={{ color: meta.color, background: meta.bg }}>{meta.label}</span>
-                    <span className={`font-medium ${p.active === false ? "text-muted line-through" : "text-navy"}`}>{p.full_name}</span>
-                    <span className="text-muted">({p.username})</span>
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    {p.must_change_password && <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>}
-                    {openPersonId === p.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                  </span>
-                </button>
-                {onViewAs && (
-                  <button
-                    title={`Ver como ${p.full_name}`}
-                    onClick={() => onViewAs(p)}
-                    className="p-1.5 rounded-lg border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
-                  >
-                    <Eye size={13} />
-                  </button>
-                )}
-              </div>
-              {openPersonId === p.id && (
-                <div className="mt-1.5 space-y-3">
-                  <div>
-                    {access.length === 0 && <p className="text-[11px] text-muted mb-1.5">sem lojas atribuídas</p>}
-                    <div className="flex flex-wrap gap-1.5">
-                      {access.map((a) => {
-                        const loja = lojas.find((l) => l.loja_id === a.loja_id);
-                        const isManage = a.permission === "gerenciar";
-                        return (
-                          <span
-                            key={a.loja_id}
-                            className={`badge transition-colors ${
-                              isManage ? "bg-purple/15 text-purple" : "bg-teal/10 text-teal"
-                            }`}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => togglePermission(a)}
-                              disabled={togglingId === a.id}
-                              title="Clique para alternar entre ver e gerenciar"
-                              className="flex items-center gap-1 hover:opacity-75"
-                            >
-                              <Store size={10} /> {loja?.loja_name || "loja"} · {isManage ? "gerenciar" : "ver"}
-                              <ArrowLeftRight size={10} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removeAccess(a)}
-                              disabled={togglingId === a.id}
-                              title="Remover acesso a essa loja"
-                              className="hover:text-danger"
-                            >
-                              <X size={10} />
-                            </button>
-                          </span>
-                        );
-                      })}
+                  <Avatar name={p.full_name} avatarUrl={p.avatar_url} size={32} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`font-medium text-sm ${p.active === false ? "text-muted line-through" : "text-navy"}`}>{p.full_name}</span>
+                      <span className="badge" style={{ color: meta.color, background: meta.bg }}>{meta.label}</span>
+                      {p.must_change_password && <span className="badge bg-warn/15 text-warn"><KeyRound size={10} /> senha pendente</span>}
+                      {p.active === false && <span className="badge bg-danger/10 text-danger">inativo</span>}
                     </div>
+                    <p className="text-xs text-muted">
+                      usuário: {p.username} · {isSocio ? "vê toda a empresa" : `${access.length} loja${access.length !== 1 ? "s" : ""} vinculada${access.length !== 1 ? "s" : ""}`}
+                    </p>
+                  </div>
+                </button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {onViewAs && (
+                    <button title={`Ver como ${p.full_name}`} onClick={() => onViewAs(p)} className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors">
+                      <Eye size={14} />
+                    </button>
+                  )}
+                  <button
+                    title="Editar"
+                    aria-label="Editar"
+                    onClick={() => { setOpenPersonId(p.id); setEditingPersonId(isEditing ? null : p.id); }}
+                    className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    title={p.active === false ? "Ativar" : "Desativar"}
+                    aria-label={p.active === false ? "Ativar" : "Desativar"}
+                    onClick={() => toggleActive(p)}
+                    disabled={togglingId === `active-${p.id}`}
+                    className={`p-1.5 rounded-lg hover:bg-line/60 transition-colors ${p.active === false ? "text-danger" : "text-muted hover:text-navy"}`}
+                  >
+                    <Power size={14} />
+                  </button>
+                  <button
+                    title={isOpen ? "Recolher" : "Ver detalhes"}
+                    aria-label={isOpen ? "Recolher" : "Ver detalhes"}
+                    onClick={() => setOpenPersonId(isOpen ? null : p.id)}
+                    className="p-1.5 rounded-lg text-muted hover:text-navy hover:bg-line/60 transition-colors"
+                  >
+                    {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                </div>
+              </div>
+
+              {isOpen && (
+                <div className="mt-3 pt-3 border-t border-line space-y-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-1.5 flex items-center gap-1.5">
+                      <Store size={11} /> Lojas com acesso
+                    </p>
                     {isSocio ? (
-                      <p className="text-[11px] text-muted mt-1.5">Sócio vê automaticamente todas as lojas da empresa — não precisa vincular.</p>
+                      <p className="text-xs text-muted">Sócio vê automaticamente todas as lojas da empresa — não precisa vincular.</p>
                     ) : (
-                      <div className="mt-1.5">
-                        {addingLojaFor === p.id ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {unassignedLojas.length === 0 && <span className="text-[11px] text-muted">todas as lojas já vinculadas</span>}
-                            {unassignedLojas.map((l) => (
-                              <button
-                                key={l.loja_id}
-                                type="button"
-                                onClick={() => addAccess(p.id, l.loja_id)}
-                                disabled={togglingId === `add-${l.loja_id}`}
-                                className="badge bg-line text-muted hover:bg-purple/10 hover:text-purple transition-colors"
+                      <>
+                        {access.length === 0 && <p className="text-xs text-muted mb-1.5">sem lojas atribuídas ainda</p>}
+                        <div className="flex flex-wrap gap-1.5">
+                          {access.map((a) => {
+                            const loja = lojas.find((l) => l.loja_id === a.loja_id);
+                            const isManage = a.permission === "gerenciar";
+                            return (
+                              <span
+                                key={a.loja_id}
+                                className={`badge transition-colors ${isManage ? "bg-purple/15 text-purple" : "bg-teal/10 text-teal"}`}
                               >
-                                <Store size={10} /> {l.loja_name}
+                                <button
+                                  type="button"
+                                  onClick={() => togglePermission(a)}
+                                  disabled={togglingId === a.id}
+                                  title="Clique para alternar entre ver e gerenciar"
+                                  className="flex items-center gap-1 hover:opacity-75"
+                                >
+                                  <Store size={10} /> {loja?.loja_name || "loja"} · {isManage ? "gerenciar" : "ver"}
+                                  <ArrowLeftRight size={10} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAccess(a)}
+                                  disabled={togglingId === a.id}
+                                  title="Remover acesso a essa loja"
+                                  className="hover:text-danger"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <div className="mt-1.5">
+                          {addingLojaFor === p.id ? (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {unassignedLojas.length === 0 && <span className="text-[11px] text-muted">todas as lojas já vinculadas</span>}
+                              {unassignedLojas.map((l) => (
+                                <button
+                                  key={l.loja_id}
+                                  type="button"
+                                  onClick={() => addAccess(p.id, l.loja_id)}
+                                  disabled={togglingId === `add-${l.loja_id}`}
+                                  className="badge bg-line text-muted hover:bg-purple/10 hover:text-purple transition-colors"
+                                >
+                                  <Store size={10} /> {l.loja_name}
+                                </button>
+                              ))}
+                              <button
+                                type="button"
+                                title="Cancelar"
+                                aria-label="Cancelar"
+                                className="p-1 rounded-lg text-muted hover:text-navy hover:bg-line/60 transition-colors"
+                                onClick={() => setAddingLojaFor(null)}
+                              >
+                                <X size={12} />
                               </button>
-                            ))}
-                            <button type="button" className="text-[11px] text-muted hover:text-navy" onClick={() => setAddingLojaFor(null)}>cancelar</button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setAddingLojaFor(p.id)}
-                            className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
-                          >
-                            <Plus size={11} /> vincular loja
-                          </button>
-                        )}
-                      </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setAddingLojaFor(p.id)}
+                              className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
+                            >
+                              <Plus size={11} /> vincular loja
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
 
                   <div>
-                    <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-1 flex items-center gap-1.5">
+                    <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-1.5 flex items-center gap-1.5">
                       <Users size={11} /> {teamLabel} ({teamScope.length})
                     </p>
                     {teamScope.length === 0 ? (
-                      <p className="text-[11px] text-muted">{isSocio ? "nenhum supervisor ou gerente cadastrado ainda" : "nenhum gerente nas lojas dessa pessoa ainda"}</p>
+                      <p className="text-xs text-muted">{isSocio ? "nenhum supervisor ou gerente cadastrado ainda" : "nenhum gerente nas lojas dessa pessoa ainda"}</p>
                     ) : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {teamScope.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => onViewAs && onViewAs(c)}
-                            title={`Ver como ${c.full_name}`}
-                            className={`badge bg-line hover:bg-purple/10 hover:text-purple transition-colors ${c.active === false ? "line-through text-muted" : "text-navy"}`}
-                          >
-                            {c.full_name}{isSocio ? ` · ${c.role === "supervisor" ? "supervisor" : "gerente"}` : ""}
-                          </button>
-                        ))}
-                      </div>
+                      <ul className="divide-y divide-line">
+                        {teamScope.map((c) => {
+                          const cLojaName = c.role === "gerente" ? (lojaNameById[c.loja_id] || "sem loja vinculada") : null;
+                          return (
+                            <li key={c.id} className="py-1.5">
+                              <button
+                                type="button"
+                                onClick={() => onViewAs && onViewAs(c)}
+                                title={`Ver como ${c.full_name}`}
+                                className="flex items-center gap-2 text-left hover:opacity-75 transition-opacity w-full"
+                              >
+                                <Avatar name={c.full_name} avatarUrl={c.avatar_url} size={24} />
+                                <span className="min-w-0">
+                                  <span className={`text-xs font-medium block ${c.active === false ? "text-muted line-through" : "text-navy"}`}>{c.full_name}</span>
+                                  <span className="text-[11px] text-muted block">
+                                    {c.role === "supervisor" ? "Supervisor" : "Gerente"}{cLojaName ? ` · ${cLojaName}` : ""}
+                                  </span>
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     )}
                   </div>
 
-                  <EditUser user={p} onChanged={onChanged} onClose={() => setOpenPersonId(null)} />
+                  {isEditing && <EditUser user={p} onChanged={onChanged} onClose={() => setEditingPersonId(null)} />}
                 </div>
               )}
             </div>
