@@ -368,6 +368,21 @@ Felipe pediu, especificamente na visão do gerente, um dashboard mostrando de ca
 
 **Build verificado:** `✓ Compiled successfully`.
 
+### Botão "redefinir senha" faltando na gestão de loja (gerente/colaborador)
+**Bug reportado:** Felipe foi editar um colaborador e não encontrou a opção de redefinir a senha — função que "já existia".
+
+**Causa raiz:** a função de fato já existia de ponta a ponta (rota `/api/admin/update-employee`, campo `resetPassword`, redefine para a senha padrão `123456789` via `admin.auth.admin.updateUserById` + marca `must_change_password: true`), mas só tinha botão na UI dentro de `EditUser` (`app/admin/page.js`), usado exclusivamente na tela `EmpresaDetail` do **master_admin** (visão agregada da empresa inteira, fora de uma loja específica). O componente `Colaboradores()` em `lib/EmpresaDashboard.js` — usado por **todos** os papéis (gerente/supervisor/sócio/master_admin) ao entrar numa loja específica e gerenciar a equipe dali — nunca teve esse botão, nem na lista de gerentes nem na de colaboradores. Como sócio/supervisor só gerenciam colaboradores por esse caminho (não têm acesso ao `EmpresaDetail`, que é exclusivo do master_admin), a função ficava inacessível pra eles na prática, e mesmo o master_admin só a via se entrasse pelo caminho certo.
+
+**Fix:** adicionado botão ícone-only (`KeyRound`, com `title`/`aria-label`, mesmo padrão de decluttering já usado no resto do app) em `Colaboradores()` (`lib/EmpresaDashboard.js`):
+- Na lista de **gerentes**: visível quando `canManageTeams` (master_admin/sócio/supervisor — mesmo gate que já protege editar/desativar/excluir gerente).
+- Na lista de **colaboradores**: visível quando `canEdit` (todos exceto `"leitor"` — inclui gerente, mantendo paridade com os botões editar/desativar/excluir que colaborador já tinha ali).
+
+Nova função `resetPassword(user)` chama a mesma rota `/api/admin/update-employee` já existente com `{ employeeId, resetPassword: true }`, com `window.confirm` avisando a senha padrão antes de executar e `alert` de confirmação/erro depois — mesmo padrão de UX já usado em `EditUser`.
+
+**Fora do escopo, sinalizado mas não implementado:** a tela "Supervisores" do sócio (`HierarchyHome.js`, gerencia contas de supervisor) também não tem botão de redefinir senha — só tem ativar/desativar. Não mexi porque o pedido foi específico pra gerente/colaborador; avisar se quiser o mesmo ali.
+
+**Build verificado:** `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
