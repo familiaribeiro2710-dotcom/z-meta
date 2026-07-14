@@ -3,10 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { resolveUsername } from "../../../../lib/generateUsername";
 
+const DEFAULT_PASSWORD = "123456789";
+
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { fullName, password, empresaId, lojaId, username: desiredUsername } = body || {};
+    const { fullName, empresaId, lojaId, username: desiredUsername } = body || {};
+    const password = DEFAULT_PASSWORD;
 
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
@@ -67,14 +70,8 @@ export async function POST(req) {
       targetLojaId = callerProfile.loja_id;
     }
 
-    if (!fullName || !password) {
-      return NextResponse.json({ error: "Preencha nome e senha." }, { status: 400 });
-    }
-    if (String(password).length < 6) {
-      return NextResponse.json(
-        { error: "A senha precisa ter pelo menos 6 caracteres." },
-        { status: 400 }
-      );
+    if (!fullName) {
+      return NextResponse.json({ error: "Preencha o nome." }, { status: 400 });
     }
 
     let username;
@@ -108,7 +105,7 @@ export async function POST(req) {
       return NextResponse.json({ error: profileErr.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, id: created.user.id, username });
+    return NextResponse.json({ ok: true, id: created.user.id, username, defaultPassword: DEFAULT_PASSWORD });
   } catch (e) {
     return NextResponse.json({ error: e.message || "Erro inesperado." }, { status: 500 });
   }

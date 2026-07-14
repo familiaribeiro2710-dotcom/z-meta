@@ -908,14 +908,13 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
   const [lojaId, setLojaId] = useState(lojas[0]?.loja_id || "");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [msg, setMsg] = useState("");
 
   async function submit(e) {
     e.preventDefault();
-    if (!lojaId || !name.trim() || !password) {
-      setMsg("Erro: preencha loja, nome e senha.");
+    if (!lojaId || !name.trim()) {
+      setMsg("Erro: preencha loja e nome.");
       return;
     }
     setCreating(true);
@@ -924,7 +923,7 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
     const res = await fetch("/api/admin/create-employee", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ fullName: name.trim(), username: username.trim(), password, empresaId, lojaId }),
+      body: JSON.stringify({ fullName: name.trim(), username: username.trim(), empresaId, lojaId }),
     });
     const json = await res.json();
     setCreating(false);
@@ -962,8 +961,8 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
           autoCapitalize="none"
           autoCorrect="off"
         />
-        <input className="input !py-1.5 !text-xs" placeholder="senha temporária" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
+      <p className="text-[11px] text-muted">Senha padrão (123456789) definida automaticamente pelo sistema.</p>
       <div className="flex items-center gap-2">
         <button type="submit" className="btn-outline !py-1.5 !text-xs" disabled={creating}>
           {creating ? "Criando…" : "Criar colaborador"}

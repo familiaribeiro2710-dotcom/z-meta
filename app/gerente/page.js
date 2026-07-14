@@ -14,6 +14,7 @@ import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard, { EMPRESA_TABS } from "../../lib/EmpresaDashboard";
+import ColaboradorView from "../../lib/ColaboradorView";
 import MonthNav from "../../lib/MonthNav";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, remainingDaysInMonth, monthLabel } from "../../lib/date";
@@ -24,6 +25,7 @@ export default function GerentePage() {
   const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState("atividades");
   const [lojaName, setLojaName] = useState("");
+  const [viewingEmployee, setViewingEmployee] = useState(null); // colaborador selecionado na aba Colaboradores — mostra a visão dele
   const [selectedMonth, setSelectedMonth] = useState(""); // mês visualizado no dashboard (só permite meses anteriores ao atual)
   const didInit = useRef(false);
   const [hero, setHero] = useState({ metaLoja: 0, soldLoja: 0, pendingToday: 0, commissionSoFar: 0, prizesSoFar: 0, commissionPct: 0, commissionTierLabel: "não atingimento" });
@@ -179,6 +181,16 @@ export default function GerentePage() {
       onTabChange={setTab}
     >
       <div className="space-y-6">
+        {viewingEmployee ? (
+          <ColaboradorView
+            key={viewingEmployee.id}
+            profile={viewingEmployee}
+            tab={tab}
+            viewedByManager
+            onBack={() => setViewingEmployee(null)}
+          />
+        ) : (
+          <>
         {tab === "atividades" && (
           <>
             <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -232,7 +244,16 @@ export default function GerentePage() {
           </>
         )}
 
-        <EmpresaDashboard lojaId={profile.loja_id} empresaId={profile.empresa_id} viewerRole="gerente" tab={tab} month={month} />
+        <EmpresaDashboard
+          lojaId={profile.loja_id}
+          empresaId={profile.empresa_id}
+          viewerRole="gerente"
+          tab={tab}
+          month={month}
+          onOpenEmployee={setViewingEmployee}
+        />
+          </>
+        )}
       </div>
     </AppShell>
   );
