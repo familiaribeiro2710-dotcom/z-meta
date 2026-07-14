@@ -404,6 +404,10 @@ Três pedidos do Felipe na lista de "Tarefas" cadastradas (`Tarefas()`, `lib/Emp
 Felipe pediu pra melhorar a aparência do seletor de dia da semana ao criar tarefa com recorrência "1 dia na semana" (`Tarefas()`, `lib/EmpresaDashboard.js`). Era um `<select>` HTML nativo genérico, destoando do resto do formulário — que logo acima já usa botões-pill (`rounded-full border-2`) pra escolher o tipo de recorrência (diária/semanal/única). Trocado pelo mesmo padrão: 7 botões-pill (`WEEKDAY_LABELS`, `text-xs font-bold px-3 py-1.5 rounded-full border-2`, ativo em roxo) com `flex-wrap`, idêntico visualmente ao seletor de recorrência logo acima.
 **Build verificado:** `✓ Compiled successfully`.
 
+### Subtítulo do "Checklist do dia" removido
+Removido o `<p>` explicativo abaixo do título "Checklist do dia" em `Tarefas()` (`lib/EmpresaDashboard.js`) — "Você pode marcar ou corrigir tarefas de qualquer dia..." (quem edita) / "Só aparecem aqui as tarefas que valem nesse dia." (leitor). Ambas as variantes saíram, não só uma.
+**Build verificado:** `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
