@@ -607,6 +607,17 @@ Felipe reportou erro ao clicar na aba Supervisores. Causa: no toggle colapsável
 **Auditoria extra, pra não deixar irmãos do mesmo bug escondidos:** rodei `eslint` com a regra `react/jsx-no-undef` (que o projeto não roda por padrão, já que o build pula lint) contra os 5 arquivos principais (`HierarchyHome.js`, `EmpresaDashboard.js`, `GerenteView.js`, `ColaboradorView.js`, `app/admin/page.js`) — confirmado **zero outras ocorrências** desse padrão (componente/ícone usado no JSX sem import) depois do fix. Vale considerar ligar essa regra no lint do CI/build no futuro pra pegar isso automaticamente (hoje "Skipping linting" deixa esse tipo de erro passar até alguém clicar na tela errada em produção).
 **Build verificado:** `✓ Compiled successfully`.
 
+### Removido campo de "Desconto (%)" no registro de advertência — era enganoso, não só redundante
+Felipe questionou se fazia sentido ter um campo de porcentagem de desconto no formulário "Registrar advertência" (`Advertencias()`, `lib/EmpresaDashboard.js`), já que isso já é configurado globalmente no card "Configurações" da mesma aba.
+
+**Concordei e confirmei algo pior do que redundância:** conferi o cálculo real (`calcIndividualPct`, `lib/scoring.js`) — o desconto aplicado no % individual do colaborador é sempre `quantidade de advertências do mês × penalty global da loja` (`warningsCount * penaltyPerWarning`, chamado em `EmpresaDashboard.js` linha ~215 usando `settingsRow.warning_penalty_points`). O valor de `points` gravado em cada advertência individual **nunca era lido nesse cálculo** — só era salvo no banco e mostrado na lista ("-{w.points}%"). Ou seja, quem editava essa % no registro achava que estava customizando o desconto daquela advertência específica, mas isso não tinha efeito nenhum no resultado real — o campo mentia sobre o que fazia.
+
+**Fix:** removido o input do formulário; `addWarning` agora grava `points` automaticamente com o valor vigente de `settings.warning_penalty_points` (config global no momento do registro) — mantém a coluna do banco como registro histórico, mas sem editar de mentirinha. Adicionada uma linha informativa abaixo do formulário: "Desconto aplicado: X% (configurado abaixo)".
+
+### Card "Configurações" (aba Advertências) virou colapsável
+Felipe pediu que esse card também seguisse o padrão colapsável (setinha) já usado nos outros formulários de cadastro do app. Adicionado state `cfgOpen` (default `false`) com o mesmo padrão chevron-header — cobre tanto a visão editável (`canEditSettings`) quanto a lista somente-leitura do papel "leitor".
+**Build verificado:** `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
