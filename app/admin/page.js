@@ -46,7 +46,7 @@ import ColaboradorView from "../../lib/ColaboradorView";
 import GerenteView from "../../lib/GerenteView";
 import ConsorcioDashboard, { CONSORCIO_TABS } from "../../lib/ConsorcioDashboard";
 import ColaboradorViewConsorcio from "../../lib/ColaboradorViewConsorcio";
-import GerenteViewConsorcio from "../../lib/GerenteViewConsorcio";
+import GerenteViewConsorcio, { GERENTE_TABS as GERENTE_TABS_CONSORCIO } from "../../lib/GerenteViewConsorcio";
 import HierarchyHome from "../../lib/HierarchyHome";
 import MonthNav from "../../lib/MonthNav";
 import SelectField from "../../lib/SelectField";
@@ -55,6 +55,7 @@ import AutoFitText from "../../lib/AutoFitText";
 import Avatar from "../../lib/Avatar";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
+import { useSavedNotice } from "../../lib/SavedNotice";
 
 // Colaborador de consórcio tem um conjunto de abas diferente do gerente (atividades/calendário/
 // tarefas, sem Metas — espelha TABS_CONSORCIO de app/colaborador/page.js, que não é exportado de lá).
@@ -78,6 +79,7 @@ function daysSince(dateStr) {
 }
 
 export default function AdminPage() {
+  const notifySaved = useSavedNotice();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -166,6 +168,7 @@ export default function AdminPage() {
     }
     setMsg("Empresa criada! Agora cadastre uma loja e um gerente dentro dela.");
     setEmpresaName(""); setCnpj(""); setTelefone(""); setEmail(""); setCategoriaId("");
+    notifySaved("Empresa criada com sucesso.");
     await loadAll();
   }
 
@@ -306,7 +309,7 @@ export default function AdminPage() {
     // de pessoas/categorias diferentes) precisa ser validado contra ele, senão uma chave de outro
     // conjunto (ex: "metas" vindo de uma visita anterior a um gerente) deixaria a tela em branco.
     const viewingTabs = isConsorcioView
-      ? (viewingProfile.role === "gerente" ? CONSORCIO_TABS : TABS_CONSORCIO_COLAB)
+      ? (viewingProfile.role === "gerente" ? GERENTE_TABS_CONSORCIO : TABS_CONSORCIO_COLAB)
       : EMPRESA_TABS;
     const effectiveViewTab = viewingTabs.some((t) => t.key === viewTab) ? viewTab : "atividades";
     return (
@@ -830,6 +833,7 @@ function FinanceiroTab() {
 }
 
 function FinanceiroRow({ row, onSave }) {
+  const notifySaved = useSavedNotice();
   const [valor, setValor] = useState(String(row.valor_por_usuario ?? 0));
   const [desconto, setDesconto] = useState(String(row.desconto ?? 0));
   const [saving, setSaving] = useState(false);
@@ -850,6 +854,7 @@ function FinanceiroRow({ row, onSave }) {
     await onSave(row.empresa_id, Number(valor) || 0, Number(desconto) || 0);
     setSaving(false);
     setDirty(false);
+    notifySaved();
   }
 
   return (
@@ -1200,6 +1205,7 @@ function HeroStatLight({ value, label, sub, divider }) {
 }
 
 function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, onChanged, onOpenLojaDados, onToggleActive, onDelete, onViewAs }) {
+  const notifySaved = useSavedNotice();
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(empresa.empresa_name);
   const [editingContact, setEditingContact] = useState(false);
@@ -1224,6 +1230,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
       return;
     }
     setEditingCategoria(false);
+    notifySaved();
     onChanged();
   }
 
@@ -1241,6 +1248,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
     if (!trimmed) return;
     await supabase.from("empresas").update({ name: trimmed }).eq("id", empresa.empresa_id);
     setEditingName(false);
+    notifySaved();
     onChanged();
   }
 
@@ -1253,6 +1261,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
       .eq("id", empresa.empresa_id);
     setSavingContact(false);
     setEditingContact(false);
+    notifySaved();
     onChanged();
   }
 
@@ -2033,6 +2042,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
 }
 
 function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onViewAs }) {
+  const notifySaved = useSavedNotice();
   const [addingLoja, setAddingLoja] = useState(false);
   const [lojaName, setLojaName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -2052,6 +2062,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
     if (res.ok) {
       setLojaName("");
       setAddingLoja(false);
+      notifySaved("Loja criada com sucesso.");
       onChanged();
     }
   }
@@ -2120,7 +2131,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, empresa
   return (
     <div className="border border-line rounded-xl p-3">
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div>
+        <button type="button" onClick={onToggle} className="text-left flex-1 min-w-0 hover:opacity-75 transition-opacity">
           <p className="text-sm font-semibold text-navy flex items-center gap-1.5">
             <Store size={13} className="text-teal" /> {loja.loja_name}
             {!loja.loja_active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
@@ -2135,7 +2146,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, empresa
           {alerts.length > 0 && (
             <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
           )}
-        </div>
+        </button>
         <div className="flex items-center gap-2 shrink-0">
           <button
             className="inline-flex items-center gap-1.5 text-white rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap shadow-pop active:scale-95 hover:brightness-110 transition-all"
@@ -2236,6 +2247,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, empresa
 }
 
 function EditUser({ user, onChanged, onClose }) {
+  const notifySaved = useSavedNotice();
   const [name, setName] = useState(user.full_name);
   const [username, setUsername] = useState(user.username || "");
   const [msg, setMsg] = useState("");
@@ -2265,6 +2277,7 @@ function EditUser({ user, onChanged, onClose }) {
       return;
     }
     setMsg("Nome atualizado.");
+    notifySaved("Nome atualizado com sucesso.");
     onChanged && onChanged();
   }
 
@@ -2280,6 +2293,7 @@ function EditUser({ user, onChanged, onClose }) {
       return;
     }
     setMsg("Usuário de login atualizado.");
+    notifySaved("Usuário de login atualizado com sucesso.");
     onChanged && onChanged();
   }
 

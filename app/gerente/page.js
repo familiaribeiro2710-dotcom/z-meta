@@ -6,7 +6,7 @@ import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import GerenteView, { EMPRESA_TABS } from "../../lib/GerenteView";
-import GerenteViewConsorcio, { CONSORCIO_TABS } from "../../lib/GerenteViewConsorcio";
+import GerenteViewConsorcio, { GERENTE_TABS } from "../../lib/GerenteViewConsorcio";
 
 export default function GerentePage() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function GerentePage() {
   }, [router]);
 
   const isConsorcio = categoriaSlug === "consorcio";
-  const TABS = isConsorcio ? CONSORCIO_TABS : EMPRESA_TABS;
+  const TABS = isConsorcio ? GERENTE_TABS : EMPRESA_TABS;
 
   if (loading) {
     return (
