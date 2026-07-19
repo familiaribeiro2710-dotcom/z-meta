@@ -36,6 +36,7 @@ import {
   DollarSign,
   Tag,
   Lock,
+  CheckSquare,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -43,6 +44,9 @@ import ChangePassword from "../../lib/ChangePassword";
 import EmpresaDashboard, { EMPRESA_TABS } from "../../lib/EmpresaDashboard";
 import ColaboradorView from "../../lib/ColaboradorView";
 import GerenteView from "../../lib/GerenteView";
+import ConsorcioDashboard, { CONSORCIO_TABS } from "../../lib/ConsorcioDashboard";
+import ColaboradorViewConsorcio from "../../lib/ColaboradorViewConsorcio";
+import GerenteViewConsorcio from "../../lib/GerenteViewConsorcio";
 import HierarchyHome from "../../lib/HierarchyHome";
 import MonthNav from "../../lib/MonthNav";
 import SelectField from "../../lib/SelectField";
@@ -51,6 +55,14 @@ import AutoFitText from "../../lib/AutoFitText";
 import Avatar from "../../lib/Avatar";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
+
+// Colaborador de consórcio tem um conjunto de abas diferente do gerente (atividades/calendário/
+// tarefas, sem Metas — espelha TABS_CONSORCIO de app/colaborador/page.js, que não é exportado de lá).
+const TABS_CONSORCIO_COLAB = [
+  { key: "atividades", label: "Início", Icon: Home },
+  { key: "calendario", label: "Calendário", Icon: Calendar },
+  { key: "tarefas", label: "Tarefas", Icon: CheckSquare },
+];
 
 const MASTER_TABS = [
   { key: "inicio", label: "Início", Icon: Home },
@@ -285,6 +297,18 @@ export default function AdminPage() {
         />
       );
     }
+    // "ver como" só é disparado de dentro de EmpresaDetail (onViewAs), então selectedEmpresaDetail
+    // (e por consequência empresaDetail, com sua categoria_slug) continua setado por baixo — não
+    // precisa recarregar categoria aqui.
+    const isConsorcioView = empresaDetail?.categoria_slug === "consorcio";
+    // colaborador de consórcio tem abas diferentes de gerente/vestuário (sem Metas, com Calendário) —
+    // precisa do próprio conjunto de tabs, e viewTab (estado solto, reaproveitado entre "ver comos"
+    // de pessoas/categorias diferentes) precisa ser validado contra ele, senão uma chave de outro
+    // conjunto (ex: "metas" vindo de uma visita anterior a um gerente) deixaria a tela em branco.
+    const viewingTabs = isConsorcioView
+      ? (viewingProfile.role === "gerente" ? CONSORCIO_TABS : TABS_CONSORCIO_COLAB)
+      : EMPRESA_TABS;
+    const effectiveViewTab = viewingTabs.some((t) => t.key === viewTab) ? viewTab : "atividades";
     return (
       <AppShell
         userName={profile.full_name}
@@ -293,8 +317,8 @@ export default function AdminPage() {
         userAvatarUrl={profile.avatar_url}
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
         onAvatarChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
-        tabs={EMPRESA_TABS}
-        activeTab={viewTab === "metas" ? "metas" : "atividades"}
+        tabs={viewingTabs}
+        activeTab={effectiveViewTab}
         onTabChange={setViewTab}
       >
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4 p-3 rounded-xl bg-gold/10 border border-gold/30">
@@ -306,9 +330,15 @@ export default function AdminPage() {
           </button>
         </div>
         {viewingProfile.role === "gerente" ? (
-          <GerenteView key={viewingProfile.id} profile={viewingProfile} tab={viewTab === "metas" ? "metas" : "atividades"} viewedBySupervisor onBack={() => setViewingProfile(null)} />
+          isConsorcioView ? (
+            <GerenteViewConsorcio key={viewingProfile.id} profile={viewingProfile} tab={effectiveViewTab} viewedBySupervisor onBack={() => setViewingProfile(null)} />
+          ) : (
+            <GerenteView key={viewingProfile.id} profile={viewingProfile} tab={effectiveViewTab} viewedBySupervisor onBack={() => setViewingProfile(null)} />
+          )
+        ) : isConsorcioView ? (
+          <ColaboradorViewConsorcio key={viewingProfile.id} profile={viewingProfile} tab={effectiveViewTab} viewedByManager onBack={() => setViewingProfile(null)} />
         ) : (
-          <ColaboradorView key={viewingProfile.id} profile={viewingProfile} tab={viewTab === "metas" ? "metas" : "atividades"} viewedByManager onBack={() => setViewingProfile(null)} />
+          <ColaboradorView key={viewingProfile.id} profile={viewingProfile} tab={effectiveViewTab} viewedByManager onBack={() => setViewingProfile(null)} />
         )}
       </AppShell>
     );
@@ -345,6 +375,7 @@ export default function AdminPage() {
   }
 
   if (selectedLoja) {
+    const isConsorcioLoja = empresaDetail?.categoria_slug === "consorcio";
     return (
       <AppShell
         userName={profile.full_name}
@@ -353,7 +384,7 @@ export default function AdminPage() {
         userAvatarUrl={profile.avatar_url}
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
         onAvatarChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
-        tabs={EMPRESA_TABS}
+        tabs={isConsorcioLoja ? CONSORCIO_TABS : EMPRESA_TABS}
         activeTab={lojaTab}
         onTabChange={setLojaTab}
       >
@@ -367,14 +398,25 @@ export default function AdminPage() {
               ← Voltar para empresas
             </button>
           </div>
-          <EmpresaDashboard
-            lojaId={selectedLoja.lojaId}
-            empresaId={selectedLoja.empresaId}
-            viewerRole="master_admin"
-            tab={lojaTab}
-            onOpenEmployee={setViewingProfile}
-            onOpenGerente={setViewingProfile}
-          />
+          {isConsorcioLoja ? (
+            <ConsorcioDashboard
+              lojaId={selectedLoja.lojaId}
+              empresaId={selectedLoja.empresaId}
+              viewerRole="master_admin"
+              tab={lojaTab}
+              onOpenEmployee={setViewingProfile}
+              onOpenGerente={setViewingProfile}
+            />
+          ) : (
+            <EmpresaDashboard
+              lojaId={selectedLoja.lojaId}
+              empresaId={selectedLoja.empresaId}
+              viewerRole="master_admin"
+              tab={lojaTab}
+              onOpenEmployee={setViewingProfile}
+              onOpenGerente={setViewingProfile}
+            />
+          )}
         </div>
       </AppShell>
     );
