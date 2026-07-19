@@ -1,15 +1,22 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Home, Wallet, Loader2 } from "lucide-react";
+import { Home, Wallet, Loader2, CalendarDays, CheckSquare } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import ColaboradorView from "../../lib/ColaboradorView";
+import ColaboradorViewConsorcio from "../../lib/ColaboradorViewConsorcio";
 
-const TABS = [
+const TABS_VESTUARIO = [
   { key: "atividades", label: "Início", Icon: Home },
   { key: "metas", label: "Metas", Icon: Wallet },
+];
+
+const TABS_CONSORCIO = [
+  { key: "atividades", label: "Início", Icon: Home },
+  { key: "calendario", label: "Calendário", Icon: CalendarDays },
+  { key: "tarefas", label: "Tarefas", Icon: CheckSquare },
 ];
 
 export default function ColaboradorPage() {
@@ -17,6 +24,7 @@ export default function ColaboradorPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("atividades");
   const [profile, setProfile] = useState(null);
+  const [categoriaSlug, setCategoriaSlug] = useState("vestuario");
 
   useEffect(() => {
     let active = true;
@@ -39,11 +47,30 @@ export default function ColaboradorPage() {
         return;
       }
       if (!active) return;
+
+      // categoria da empresa decide qual experiência renderizar (vestuário = padrão atual,
+      // consórcio = funil de ligações). Empresas antigas sem categoria (não deveria acontecer,
+      // categoria_id é not null) caem no fallback "vestuario".
+      if (prof.empresa_id) {
+        const { data: empresaRow } = await supabase.from("empresas").select("categoria_id").eq("id", prof.empresa_id).single();
+        if (empresaRow?.categoria_id) {
+          const { data: categoriaRow } = await supabase
+            .from("categorias_empresa")
+            .select("slug")
+            .eq("id", empresaRow.categoria_id)
+            .single();
+          if (categoriaRow?.slug && active) setCategoriaSlug(categoriaRow.slug);
+        }
+      }
+
       setProfile(prof);
       setLoading(false);
     })();
     return () => { active = false; };
   }, [router]);
+
+  const isConsorcio = categoriaSlug === "consorcio";
+  const TABS = isConsorcio ? TABS_CONSORCIO : TABS_VESTUARIO;
 
   if (loading) {
     return (
@@ -74,7 +101,11 @@ export default function ColaboradorPage() {
       activeTab={tab}
       onTabChange={setTab}
     >
-      <ColaboradorView key={profile.id} profile={profile} tab={tab} />
+      {isConsorcio ? (
+        <ColaboradorViewConsorcio key={profile.id} profile={profile} tab={tab} />
+      ) : (
+        <ColaboradorView key={profile.id} profile={profile} tab={tab} />
+      )}
     </AppShell>
   );
 }
