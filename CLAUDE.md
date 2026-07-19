@@ -75,7 +75,8 @@ Todas as tabelas têm RLS habilitado. Multi-tenant por `empresa_id` (e a maioria
 | Tabela | Campos-chave | Observações |
 |---|---|---|
 | `profiles` | `id` (= `auth.users.id`), `role`, `username`, `empresa_id`, `loja_id`, `gerente_id`, `active`, `must_change_password`, `avatar_url` | `role` é um `CHECK` (`master_admin`/`socio`/`supervisor`/`gerente`/`colaborador`). `gerente_id` aponta pra outro profile (o gerente da equipe do colaborador) |
-| `empresas` | `id`, `name`, `active`, `plano` (`trial`/`pago`/`cancelado`), `valor_por_usuario`, `desconto`, `cnpj`, `logo_url` | empresa-cliente (tenant raiz) |
+| `empresas` | `id`, `name`, `active`, `plano` (`trial`/`pago`/`cancelado`), `valor_por_usuario`, `desconto`, `cnpj`, `logo_url`, `categoria_id` | empresa-cliente (tenant raiz). `categoria_id` é **imutável depois que a empresa tem loja ou usuário** (trigger `prevent_categoria_change_after_setup`, ver seção 5) |
+| `categorias_empresa` | `id`, `nome`, `slug`, `active` | segmento de negócio da empresa-cliente (vestuário, consórcio, ...) — tabela lookup em vez de enum fixo, porque a FORGE GROUP planeja vender pra outros segmentos além dos dois atuais. Cada categoria pode ter uma experiência de dashboard totalmente diferente (roteada pelo `slug`) |
 | `lojas` | `id`, `empresa_id`, `name`, `active` | uma empresa pode ter várias lojas |
 | `loja_access` | `profile_id`, `loja_id`, `permission` (`ver`/`gerenciar`) | **só usada por supervisor** — sócio nunca depende disso (vê a empresa inteira implicitamente) |
 | `app_settings` | PK `loja_id`, `empresa_id`, `warning_penalty_points`, `team_threshold_pct`, `monthly_prize` | config por loja: desconto % por advertência, meta da barra geral, premiação mensal |
@@ -108,6 +109,7 @@ Todas as tabelas têm RLS habilitado. Multi-tenant por `empresa_id` (e a maioria
 - **O build roda com `eslint: { ignoreDuringBuilds: true }`** (`next.config.mjs`) — `npm run build` **não pega** JSX referenciando componente/ícone não importado (`ReferenceError` só em runtime). Já causou bug real em produção (aba inteira quebrando ao abrir). Rodar `eslint` com a regra `react/jsx-no-undef` manualmente antes de confiar cegamente no build é recomendado quando se mexe em ícones/imports.
 - **`@fontsource/inter` em vez de `next/font/google`** — decisão deliberada porque `next/font/google` falha no ambiente de build usado pra verificação (sem acesso à internet do Google Fonts).
 - **Identidade do `AppShell` sempre representa quem está de fato logado**, nunca a pessoa sendo "vista como" (impersonation) — resolvido pelo JWT real da sessão em `update-username`, nunca por id vindo do cliente. Ver `CONTEXTO_PROJETO.md` seção 4 antes de mexer em telas com "ver como".
+- **`empresas.categoria_id` é imutável depois que a empresa tem loja ou usuário cadastrado.** Enforçado por trigger no banco (`prevent_categoria_change_after_setup`, `BEFORE UPDATE` em `empresas`) — não confiar só na UI, porque master admin tem bypass de RLS em `empresas` e edita via `supabase.from("empresas").update(...)` direto do client. `app/admin/page.js` (`EmpresaDetail`) já espelha essa trava na UI (só mostra o seletor editável quando `lojas.length === 0 && _colabTotal === 0`), mas a trava de verdade é o trigger.
 
 ## 6. Workflow de build, teste e deploy
 

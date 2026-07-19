@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { empresaName, cnpj, telefone, email } = body || {};
+    const { empresaName, cnpj, telefone, email, categoriaId } = body || {};
 
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
@@ -41,8 +41,21 @@ export async function POST(req) {
     if (!empresaName || !empresaName.trim()) {
       return NextResponse.json({ error: "Informe o nome da empresa." }, { status: 400 });
     }
+    if (!categoriaId) {
+      return NextResponse.json({ error: "Selecione a categoria da empresa." }, { status: 400 });
+    }
 
     const admin = getSupabaseAdmin();
+
+    const { data: categoria, error: categoriaErr } = await admin
+      .from("categorias_empresa")
+      .select("id")
+      .eq("id", categoriaId)
+      .eq("active", true)
+      .single();
+    if (categoriaErr || !categoria) {
+      return NextResponse.json({ error: "Categoria inválida." }, { status: 400 });
+    }
 
     const { data: empresa, error: empresaErr } = await admin
       .from("empresas")
@@ -51,6 +64,7 @@ export async function POST(req) {
         cnpj: cnpj?.trim() || null,
         telefone: telefone?.trim() || null,
         email: email?.trim() || null,
+        categoria_id: categoriaId,
         created_by: userData.user.id,
       })
       .select()

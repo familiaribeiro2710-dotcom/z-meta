@@ -34,6 +34,8 @@ import {
   Wallet,
   BarChart3,
   DollarSign,
+  Tag,
+  Lock,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -85,6 +87,8 @@ export default function AdminPage() {
   const [cnpj, setCnpj] = useState("");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
+  const [categoriaId, setCategoriaId] = useState("");
+  const [categorias, setCategorias] = useState([]);
   const [msg, setMsg] = useState("");
   const [creating, setCreating] = useState(false);
   const [newEmpresaOpen, setNewEmpresaOpen] = useState(false);
@@ -97,6 +101,12 @@ export default function AdminPage() {
     setOverview((overviewRows && overviewRows[0]) || null);
     const { data: healthRows } = await supabase.rpc("admin_lojas_health", { p_month: month });
     setHealth(healthRows || []);
+    const { data: categoriaRows } = await supabase
+      .from("categorias_empresa")
+      .select("*")
+      .eq("active", true)
+      .order("nome");
+    setCategorias(categoriaRows || []);
     const { data: profileRows } = await supabase
       .from("profiles")
       .select("*")
@@ -124,13 +134,17 @@ export default function AdminPage() {
 
   async function handleCreate(e) {
     e.preventDefault();
+    if (!categoriaId) {
+      setMsg("Erro: selecione a categoria da empresa.");
+      return;
+    }
     setCreating(true);
     setMsg("");
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch("/api/admin/create-empresa", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ empresaName, cnpj, telefone, email }),
+      body: JSON.stringify({ empresaName, cnpj, telefone, email, categoriaId }),
     });
     const json = await res.json();
     setCreating(false);
@@ -139,7 +153,7 @@ export default function AdminPage() {
       return;
     }
     setMsg("Empresa criada! Agora cadastre uma loja e um gerente dentro dela.");
-    setEmpresaName(""); setCnpj(""); setTelefone(""); setEmail("");
+    setEmpresaName(""); setCnpj(""); setTelefone(""); setEmail(""); setCategoriaId("");
     await loadAll();
   }
 
@@ -186,6 +200,9 @@ export default function AdminPage() {
           cnpj: row.cnpj,
           telefone: row.telefone,
           email: row.email,
+          categoria_id: row.categoria_id,
+          categoria_nome: row.categoria_nome,
+          categoria_slug: row.categoria_slug,
           lojas: [],
         });
       }
@@ -312,6 +329,7 @@ export default function AdminPage() {
             empresa={empresaDetail}
             allProfiles={allProfiles}
             lojaAccess={lojaAccess}
+            categorias={categorias}
             onBack={() => setSelectedEmpresaDetail(null)}
             onChanged={loadAll}
             onOpenLojaDados={(l) => { setLojaTab("atividades"); setSelectedLoja(l); }}
@@ -448,6 +466,14 @@ export default function AdminPage() {
                   <input className="input" value={empresaName} onChange={(e) => setEmpresaName(e.target.value)} maxLength={50} required />
                 </div>
                 <div>
+                  <label className="label">Categoria</label>
+                  <SelectField className="w-full" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} required>
+                    <option value="">— selecione —</option>
+                    {categorias.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                  </SelectField>
+                  <p className="text-[11px] text-muted mt-1">Não dá pra trocar depois que a empresa já tiver loja ou usuário cadastrado.</p>
+                </div>
+                <div>
                   <label className="label">CNPJ</label>
                   <CnpjInput value={cnpj} onChange={setCnpj} />
                 </div>
@@ -548,9 +574,12 @@ export default function AdminPage() {
                         <EmpresaAvatar empresaId={row.empresa_id} logoUrl={row.logo_url} name={row.empresa_name} onChanged={loadAll} />
                       </div>
                       <div>
-                        <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
+                        <p className="font-semibold text-navy text-sm flex items-center gap-1.5 flex-wrap">
                           {row.empresa_name}
                           <ChevronRight size={14} className="text-muted" />
+                          {row.categoria_nome && (
+                            <span className="badge !text-[10px]">{row.categoria_nome}</span>
+                          )}
                           {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
                         </p>
                         <p className="text-xs text-muted">
@@ -1128,7 +1157,7 @@ function HeroStatLight({ value, label, sub, divider }) {
   );
 }
 
-function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, onOpenLojaDados, onToggleActive, onDelete, onViewAs }) {
+function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, onChanged, onOpenLojaDados, onToggleActive, onDelete, onViewAs }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(empresa.empresa_name);
   const [editingContact, setEditingContact] = useState(false);
@@ -1136,6 +1165,25 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, on
   const [telVal, setTelVal] = useState(empresa.telefone || "");
   const [emailVal, setEmailVal] = useState(empresa.email || "");
   const [savingContact, setSavingContact] = useState(false);
+  const [editingCategoria, setEditingCategoria] = useState(false);
+  const [categoriaVal, setCategoriaVal] = useState(empresa.categoria_id || "");
+  const [savingCategoria, setSavingCategoria] = useState(false);
+  const categoriaLocked = empresa.lojas.length > 0 || empresa._colabTotal > 0;
+
+  useEffect(() => { if (!editingCategoria) setCategoriaVal(empresa.categoria_id || ""); }, [empresa.categoria_id, editingCategoria]);
+
+  async function saveCategoria() {
+    if (!categoriaVal) return;
+    setSavingCategoria(true);
+    const { error } = await supabase.from("empresas").update({ categoria_id: categoriaVal }).eq("id", empresa.empresa_id);
+    setSavingCategoria(false);
+    if (error) {
+      alert("Erro ao trocar categoria: " + error.message);
+      return;
+    }
+    setEditingCategoria(false);
+    onChanged();
+  }
 
   useEffect(() => { if (!editingName) setNameVal(empresa.empresa_name); }, [empresa.empresa_name, editingName]);
   useEffect(() => {
@@ -1295,6 +1343,46 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, onBack, onChanged, on
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] uppercase tracking-wider text-muted font-bold flex items-center gap-1.5">
+            <Tag size={13} /> Categoria
+          </p>
+          {!categoriaLocked && !editingCategoria && (
+            <button
+              className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
+              onClick={() => setEditingCategoria(true)}
+              title="Trocar categoria"
+              aria-label="Trocar categoria"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
+        </div>
+        {editingCategoria ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            <SelectField className="w-full sm:w-auto" value={categoriaVal} onChange={(e) => setCategoriaVal(e.target.value)}>
+              {categorias.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </SelectField>
+            <button className="btn-outline !py-1.5 !text-xs" onClick={saveCategoria} disabled={savingCategoria}>
+              {savingCategoria ? "Salvando…" : "Salvar"}
+            </button>
+            <button className="text-[11px] text-muted hover:text-navy" onClick={() => setEditingCategoria(false)}>
+              cancelar
+            </button>
+          </div>
+        ) : (
+          <div>
+            <span className="badge">{empresa.categoria_nome || "—"}</span>
+            {categoriaLocked && (
+              <p className="text-[11px] text-muted mt-1.5 flex items-center gap-1.5">
+                <Lock size={11} className="shrink-0" /> Travada — a empresa já tem loja ou usuário cadastrado.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <AddUserCard empresaId={empresa.empresa_id} lojas={empresa.lojas} onChanged={onChanged} />
