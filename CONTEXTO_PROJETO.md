@@ -1100,6 +1100,18 @@ Todos seguiram o mesmo padrão já estabelecido (`RankingCard`/`LojaRankingCard`
 
 **Verificação:** `npm run build` → `✓ Compiled successfully`. Revisão manual cuidadosa dos encadeamentos `empresaConfirm?.row.active` (confirmando que optional chaining curto-circuita a cadeia INTEIRA quando `empresaConfirm` é `null`, não só o próximo `.`) — sem teste em navegador real nesta sessão (login do Master Admin exige sessão Supabase real, que não existe neste sandbox).
 
+## ConfirmModal cortado/instável no Master Admin — mesma causa do painel de notificações (2026-07-20)
+
+**Reportado pelo Felipe:** o `ConfirmModal` novo (item anterior) "fica se mexendo na tela".
+
+**Causa:** exatamente o mesmo bug já corrigido antes em `lib/PushNotifications.js` nesta mesma sessão, só que reintroduzido num componente novo — o `ConfirmModal` é aberto de dentro do Master Admin (`app/admin/page.js`), que usa `AppShell.js`, cujo `<header>` tem `backdrop-blur`. Em WebKit/Safari, um ancestral com `backdrop-filter` vira o containing block de qualquer `position: fixed` dentro dele, então o overlay `fixed inset-0` não cobria a tela inteira — ficava preso/instável dentro da caixinha do header em vez de fixo na viewport. Some a isso o cálculo de `vh` no mobile (que pode mudar quando o teclado abre pra digitar o nome de confirmação), que também já tinha causado corte no painel de notificações.
+
+**Fix:** `lib/ConfirmModal.js` passou a seguir o mesmo padrão já validado em `PushNotifications.js` — `createPortal` direto em `document.body` (escapa do containing block do header) + overlay inteiro rolável (`fixed inset-0 overflow-y-auto` com wrapper interno `min-h-full flex items-start sm:items-center justify-center`) em vez de `flex items-center justify-center` direto no overlay fixo.
+
+**Lição pra próximas sessões:** todo modal `fixed inset-0` novo dentro de uma tela que usa `AppShell.js` (ou qualquer ancestral com `backdrop-filter`/`filter`/`transform`) precisa nascer já com esse padrão (portal + overlay rolável) — não é algo pra descobrir de novo a cada componente novo.
+
+**Verificação:** `npm run build` → `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
