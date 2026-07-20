@@ -1023,6 +1023,23 @@ Colaborador de consórcio tinha 3 abas (Início/Calendário/Tarefas) — diferen
 
 **Ajuste no mesmo dia:** Felipe apontou que o corpo mostrava o VALOR DA META (`r.amount`, o alvo já conhecido desde a criação da meta) em vez do valor que o colaborador JÁ VENDEU até agora — a informação que de fato muda a cada notificação. Trocado `r.amount` por `v_total_after` (soma já calculada no próprio trigger pra decidir se cruzou o tier) nas duas funções (`notify_push_meta_individual_vestuario`/`_consorcio`). Corpo final: `"<nome> bateu a meta \"<tier>\" — vendido até agora: <R$ total>"`.
 
+## Vestuário: lançamento de venda libera data de hoje + telas viram tema escuro (2026-07-20)
+
+**Pedido do Felipe:** (1) "Lançar valor vendido" (aba Metas do colaborador e aba Lançamentos do gestor, ambos em vestuário) só aceitava até ontem — precisava liberar hoje também (e continuar bloqueando datas futuras). (2) Colocar mais telas de vestuário no tema escuro (`.card-dark`), no mesmo espírito do que já foi feito em consórcio.
+
+**Parte 1 — data:**
+- `lib/ColaboradorView.js` e `lib/EmpresaDashboard.js` (`Lancamentos`): `max={yesterdayStr(...)}` virou `max={today}`/`max={todayStr()}`; valor inicial do campo de data também passou de "ontem" pra "hoje" (`useState(todayStr())`).
+- `yesterdayStr()` (`lib/date.js`) ficou sem nenhum uso no projeto depois disso — removida (código morto).
+- Como consequência direta (não dava pra deixar como estava, ficaria incorreto): o texto "Vendido até ontem" nos 3 herocards de vestuário (`ColaboradorView.js`, `GerenteView.js`, `HierarchyHome.js`) virou "Vendido até hoje", já que a soma (`soldSoFar`/`hero.soldLoja`) agora pode de fato incluir a venda lançada no próprio dia.
+
+**Parte 2 — tema escuro:** convertidos os dois lugares que eram "tabela crua"/lista clara equivalentes ao que consórcio já tinha em `.card-dark` (mesmo padrão de conversão já documentado antes — Rankings/Colaboradores/Funil):
+- `lib/EmpresaDashboard.js` (`Lancamentos`, card "Histórico" — visão do gestor): viel `.card`→`.card-dark`, lista virou `row-card`. Espelha o card "Vendas do mês" que `ConsorcioDashboard.js` já tinha.
+- `lib/ColaboradorView.js` (card "Registros do mês" — visão do próprio colaborador): era uma `<table>` crua sobre fundo branco, virou `.card-dark` com cabeçalho/linhas em tons de branco translúcido e valor vendido em `text-goldlight`. Espelha "Minhas ligações" que `ColaboradorViewConsorcio.js` já tinha (mesma sessão anterior).
+
+**Não mexido de propósito:** `FaturamentoTab` (`HierarchyHome.js`, aba cross-loja exclusiva de vestuário) continua com tabela clara — já era um pendente conhecido antes desta sessão ("Financeiro/Faturamento ainda não convertido", seção 7) e consórcio nem tem essa aba ainda (mostra "em breve"), então não é um caso de paridade — fica de fora até o Felipe pedir especificamente.
+
+**Verificação:** `npm run build` → `✓ Compiled successfully`. Grep confirmou zero sobra de `yesterdayStr` no projeto.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
