@@ -2050,6 +2050,29 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
     }
   }
 
+  async function deleteLoja(loja) {
+    const typed = window.prompt(
+      `Isso vai apagar "${loja.loja_name}" e TODOS os dados dela (gerente, colaboradores, tarefas, metas, vendas/leads, histórico) para sempre. Digite o nome da loja para confirmar:`
+    );
+    if (typed !== loja.loja_name) {
+      if (typed !== null) alert("Nome não confere. Nada foi excluído.");
+      return;
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/delete-loja", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ lojaId: loja.loja_id }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      alert("Erro ao excluir: " + (json.error || "não foi possível excluir."));
+      return;
+    }
+    notifySaved("Loja excluída com sucesso.");
+    onChanged();
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -2088,6 +2111,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
             onChanged={onChanged}
             onOpenDados={onOpenDados}
             onViewAs={onViewAs}
+            onDelete={deleteLoja}
             isOpen={openLojaId === l.loja_id}
             onToggle={() => setOpenLojaId(openLojaId === l.loja_id ? null : l.loja_id)}
           />
@@ -2097,7 +2121,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
   );
 }
 
-function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, empresaId, isOpen, onToggle }) {
+function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onDelete, empresaId, isOpen, onToggle }) {
   const [openUserId, setOpenUserId] = useState(null);
 
   const colaboradores = allProfiles.filter((p) => p.loja_id === loja.loja_id && p.role === "colaborador");
@@ -2136,6 +2160,13 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, empresa
             onClick={() => onOpenDados({ lojaId: loja.loja_id, lojaName: loja.loja_name, empresaId })}
           >
             <Eye size={12} /> Ver dados
+          </button>
+          <button
+            title="Excluir loja"
+            onClick={() => onDelete(loja)}
+            className="p-1.5 rounded-lg border border-line text-muted hover:border-danger hover:text-danger transition-colors"
+          >
+            <Trash2 size={13} />
           </button>
           <button onClick={onToggle} className="p-1.5 rounded-lg border border-line text-muted hover:border-navy hover:text-navy transition-colors">
             {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
