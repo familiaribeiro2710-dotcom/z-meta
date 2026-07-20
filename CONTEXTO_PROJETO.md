@@ -780,6 +780,35 @@ Pedido do Felipe: "Precisamos reformular a aparência do APP! Está muito com ca
 
 **Verificação:** `npm run build` → `✓ Compiled successfully` em cada fase (mesmos erros de prerender de sempre, sandbox sem `.env.local`). `eslint react/jsx-no-undef` rodado em todos os arquivos tocados a cada fase — zero ocorrências reais (só o barulho de sempre da regra `react-hooks/exhaustive-deps` não carregada nesse config minimalista). Não houve teste visual real em dispositivo do Felipe ainda — recomendado abrir o app depois do deploy e conferir contraste/legibilidade dos novos cartões escuros em mobile antes de considerar a fase 100% fechada.
 
+### Funil vira browser de leads filtrável + Master Admin na nova identidade (2026-07-19)
+
+Depois de aprovar o mockup da nova identidade em `HierarchyHome.js`/`EmpresaDashboard.js`/`ConsorcioDashboard.js` (seção anterior), Felipe apontou dois problemas que motivaram um segundo mockup (apresentado e aprovado antes de codar, mesmo padrão de "mockup primeiro" desta fase inteira):
+
+1. "O dashboard funil por colaborador não faz sentido! Ali o usuário tem que conseguir filtrar os leads e todas as informações dele." — o card "Funil por colaborador" só mostrava totais agregados por pessoa; não dava pra abrir um lead individual na tela (só via Excel).
+2. "Você não reformulou a visão do Master e suas telas" — as 3 abas do Master Admin (Início/Financeiro/Dados) ainda estavam na identidade antiga, cada uma com um gradiente diferente (dourado/verde-água/roxo-rosa), sem critério.
+
+**Decisões do Felipe no mockup:** (1) o gestor PODE editar/resolver o lead direto da lista nova (agendar, marcar perdido/follow-up/vendido) — não é só consulta; (2) o resumo por colaborador vira atalho de filtro (chips clicáveis), não desaparece; (3) unificar a cor do Master em dourado (era a recomendação, aprovada).
+
+**Funil (`lib/ConsorcioDashboard.js`, componente `Funil`):**
+- Filtros ganharam busca por nome/telefone (`busca`) e filtro de colaborador (`filtroColaboradorId`) — este último não é um select, é setado clicando num chip.
+- O card "Funil por colaborador" (`<ul>` com totais por pessoa) foi substituído por dois cards: um card-dark "Colaboradores" com chips (`Avatar` + nome + contagem, clicável, com `title` mostrando o breakdown completo no hover) que filtra a lista abaixo; e um card-dark "Leads" com a lista individual de verdade (`ManagerLeadRow`, novo componente) — nome, telefone, status, agendamento, responsável, e um toggle "expandir" que abre endereço/e-mail/data da ligação/categoria/feedback-observações direto na linha, sem precisar de modal.
+- `ManagerLeadRow` tem os mesmos botões de ação que já existiam em `ColaboradorViewConsorcio.js` (`LeadRow`): agendar/reagendar, marcar perdido, follow-up, vendido — reaproveitando a MESMA lógica de `openResolve`/`confirmResolve`/`openAgendar`/`confirmAgendar` (copiada e adaptada pra chamar `onChanged()` do componente pai em vez de `loadCrm`, já que `Funil` recebe os dados via prop). Só aparecem se `canManageLeads` (todo `viewerRole` exceto `"leitor"` — supervisor só-leitura continua sem poder editar nada, mesmo padrão do resto do app).
+- `filteredLeads` agora também filtra por busca (nome/telefone); `filteredBoard` (usado pelos chips) reflete todos os filtros MENOS o de colaborador, pra cada chip mostrar quantos leads aquele colaborador tem dentro do filtro atual; `leadsToShow` aplica o filtro de colaborador em cima disso.
+- Excel export não mudou (mesma lógica, mesmo `filteredLeads` como fonte).
+
+**Master Admin (`app/admin/page.js`):**
+- Hero bands das 3 abas (Início/Financeiro/Dados) e do drill-down de Faturamento por empresa unificados no MESMO gradiente dourado (`#c9a15a`→`#e4c789`) que o Início já usava — Financeiro era verde-água, Dados/Faturamento era roxo→rosa. `HeroStatLight` (usado só em Dados/Faturamento) teve as cores invertidas de branco-sobre-escuro pra navy-sobre-claro, já que o fundo dourado é claro.
+- Barras dos 2 gráficos (crescimento de empresas no Início; faturamento mensal no drill-down) trocaram de gradiente roxo→rosa pra dourado.
+- Botão "Ver dados" (dentro de `LojasList`) usava o gradiente roxo→rosa direto — não era comemoração nenhuma, ficou de fora da Fase 2 por estar num arquivo que na época ainda não tinha sido tocado. Corrigido agora: virou `.btn` (dourado padrão).
+- `EmpresaAvatar` (fallback de logo da empresa) e o avatar de usuário sem foto em `Avatar.js` (já convertido na Fase 3) — mesma cor de fallback dourada em vez de roxo→rosa, consistência total de "quem não tem foto" em qualquer lugar do app.
+- Lista de Empresas (Início) virou `.card-dark`/`.row-card`, com o indicador de risco (loja parada) virando `chip-danger` em vez de borda vermelha na linha inteira.
+- `FinanceiroRow` (linha editável por empresa) virou `.card-dark`, mantendo os `.input` claros de edição (mesmo padrão já validado na Fase 4).
+- Lista de empresas da aba Dados e a tabela real "Detalhe por mês" (histórico de faturamento, `FaturamentoHistorico`) viraram `.card-dark`/`.row-card` — essa tabela era a última `<table>` HTML crua que sobrava no admin.
+
+**Decisão explícita de escopo:** Felipe perguntou se dava pra ir além do card-dark pontual e fazer o app inteiro em dark mode (fundo navy em toda tela). Recomendação dada e aceita: manter o padrão híbrido atual (fundo claro + cartões escuros nos pontos de maior impacto), não fazer o flip total — motivos: (1) uso real é colaborador de loja o dia inteiro, muitas vezes em ambiente bem iluminado, onde tela clara lê melhor que tela escura; (2) sem testes automatizados nem staging, reauditar contraste do app inteiro de uma vez é risco desproporcional ao ganho, já que os pontos de maior impacto visual (rankings, dinheiro, gamificação) já viraram escuro/dourado nas Fases 3-4.
+
+**Verificação:** `npm run build` → `✓ Compiled successfully` (mesmos erros de prerender de sempre). `eslint react/jsx-no-undef` rodado em `ConsorcioDashboard.js` e `app/admin/page.js` — zero ocorrências reais (só o barulho de sempre de `react-hooks/exhaustive-deps` não carregada no config minimalista). Não testado contra dado real (nenhuma empresa de consórcio com leads reais suficientes em produção pra validar visualmente a lista nova) nem em dispositivo físico.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.

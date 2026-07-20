@@ -484,7 +484,7 @@ export default function AdminPage() {
                 <span className="text-xs text-muted mb-1">{b.count}</span>
                 <div
                   className="w-full rounded-t-xl transition-all"
-                  style={{ height: `${Math.max(4, (b.count / maxGrowth) * 88)}px`, background: "linear-gradient(180deg, #ec4899, #7c3aed)" }}
+                  style={{ height: `${Math.max(4, (b.count / maxGrowth) * 88)}px`, background: "linear-gradient(180deg, #e4c789, #c9a15a)" }}
                 />
                 <span className="text-[11px] text-muted mt-1.5 capitalize">{b.label}</span>
               </div>
@@ -546,16 +546,16 @@ export default function AdminPage() {
           )}
         </div>
 
-        <div className="card overflow-x-auto">
+        <div className="card-dark">
           <div className="flex items-center justify-between mb-3 flex-nowrap gap-2">
-            <p className="inline-flex items-center gap-1.5 whitespace-nowrap m-0 text-xs uppercase tracking-wider text-muted font-bold">
-              <Building2 size={14} className="shrink-0" /> Empresas
+            <p className="label-dark mb-0 inline-flex items-center gap-1.5 whitespace-nowrap">
+              <Building2 size={14} className="shrink-0 text-goldlight" /> Empresas
             </p>
             <div className="relative shrink-0">
               <button
                 onClick={() => setFilterOpen((v) => !v)}
                 className={`p-2 rounded-full border transition-all ${
-                  filterOpen ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
+                  filterOpen ? "bg-goldlight text-navy border-goldlight" : "border-white/15 text-white/60 hover:border-goldlight hover:text-goldlight"
                 }`}
                 title="Ordenar empresas"
               >
@@ -588,7 +588,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="relative mb-4">
+          <div className="relative mb-3">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
             <input
               className="input !pl-10"
@@ -598,72 +598,63 @@ export default function AdminPage() {
             />
           </div>
 
-          <div className="space-y-3">
+          <div>
             {empresasGrouped.length === 0 && search.trim() && (
-              <p className="text-sm text-muted py-2">Nenhuma empresa encontrada para &ldquo;{search.trim()}&rdquo;.</p>
+              <p className="text-sm text-white/50 py-2">Nenhuma empresa encontrada para &ldquo;{search.trim()}&rdquo;.</p>
             )}
             {empresasGrouped.map((row) => {
               const stale = row._worstStale;
               const neverActive = stale === Infinity;
+              const atRisk = row.lojas.length > 0 && (neverActive || stale >= 7);
               return (
                 <div
                   key={row.empresa_id}
-                  className={`border rounded-xl p-3.5 cursor-pointer transition-colors ${
-                    row.lojas.length > 0 && (neverActive || stale >= 7) ? "border-danger/40 bg-danger/5" : "border-line hover:border-purple/40"
-                  } ${!row.active ? "opacity-60" : ""}`}
+                  className={`row-card justify-between flex-wrap cursor-pointer ${!row.active ? "opacity-60" : ""}`}
                   onClick={() => setSelectedEmpresaDetail(row.empresa_id)}
                 >
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex items-start gap-3">
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <EmpresaAvatar empresaId={row.empresa_id} logoUrl={row.logo_url} name={row.empresa_name} onChanged={loadAll} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-navy text-sm flex items-center gap-1.5 flex-wrap">
-                          {row.empresa_name}
-                          <ChevronRight size={14} className="text-muted" />
-                          {row.categoria_nome && (
-                            <span className="badge !text-[10px]">{row.categoria_nome}</span>
-                          )}
-                          {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
-                        </p>
-                        <p className="text-xs text-muted">
-                          {row.lojas.length} loja{row.lojas.length !== 1 ? "s" : ""} · {row._colabTotal} colaborador(es) no total
-                        </p>
-                        <p className="text-[11px] text-muted mt-0.5">
-                          {row.lojas.length === 0
-                            ? "nenhuma loja cadastrada ainda"
-                            : neverActive
-                              ? "nenhuma loja teve atividade ainda"
-                              : `loja mais parada: há ${stale} dia(s)`}
-                        </p>
-                      </div>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <EmpresaAvatar empresaId={row.empresa_id} logoUrl={row.logo_url} name={row.empresa_name} onChanged={loadAll} />
                     </div>
-                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <span className="inline-flex items-center gap-1.5 text-[11px] text-muted whitespace-nowrap" title="Data de cadastro">
-                        <Calendar size={13} />
-                        {row.created_at ? new Date(row.created_at).toLocaleDateString("pt-BR") : "—"}
-                      </span>
-                      <button
-                        title={row.active ? "Desativar empresa" : "Ativar empresa"}
-                        onClick={() => toggleEmpresaActive(row)}
-                        className={`p-1.5 rounded-lg border transition-colors ${row.active ? "border-line text-muted hover:border-warn hover:text-warn" : "border-success text-success"}`}
-                      >
-                        <Power size={13} />
-                      </button>
-                      <button
-                        title="Excluir empresa"
-                        onClick={() => deleteEmpresa(row)}
-                        className="p-1.5 rounded-lg border border-line text-muted hover:border-danger hover:text-danger transition-colors"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-white text-sm flex items-center gap-1.5 flex-wrap">
+                        {row.empresa_name}
+                        <ChevronRight size={14} className="text-white/40" />
+                        {row.categoria_nome && (
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/10 text-goldlight shrink-0">{row.categoria_nome}</span>
+                        )}
+                        {atRisk && <span className="chip-danger">há {neverActive ? "muito tempo" : `${stale} dia(s)`} parada</span>}
+                        {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+                      </p>
+                      <p className="text-xs text-white/50">
+                        {row.lojas.length} loja{row.lojas.length !== 1 ? "s" : ""} · {row._colabTotal} colaborador(es) no total
+                      </p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-white/40 whitespace-nowrap" title="Data de cadastro">
+                      <Calendar size={13} />
+                      {row.created_at ? new Date(row.created_at).toLocaleDateString("pt-BR") : "—"}
+                    </span>
+                    <button
+                      title={row.active ? "Desativar empresa" : "Ativar empresa"}
+                      onClick={() => toggleEmpresaActive(row)}
+                      className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${row.active ? "text-white/60 hover:text-warn" : "text-success"}`}
+                    >
+                      <Power size={13} />
+                    </button>
+                    <button
+                      title="Excluir empresa"
+                      onClick={() => deleteEmpresa(row)}
+                      className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 </div>
               );
             })}
-            {empresasGrouped.length === 0 && !search.trim() && <p className="text-sm text-muted py-2">Nenhuma empresa cadastrada ainda.</p>}
+            {empresasGrouped.length === 0 && !search.trim() && <p className="text-sm text-white/50 py-2">Nenhuma empresa cadastrada ainda.</p>}
           </div>
         </div>
       </div>
@@ -713,8 +704,8 @@ function EmpresaAvatar({ empresaId, logoUrl, name, onChanged }) {
         <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
       ) : (
         <div
-          className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
-          style={{ background: "linear-gradient(135deg, #7c3aed, #ec4899)" }}
+          className="w-full h-full flex items-center justify-center text-navy font-bold text-sm"
+          style={{ background: "linear-gradient(135deg, #e4c789, #c9a15a)" }}
         >
           {initials}
         </div>
@@ -797,7 +788,7 @@ function FinanceiroTab() {
 
       <div
         className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
-        style={{ background: "linear-gradient(135deg, #0d9488 0%, #5eead4 100%)", boxShadow: "0 10px 28px rgba(13,148,136,0.35)" }}
+        style={{ background: "linear-gradient(135deg, #c9a15a 0%, #e4c789 100%)", boxShadow: "0 10px 28px rgba(201,161,90,0.4)" }}
       >
         <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
         <div className="relative flex items-center gap-2 mb-5">
@@ -858,17 +849,17 @@ function FinanceiroRow({ row, onSave }) {
   }
 
   return (
-    <div className={`card ${!row.active ? "opacity-60" : ""}`}>
+    <div className={`card-dark ${!row.active ? "opacity-60" : ""}`}>
       <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-        <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-          <Building2 size={14} className="text-purple" /> {row.empresa_name}
+        <p className="font-semibold text-white text-sm flex items-center gap-1.5">
+          <Building2 size={14} className="text-goldlight" /> {row.empresa_name}
           {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
         </p>
-        <span className="text-xs text-muted">{row.usuarios_count} usuário{row.usuarios_count !== 1 ? "s" : ""} cadastrado{row.usuarios_count !== 1 ? "s" : ""}</span>
+        <span className="text-xs text-white/50">{row.usuarios_count} usuário{row.usuarios_count !== 1 ? "s" : ""} cadastrado{row.usuarios_count !== 1 ? "s" : ""}</span>
       </div>
       <div className="grid sm:grid-cols-3 gap-3">
         <div>
-          <label className="label">Valor por usuário</label>
+          <label className="label-dark">Valor por usuário</label>
           <input
             className="input !py-1.5 !text-xs"
             type="number"
@@ -878,7 +869,7 @@ function FinanceiroRow({ row, onSave }) {
           />
         </div>
         <div>
-          <label className="label">Desconto (R$)</label>
+          <label className="label-dark">Desconto (R$)</label>
           <input
             className="input !py-1.5 !text-xs"
             type="number"
@@ -888,15 +879,15 @@ function FinanceiroRow({ row, onSave }) {
           />
         </div>
         <div>
-          <label className="label">Quanto cobrar</label>
-          <p className="input !py-1.5 !text-xs !bg-paper font-bold text-navy flex items-center">
+          <label className="label-dark">Quanto cobrar</label>
+          <p className="!py-1.5 !text-xs font-bold text-goldlight flex items-center bg-white/5 border border-white/10 rounded-2xl px-3.5">
             <AutoFitText as="span">{formatBRL(cobrar)}</AutoFitText>
           </p>
         </div>
       </div>
       {dirty && (
         <div className="mt-3">
-          <button className="btn-outline !py-1.5 !text-xs" onClick={save} disabled={saving}>
+          <button className="btn-outline !py-1.5 !text-xs !border-goldlight !text-goldlight hover:!bg-goldlight hover:!text-navy" onClick={save} disabled={saving}>
             {saving ? "Salvando…" : "Salvar"}
           </button>
         </div>
@@ -952,12 +943,12 @@ function DadosTab() {
 
       <div
         className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
-        style={{ background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)", boxShadow: "0 10px 28px rgba(124,58,237,0.35)" }}
+        style={{ background: "linear-gradient(135deg, #c9a15a 0%, #e4c789 100%)", boxShadow: "0 10px 28px rgba(201,161,90,0.4)" }}
       >
         <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
         <div className="relative flex items-center gap-2 mb-5">
-          <TrendingUp size={18} className="text-white" />
-          <span className="text-xs font-bold uppercase tracking-wider text-white">Dados · {monthLabel(month)}</span>
+          <TrendingUp size={18} className="text-navy" />
+          <span className="text-xs font-bold uppercase tracking-wider text-navy">Dados · {monthLabel(month)}</span>
         </div>
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
           <HeroStatLight value={formatBRL(totals.faturamento)} label="Faturamento total" sub="todas as empresas" />
@@ -983,29 +974,29 @@ function DadosTab() {
           {filtered.map((r) => (
             <div
               key={r.empresa_id}
-              className={`card cursor-pointer transition-colors hover:border-purple/40 ${!r.active ? "opacity-60" : ""}`}
+              className={`card-dark cursor-pointer transition-colors hover:border-goldlight/40 ${!r.active ? "opacity-60" : ""}`}
               onClick={() => setSelectedEmpresa({ id: r.empresa_id, name: r.empresa_name })}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-                <p className="font-semibold text-navy text-sm flex items-center gap-1.5">
-                  <Building2 size={14} className="text-purple" /> {r.empresa_name}
-                  <ChevronRight size={14} className="text-muted" />
+                <p className="font-semibold text-white text-sm flex items-center gap-1.5">
+                  <Building2 size={14} className="text-goldlight" /> {r.empresa_name}
+                  <ChevronRight size={14} className="text-white/40" />
                   {!r.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
                 </p>
-                <span className="text-xs text-muted">{r.lojas_count} loja{r.lojas_count !== 1 ? "s" : ""}</span>
+                <span className="text-xs text-white/50">{r.lojas_count} loja{r.lojas_count !== 1 ? "s" : ""}</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                 <div className="min-w-0">
-                  <p className="text-[11px] text-muted">Faturamento no mês</p>
-                  <AutoFitText className="text-navy font-bold">{formatBRL(r.faturamento)}</AutoFitText>
+                  <p className="text-[11px] text-white/50">Faturamento no mês</p>
+                  <AutoFitText className="text-goldlight font-bold">{formatBRL(r.faturamento)}</AutoFitText>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-muted">Usuários</p>
-                  <p className="text-navy font-bold">{r.usuarios_count}</p>
+                  <p className="text-[11px] text-white/50">Usuários</p>
+                  <p className="text-white font-bold">{r.usuarios_count}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-muted">Premiações pagas</p>
-                  <AutoFitText className="text-navy font-bold">{formatBRL(r.premiacoes)}</AutoFitText>
+                  <p className="text-[11px] text-white/50">Premiações pagas</p>
+                  <AutoFitText className="text-white font-bold">{formatBRL(r.premiacoes)}</AutoFitText>
                 </div>
               </div>
             </div>
@@ -1093,15 +1084,15 @@ function FaturamentoHistorico({ empresa, onBack }) {
 
       <div
         className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
-        style={{ background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)", boxShadow: "0 10px 28px rgba(124,58,237,0.35)" }}
+        style={{ background: "linear-gradient(135deg, #c9a15a 0%, #e4c789 100%)", boxShadow: "0 10px 28px rgba(201,161,90,0.4)" }}
       >
         <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
         <div className="relative flex items-center gap-2 mb-3">
-          <TrendingUp size={18} className="text-white" />
-          <span className="text-xs font-bold uppercase tracking-wider text-white">Faturamento no período</span>
+          <TrendingUp size={18} className="text-navy" />
+          <span className="text-xs font-bold uppercase tracking-wider text-navy">Faturamento no período</span>
         </div>
-        <AutoFitText className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(totalPeriodo)}</AutoFitText>
-        <p className="relative text-xs font-semibold text-white/75 mt-1">
+        <AutoFitText className="relative text-4xl sm:text-5xl font-extrabold text-navy leading-tight">{formatBRL(totalPeriodo)}</AutoFitText>
+        <p className="relative text-xs font-semibold text-navy/65 mt-1">
           {fromMonth && toMonth ? `${monthShortLabel(fromMonth)} até ${monthShortLabel(toMonth)}` : "sem dados no período"}
         </p>
       </div>
@@ -1161,7 +1152,7 @@ function FaturamentoHistorico({ empresa, onBack }) {
                   <AutoFitText className="text-[10px] text-muted mb-1" minPx={7}>{formatBRL(r.faturamento).replace("R$", "").trim()}</AutoFitText>
                   <div
                     className="w-full rounded-t-xl transition-all"
-                    style={{ height: `${Math.max(4, (Number(r.faturamento) / maxVal) * 96)}px`, background: "linear-gradient(180deg, #ec4899, #7c3aed)" }}
+                    style={{ height: `${Math.max(4, (Number(r.faturamento) / maxVal) * 96)}px`, background: "linear-gradient(180deg, #e4c789, #c9a15a)" }}
                   />
                   <span className="text-[11px] text-muted mt-1.5 whitespace-nowrap">{monthShortLabel(r.month)}</span>
                 </div>
@@ -1169,24 +1160,16 @@ function FaturamentoHistorico({ empresa, onBack }) {
             </div>
           </div>
 
-          <div className="card overflow-x-auto">
-            <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-3">Detalhe por mês</p>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wider text-muted border-b border-line">
-                  <th className="pb-2">Mês</th>
-                  <th className="pb-2">Faturamento</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.slice().reverse().map((r) => (
-                  <tr key={r.month} className="border-b border-line last:border-0">
-                    <td className="py-2.5 font-medium text-navy">{monthLabel(r.month)}</td>
-                    <td className="py-2.5 text-navy">{formatBRL(r.faturamento)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="card-dark">
+            <p className="label-dark mb-3">Detalhe por mês</p>
+            <ul>
+              {filtered.slice().reverse().map((r) => (
+                <li key={r.month} className="row-card">
+                  <span className="font-medium text-white text-xs sm:text-sm flex-1 min-w-0">{monthLabel(r.month)}</span>
+                  <span className="font-bold text-goldlight text-xs sm:text-sm shrink-0 whitespace-nowrap">{formatBRL(r.faturamento)}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </>
       )}
@@ -1196,10 +1179,10 @@ function FaturamentoHistorico({ empresa, onBack }) {
 
 function HeroStatLight({ value, label, sub, divider }) {
   return (
-    <div className={`min-w-0 ${divider ? "sm:border-l sm:border-white/25 sm:pl-4" : ""}`}>
-      <AutoFitText className="text-xl sm:text-3xl font-extrabold mt-0 text-white">{value ?? 0}</AutoFitText>
-      <p className="text-xs font-semibold mt-0.5 text-white">{label}</p>
-      <p className="text-[11px] mt-0.5 text-white/75">{sub}</p>
+    <div className={`min-w-0 ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`}>
+      <AutoFitText className="text-xl sm:text-3xl font-extrabold mt-0 text-navy">{value ?? 0}</AutoFitText>
+      <p className="text-xs font-semibold mt-0.5 text-navy">{label}</p>
+      <p className="text-[11px] mt-0.5 text-navy/65">{sub}</p>
     </div>
   );
 }
@@ -2149,8 +2132,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, empresa
         </button>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            className="inline-flex items-center gap-1.5 text-white rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap shadow-pop active:scale-95 hover:brightness-110 transition-all"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #ec4899)" }}
+            className="btn !px-3 !py-1.5 !text-xs whitespace-nowrap"
             onClick={() => onOpenDados({ lojaId: loja.loja_id, lojaName: loja.loja_name, empresaId })}
           >
             <Eye size={12} /> Ver dados
