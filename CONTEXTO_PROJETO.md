@@ -827,6 +827,24 @@ Item que estava anotado no roadmap desde a Fase 1/2 do consórcio ("Notificaçõ
 
 **Pendências abertas:** sem botão de "desativar notificações" na UI (hoje só dá pra desativar revogando a permissão no navegador); sem lembrete de reunião (fora do escopo pedido); sem notificação em cascata pra gestor em advertência/premiação (só o gerente é avisado, e só em venda).
 
+## Funil — paginação e filtros com botão "Aplicar" (2026-07-20)
+
+**Pedido do Felipe:** "o dashboard de leads precisa ter um limite por página, porque conforme o volume for aumentando, a rolagem vai ficar muito grande" + "os filtros não podem aplicar automaticamente, precisa ter um botão de aplicar." Ambos em `lib/ConsorcioDashboard.js`, componente `Funil` (aba Início → Funil, visão de gerente/supervisor/sócio/master).
+
+**Paginação:**
+- `PAGE_SIZE = 20`, estado `page`. `leadsToShow` (já filtrado + ordenado) é fatiado em `pagedLeads` via `totalPages`/`safePage` (o `safePage` sempre reclampa pra dentro do intervalo válido, então nunca fica numa página vazia se o total encolher).
+- Controles "← Anterior" / "Próxima →" só aparecem se `totalPages > 1`, no rodapé do card de Leads, com contador "Página X de Y".
+- `page` é resetado pra 1 sempre que: um filtro é aplicado (`aplicarFiltros`), os filtros são limpos (`limparFiltros`), ou o chip de colaborador muda (clique em "Todos" ou num colaborador específico) — senão dava pra ficar numa página 3 vazia depois de filtrar pra um conjunto menor.
+
+**Filtros com botão Aplicar:**
+- O formulário de filtros (busca, data de/até, categoria, status) agora tem dois níveis de estado: `draft*` (ligado direto aos inputs, muda a cada tecla/clique) e o estado "aplicado" (`filtroDataIni`/`filtroDataFim`/`filtroStatuses`/`filtroCategoriaId`/`busca` — os mesmos nomes de antes, mantidos porque são os que alimentam `filteredLeads`, o "Funil por colaborador" e a exportação Excel).
+- Painel de filtros virou um `<form onSubmit={aplicarFiltros}>` com um botão "Aplicar filtros" (`type="submit"`, então Enter no campo de busca também aplica) — só nesse clique/submit os valores draft são copiados pro estado aplicado.
+- `filtrosPendentes` (comparação draft vs. aplicado) mostra um aviso discreto "alterações pendentes — clique em Aplicar" e mantém o botão "Limpar filtros" visível mesmo se só o rascunho mudou (antes só aparecia com `filtroAtivo`).
+- **Decisão deliberada:** o chip de colaborador (clique único pra filtrar por pessoa) ficou de fora do "Aplicar" — é uma seleção explícita e instantânea, não um campo de formulário sendo preenchido aos poucos, então continua aplicando na hora (mesmo padrão já documentado na Fase 4).
+- `limparFiltros` zera draft e aplicado ao mesmo tempo (é uma ação de reset, não uma edição em andamento) e também reseta `page`.
+
+**Verificação:** `eslint react/jsx-no-undef` limpo, `npm run build` → `✓ Compiled successfully` (erros de prerender "supabaseUrl is required" no admin/colaborador/gerente/etc. são esperados no sandbox de verificação, sem `.env.local`, não relacionados à mudança).
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
