@@ -1050,6 +1050,23 @@ Colaborador de consórcio tinha 3 abas (Início/Calendário/Tarefas) — diferen
 
 **Verificação:** `npm run build` → `✓ Compiled successfully`.
 
+## Todo dashboard de "Ranking de vendas" vira tema escuro (2026-07-20)
+
+**Pedido do Felipe:** "todos os dashboards de ranking de vendas tem que ser no tema escuro" — depois da conversão pontual do ranking do colaborador (item anterior), pediu pra cobrir os que sobraram em qualquer papel/categoria.
+
+**Mapeados via grep por toda a árvore de componentes (`lib/*.js`) e convertidos os que ainda estavam claros:**
+- `lib/GerenteView.js` — card "Ranking de vendas" (gerente, vestuário, aba Início/Placar).
+- `lib/GerenteViewConsorcio.js` — mesmo card, versão consórcio.
+- `lib/EmpresaDashboard.js` — card "Líder de vendas até agora" (só master_admin, dentro de `Placar`) — não é uma lista, é um resumo de 1 linha, mas é da mesma família ("ranking de vendas"), então também virou `.card-dark`.
+
+Todos seguiram o mesmo padrão já estabelecido (`RankingCard`/`LojaRankingCard` de `HierarchyHome.js`, e o "Ranking de vendas" do colaborador convertido antes nesta mesma sessão): `.card-dark` + `.label-dark`, listas com `.row-card` + `.rank-pos`/`rank-pos-1/2/3/plain` + `Avatar` (import novo em `GerenteView.js`/`GerenteViewConsorcio.js`), valor em destaque com `text-goldlight`. `rankPosClass()` duplicada localmente em cada arquivo (mesmo padrão já usado — função pura de 4 linhas, sem estado, não migrada pra um util compartilhado de propósito, seguindo o costume do projeto de não abstrair prematuramente).
+
+**Já estavam corretos antes, confirmado por grep, sem necessidade de mexer:** `HierarchyHome.js` (Rankings cross-loja: Top vendedores/Mais premiados/Líder de tarefas/Mais comissionados + Ranking de lojas), `ColaboradorView.js` (Ranking de vendas, convertido momentos antes nesta mesma sessão).
+
+**Não é "ranking" no sentido de lista/dashboard, ficou de fora de propósito:** o texto "Líder de vendas" que aparece dentro dos herocards em gradiente (`HierarchyHome.js`, tiles do card colorido de Início pra sócio/supervisor, vestuário e consórcio) — é uma métrica dentro do herocard colorido, não um card `.card`/`.card-dark` à parte; mantém o próprio sistema visual do herocard (que já não é branco).
+
+**Verificação:** `npm run build` → `✓ Compiled successfully` depois de cada conversão.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
