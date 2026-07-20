@@ -36,7 +36,6 @@ import {
   DollarSign,
   Tag,
   Lock,
-  CheckSquare,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -57,12 +56,13 @@ import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
 import { useSavedNotice } from "../../lib/SavedNotice";
 
-// Colaborador de consórcio tem um conjunto de abas diferente do gerente (atividades/calendário/
-// tarefas, sem Metas — espelha TABS_CONSORCIO de app/colaborador/page.js, que não é exportado de lá).
+// Colaborador de consórcio tem um conjunto de abas diferente do gerente (atividades/calendário,
+// sem Metas — espelha TABS_CONSORCIO de app/colaborador/page.js, que não é exportado de lá).
+// 2026-07-20: "Tarefas" deixou de ser aba própria — virou card do dashboard de Início (ver
+// lib/ColaboradorViewConsorcio.js) — removida daqui também (regra de ouro de UI).
 const TABS_CONSORCIO_COLAB = [
   { key: "atividades", label: "Início", Icon: Home },
   { key: "calendario", label: "Calendário", Icon: Calendar },
-  { key: "tarefas", label: "Tarefas", Icon: CheckSquare },
 ];
 
 const MASTER_TABS = [
