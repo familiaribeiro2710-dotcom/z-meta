@@ -55,6 +55,7 @@ import Avatar from "../../lib/Avatar";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
 import { useSavedNotice } from "../../lib/SavedNotice";
+import ConfirmModal from "../../lib/ConfirmModal";
 
 // Colaborador de consórcio tem um conjunto de abas diferente do gerente (atividades/calendário,
 // sem Metas — espelha TABS_CONSORCIO de app/colaborador/page.js, que não é exportado de lá).
@@ -106,6 +107,11 @@ export default function AdminPage() {
   const [msg, setMsg] = useState("");
   const [creating, setCreating] = useState(false);
   const [newEmpresaOpen, setNewEmpresaOpen] = useState(false);
+
+  // Confirmação de ativar/desativar/excluir empresa — centralizada aqui (em vez de dentro de
+  // EmpresaDetail) porque existem DOIS lugares com esses botões (a listinha de empresas aqui
+  // embaixo e o header de EmpresaDetail) e os dois precisam do mesmo modal, sem duplicar.
+  const [empresaConfirm, setEmpresaConfirm] = useState(null); // { type: "toggle" | "delete", row } | null
 
   const greet = greeting();
   const month = firstDayOfMonth(todayStr());
@@ -172,21 +178,18 @@ export default function AdminPage() {
     await loadAll();
   }
 
+  // Ambas devolvem/lançam erro em vez de window.confirm/prompt/alert — a confirmação e o aviso
+  // de erro agora são responsabilidade do ConfirmModal (ver EmpresaDetail), chamado a partir do
+  // clique do botão. O aviso de sucesso continua no useSavedNotice() já existente.
   async function toggleEmpresaActive(row) {
     const next = !row.active;
-    if (!next && !window.confirm(`Desativar "${row.empresa_name}"? Gerentes e colaboradores dessa empresa perdem o acesso até você reativar.`)) return;
-    await supabase.from("empresas").update({ active: next }).eq("id", row.empresa_id);
+    const { error } = await supabase.from("empresas").update({ active: next }).eq("id", row.empresa_id);
+    if (error) throw new Error(error.message);
     await loadAll();
+    notifySaved(next ? "Empresa ativada com sucesso." : "Empresa desativada com sucesso.");
   }
 
   async function deleteEmpresa(row) {
-    const typed = window.prompt(
-      `Isso vai apagar "${row.empresa_name}" e TODOS os dados dela (lojas, gerentes, colaboradores, tarefas, metas, histórico) para sempre. Digite o nome da empresa para confirmar:`
-    );
-    if (typed !== row.empresa_name) {
-      if (typed !== null) alert("Nome não confere. Nada foi excluído.");
-      return;
-    }
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch("/api/admin/delete-empresa", {
       method: "POST",
@@ -194,11 +197,16 @@ export default function AdminPage() {
       body: JSON.stringify({ empresaId: row.empresa_id }),
     });
     const json = await res.json();
-    if (!res.ok) {
-      alert("Erro ao excluir: " + (json.error || "não foi possível excluir."));
-      return;
-    }
+    if (!res.ok) throw new Error(json.error || "não foi possível excluir.");
     await loadAll();
+    notifySaved("Empresa excluída com sucesso.");
+  }
+
+  async function handleEmpresaConfirm() {
+    if (!empresaConfirm) return;
+    if (empresaConfirm.type === "toggle") await toggleEmpresaActive(empresaConfirm.row);
+    else await deleteEmpresa(empresaConfirm.row);
+    setEmpresaConfirm(null);
   }
 
   const allEmpresas = useMemo(() => {
@@ -366,8 +374,8 @@ export default function AdminPage() {
             onBack={() => setSelectedEmpresaDetail(null)}
             onChanged={loadAll}
             onOpenLojaDados={(l) => { setLojaTab("atividades"); setSelectedLoja(l); }}
-            onToggleActive={toggleEmpresaActive}
-            onDelete={deleteEmpresa}
+            onToggleActive={(row) => setEmpresaConfirm({ type: "toggle", row })}
+            onDelete={(row) => setEmpresaConfirm({ type: "delete", row })}
             onViewAs={setViewingProfile}
           />
         ) : (
@@ -638,14 +646,14 @@ export default function AdminPage() {
                     </span>
                     <button
                       title={row.active ? "Desativar empresa" : "Ativar empresa"}
-                      onClick={() => toggleEmpresaActive(row)}
+                      onClick={() => setEmpresaConfirm({ type: "toggle", row })}
                       className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${row.active ? "text-white/60 hover:text-warn" : "text-success"}`}
                     >
                       <Power size={13} />
                     </button>
                     <button
                       title="Excluir empresa"
-                      onClick={() => deleteEmpresa(row)}
+                      onClick={() => setEmpresaConfirm({ type: "delete", row })}
                       className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-white/10 transition-colors"
                     >
                       <Trash2 size={13} />
@@ -659,6 +667,22 @@ export default function AdminPage() {
         </div>
       </div>
       )}
+      <ConfirmModal
+        open={!!empresaConfirm}
+        title={empresaConfirm?.type === "delete" ? `Excluir "${empresaConfirm.row.empresa_name}"?` : `${empresaConfirm?.row.active ? "Desativar" : "Ativar"} "${empresaConfirm?.row.empresa_name}"?`}
+        message={
+          empresaConfirm?.type === "delete"
+            ? "Isso vai apagar todos os dados dela (lojas, gerentes, colaboradores, tarefas, metas, histórico) para sempre. Não dá pra desfazer."
+            : empresaConfirm?.row.active
+            ? "Gerentes e colaboradores dessa empresa perdem o acesso até você reativar. Os dados continuam guardados."
+            : "Gerentes e colaboradores dessa empresa recuperam o acesso."
+        }
+        confirmLabel={empresaConfirm?.type === "delete" ? "Excluir" : empresaConfirm?.row.active ? "Desativar" : "Ativar"}
+        danger={empresaConfirm?.type === "delete" || (empresaConfirm?.type === "toggle" && empresaConfirm?.row.active)}
+        confirmText={empresaConfirm?.type === "delete" ? empresaConfirm.row.empresa_name : undefined}
+        onConfirm={handleEmpresaConfirm}
+        onCancel={() => setEmpresaConfirm(null)}
+      />
     </AppShell>
   );
 }
@@ -2050,14 +2074,18 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
     }
   }
 
+  // Confirmação/erro agora são responsabilidade do ConfirmModal (aberto a partir de LojaCard,
+  // único lugar que tem esses botões — diferente de empresa, que tem dois lugares e por isso
+  // precisou centralizar lá em cima em AdminPage).
+  async function toggleLojaActive(loja) {
+    const next = !loja.loja_active;
+    const { error } = await supabase.from("lojas").update({ active: next }).eq("id", loja.loja_id);
+    if (error) throw new Error(error.message);
+    onChanged();
+    notifySaved(next ? "Loja ativada com sucesso." : "Loja desativada com sucesso.");
+  }
+
   async function deleteLoja(loja) {
-    const typed = window.prompt(
-      `Isso vai apagar "${loja.loja_name}" e TODOS os dados dela (gerente, colaboradores, tarefas, metas, vendas/leads, histórico) para sempre. Digite o nome da loja para confirmar:`
-    );
-    if (typed !== loja.loja_name) {
-      if (typed !== null) alert("Nome não confere. Nada foi excluído.");
-      return;
-    }
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch("/api/admin/delete-loja", {
       method: "POST",
@@ -2065,12 +2093,9 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
       body: JSON.stringify({ lojaId: loja.loja_id }),
     });
     const json = await res.json();
-    if (!res.ok) {
-      alert("Erro ao excluir: " + (json.error || "não foi possível excluir."));
-      return;
-    }
-    notifySaved("Loja excluída com sucesso.");
+    if (!res.ok) throw new Error(json.error || "não foi possível excluir.");
     onChanged();
+    notifySaved("Loja excluída com sucesso.");
   }
 
   return (
@@ -2111,6 +2136,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
             onChanged={onChanged}
             onOpenDados={onOpenDados}
             onViewAs={onViewAs}
+            onToggleActive={toggleLojaActive}
             onDelete={deleteLoja}
             isOpen={openLojaId === l.loja_id}
             onToggle={() => setOpenLojaId(openLojaId === l.loja_id ? null : l.loja_id)}
@@ -2121,8 +2147,9 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
   );
 }
 
-function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onDelete, empresaId, isOpen, onToggle }) {
+function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggleActive, onDelete, empresaId, isOpen, onToggle }) {
   const [openUserId, setOpenUserId] = useState(null);
+  const [confirmType, setConfirmType] = useState(null); // "toggle" | "delete" | null
 
   const colaboradores = allProfiles.filter((p) => p.loja_id === loja.loja_id && p.role === "colaborador");
   const gerenteProfile = allProfiles.find((p) => p.id === loja.gerente_id);
@@ -2162,8 +2189,15 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onDelet
             <Eye size={12} /> Ver dados
           </button>
           <button
+            title={loja.loja_active ? "Desativar loja" : "Ativar loja"}
+            onClick={() => setConfirmType("toggle")}
+            className={`p-1.5 rounded-lg border transition-colors ${loja.loja_active ? "border-line text-muted hover:border-warn hover:text-warn" : "border-success text-success"}`}
+          >
+            <Power size={13} />
+          </button>
+          <button
             title="Excluir loja"
-            onClick={() => onDelete(loja)}
+            onClick={() => setConfirmType("delete")}
             className="p-1.5 rounded-lg border border-line text-muted hover:border-danger hover:text-danger transition-colors"
           >
             <Trash2 size={13} />
@@ -2255,6 +2289,26 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onDelet
           </div>
         </div>
       )}
+      <ConfirmModal
+        open={!!confirmType}
+        title={confirmType === "delete" ? `Excluir "${loja.loja_name}"?` : `${loja.loja_active ? "Desativar" : "Ativar"} "${loja.loja_name}"?`}
+        message={
+          confirmType === "delete"
+            ? "Isso vai apagar todos os dados dela (gerente, colaboradores, tarefas, metas, vendas/leads, histórico) para sempre. Não dá pra desfazer."
+            : loja.loja_active
+            ? "O gerente e os colaboradores dessa loja perdem o acesso até você reativar. Os leads/vendas continuam guardados."
+            : "O gerente e os colaboradores dessa loja recuperam o acesso."
+        }
+        confirmLabel={confirmType === "delete" ? "Excluir" : loja.loja_active ? "Desativar" : "Ativar"}
+        danger={confirmType === "delete" || (confirmType === "toggle" && loja.loja_active)}
+        confirmText={confirmType === "delete" ? loja.loja_name : undefined}
+        onConfirm={async () => {
+          if (confirmType === "delete") await onDelete(loja);
+          else await onToggleActive(loja);
+          setConfirmType(null);
+        }}
+        onCancel={() => setConfirmType(null)}
+      />
     </div>
   );
 }
