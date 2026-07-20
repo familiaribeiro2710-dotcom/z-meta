@@ -1112,6 +1112,18 @@ Todos seguiram o mesmo padrão já estabelecido (`RankingCard`/`LojaRankingCard`
 
 **Verificação:** `npm run build` → `✓ Compiled successfully`.
 
+## ConfirmModal: botão de confirmar não desbloqueava (bug de case do rótulo) (2026-07-20)
+
+**Reportado pelo Felipe (com print):** tentando excluir a loja "ArmyBR Iburapuera", digitou o nome exatamente como aparecia na tela ("ARMYBR IBURAPUERA") e o botão "Excluir" continuava desabilitado.
+
+**Causa:** `.label` (`app/globals.css`) tem `uppercase` por CSS — o rótulo `Digite "{confirmText}" para confirmar` mostrava o nome da loja/empresa TODO EM CAIXA ALTA na tela, mas a comparação em `ConfirmModal.js` era `typed === confirmText` (case-sensitive) contra o nome de verdade (`"ArmyBR Iburapuera"`, case misto). O usuário digitava fielmente o que via (maiúsculo) e nunca batia com o valor real. O `window.prompt` antigo (antes do `ConfirmModal` existir) não tinha esse problema porque não tem CSS nenhum — o texto aparecia no case real.
+
+**Fix, dois níveis (visual + lógica, pra não voltar a acontecer nem com outro nome):**
+- Rótulo: `<span className="normal-case">` em volta só do nome interpolado, cancelando o `uppercase` herdado do `.label` — o nome agora aparece no case certo na tela.
+- Comparação: virou case/trim-insensível (`typed.trim().toLowerCase() === confirmText.trim().toLowerCase()`) — mais tolerante a variação de maiúscula/minúscula em nomes reais (ex.: "ArmyBR"), sem perder a fricção de "precisa saber/digitar o nome certo".
+
+**Verificação:** `npm run build` → `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
