@@ -827,6 +827,27 @@ Item que estava anotado no roadmap desde a Fase 1/2 do consórcio ("Notificaçõ
 
 **Pendências abertas:** sem botão de "desativar notificações" na UI (hoje só dá pra desativar revogando a permissão no navegador); sem lembrete de reunião (fora do escopo pedido); sem notificação em cascata pra gestor em advertência/premiação (só o gerente é avisado, e só em venda).
 
+## Notificações push pra sócio/supervisor — meta batida e venda (2026-07-20)
+
+**Pedido do Felipe:** o sino de notificações (Fase 5) já aparece pra qualquer papel logado, inclusive sócio/supervisor — nada precisou mudar aí. O que faltava era o **conteúdo**: "toda vez que uma loja abaixo dele bata a meta, ele seja notificado; todo colaborador abaixo dele que faça uma venda, ele seja notificado" — pra sócio e supervisor, **sempre respeitando a hierarquia** (sócio = todas as lojas da empresa; supervisor = só as lojas que ele tem `loja_access`, "não faz sentido o supervisor receber notificação de loja que não é dele").
+
+**Dois helpers novos (SQL, `public`):**
+- `push_notify(profile_id, title, body, url)` — encapsula o `net.http_post` pro Edge Function `send-push` (mesmo endpoint/segredo da Fase 5). Reaproveitado por toda trigger nova, evita repetir os headers em cada uma.
+- `push_notify_hierarquia_loja(loja_id, empresa_id, title, body, url)` — resolve os destinatários: todo `socio` ativo da `empresa_id` (sem depender de `loja_access`, mesmo padrão de `hierarquiaCanManageLoja`) + todo `supervisor` ativo com uma linha em `loja_access` pra aquela `loja_id` específica (qualquer `permission`, `ver` ou `gerenciar`).
+- **Correção de segurança aplicada na hora:** essas duas funções são `SECURITY DEFINER` (bypassam RLS) e por padrão o Postgres concede `EXECUTE` pra `PUBLIC` em função nova — como não são funções de trigger (`returns void`, não `returns trigger`), ficariam expostas via RPC (`supabase.rpc(...)`) pra qualquer usuário autenticado, que poderia mandar push arbitrário (inclusive link malicioso) pra qualquer `profile_id`. Revogado `EXECUTE` de `anon`/`authenticated`/`PUBLIC` logo em seguida (migração `revoke_public_execute_push_helpers`) — só `postgres`/`service_role` mantêm acesso, o que basta porque as triggers rodam como o dono da função. As 4 triggers de evento (abaixo) não têm esse risco por serem `returns trigger` — só disparam como trigger, nunca via RPC direto.
+
+**Quatro triggers novas:**
+- `notify_push_venda_vestuario` (`sales_entries`, AFTER INSERT, só quando `daily_amount > 0`) — colaborador lançou uma venda do dia → hierarquia da loja.
+- `notify_push_venda_consorcio_hierarquia` (`crm_leads`, AFTER UPDATE, `status` vira `vendido`) — **trigger nova e separada** da `trg_notify_push_venda` já existente (Fase 5, notifica o gerente) — não mexeu na antiga, só somou esse segundo canal de destinatários.
+- `notify_push_meta_vestuario` (`sales_entries`, AFTER INSERT OR UPDATE) e `notify_push_meta_consorcio` (`crm_leads`, AFTER UPDATE→vendido) — "loja bateu meta": recalcula o total vendido pela loja no mês (`sales_entries.daily_amount` / `crm_leads.valor` onde `vendido`) ANTES e DEPOIS da transação (`total_before = total_after - delta`) e notifica **só as camadas de `sales_goals`/`consorcio_goals` cruzadas nessa transação especificamente** (`store_total > total_before AND store_total <= total_after`) — evita notificar de novo numa camada já batida antes. Se uma venda grande cruzar duas camadas de uma vez (ex: pula de "abaixo da Meta" pra "acima da Super Meta"), notifica as duas.
+
+**Decisões deliberadas:**
+- "Colaborador vendeu" em vestuário dispara só em `daily_amount > 0` no INSERT — não em correção/edição nem em lançamento zerado, pra não ser "uma venda" que não é venda de fato.
+- Escopo do evento ficou só em sócio/supervisor, como pedido — **não muda** o que colaborador/gerente já recebem (advertência/premiação/lead novo pro colaborador; venda pro gerente, ambos decisões da Fase 5, intocadas).
+- **Gap identificado e não implementado (fora do escopo pedido):** gerente não recebe push de venda em vestuário hoje — só em consórcio (`trg_notify_push_venda` original só cobre `crm_leads`). Avisar o Felipe se isso for querido depois.
+
+**Verificação:** schema conferido via `information_schema` antes de escrever (evitar suposição errada de coluna). Todas as 6 funções novas com `SECURITY DEFINER` + `search_path` fixo, mesmo padrão de hardening da Fase 5. Teste funcional real na empresa Teste Consórcio: meta baixa (R$1) já estava ultrapassada por vendas anteriores → corretamente NÃO notificou (camada já tinha sido cruzada antes); meta mais alta (R$220.000, cruzada de propósito por uma venda de teste) → notificou corretamente, junto com o evento de venda e o trigger de gerente já existente (3 requisições, todas HTTP 200, `sent:0` porque nenhum dispositivo real tem subscription ainda — mesma pendência já documentada na Fase 5). Metas e leads de teste usados nessa verificação foram apagados/revertidos ao final, sem deixar rastro nos dados que o Felipe vai usar pra testar os filtros.
+
 ## Funil — paginação e filtros com botão "Aplicar" (2026-07-20)
 
 **Pedido do Felipe:** "o dashboard de leads precisa ter um limite por página, porque conforme o volume for aumentando, a rolagem vai ficar muito grande" + "os filtros não podem aplicar automaticamente, precisa ter um botão de aplicar." Ambos em `lib/ConsorcioDashboard.js`, componente `Funil` (aba Início → Funil, visão de gerente/supervisor/sócio/master).
