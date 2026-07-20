@@ -986,6 +986,27 @@ Colaborador de consórcio tinha 3 abas (Início/Calendário/Tarefas) — diferen
 
 **Verificação:** `npm run build` → `✓ Compiled successfully`. Não houve teste em dispositivo físico real (mesma limitação já registrada — auditoria mobile é sempre estática nesse ambiente); recomendado o Felipe conferir num celular real depois do deploy.
 
+## Painel de notificações: corte real era `backdrop-filter` quebrando `position: fixed` (2026-07-20)
+
+**Reportado pelo Felipe (com print):** mesmo depois do fix acima, o painel continuava cortado no mobile — aparecia espremido bem no topo da tela, com o resto do app visível por baixo.
+
+**Causa real:** o sino (`NotificationBell`) fica dentro do `<header>` do `AppShell.js`, que usa `backdrop-blur` (`backdrop-filter`). Em navegadores WebKit (Safari/iOS — o caso do Felipe), um ancestral com `backdrop-filter` (mesma regra de `filter`/`transform`) vira o **containing block** de qualquer `position: fixed` dentro dele. Ou seja, o overlay `fixed inset-0` do painel não cobria a tela inteira — ficava contido dentro da caixinha pequena do próprio header, daí o corte.
+
+**Fix:** o overlay do painel (`panelOpen && ...`) agora é renderizado via `createPortal` direto em `document.body` (`lib/PushNotifications.js`), escapando do containing block do header. Estado `mounted` novo, seteado em `useEffect`, evita acessar `document` durante SSR.
+
+**Verificação:** `npm run build` → `✓ Compiled successfully`.
+
+## Notificações de hierarquia: nome da loja no título (2026-07-20)
+
+**Pedido do Felipe (com print de uma notificação real):** a notificação mostrava "Nova venda registrada" + corpo com nome do colaborador/cliente, mas sem dizer de qual loja — sócio pode gerenciar várias lojas da empresa e supervisor pode ter acesso a mais de uma via `loja_access`, então sem o nome da loja não dava pra saber a origem sem abrir o app. (A linha "from Z Meta" que aparece na notificação do Safari/iOS é o nome do PWA instalado, chrome do próprio navegador — não é customizável por notificação; a solução real é reforçar a origem no título que o app controla.)
+
+**Fix, direto no banco (funções já viviam só no Postgres, sem migration local rastreada no repo):**
+- `push_notify_hierarquia_loja` (usada por sócio/supervisor em 5 triggers — meta batida vestuário/consórcio, venda vestuário/consórcio, tarefas concluídas): passou a buscar `lojas.name` a partir do `p_loja_id` que já recebia, e prefixa o título com `' — ' || nome_da_loja`. Corrigir num ponto só resolveu os 5 call sites de uma vez.
+- `notify_push_venda` (gerente, venda em consórcio), `notify_push_venda_vestuario_gerente` (gerente, venda em vestuário) e `notify_tarefas_completas` (ramo que notifica o gerente direto): cada uma faz push direto pro gerente (não passa pela função acima, que é só pra sócio/supervisor) — mesmo ajuste replicado nas 3, usando o `loja_id` que cada uma já tinha disponível na própria linha/contexto.
+- Título final fica, por exemplo, `"Nova venda registrada — Loja 1 Teste"` em vez de só `"Nova venda registrada"`.
+
+**Verificação:** `get_advisors` (security) rodado depois da migração — mesmos achados de sempre (`SECURITY DEFINER` exposto a `anon`/`authenticated` nas funções de trigger, padrão já aceito, nenhum achado novo). Conferido por SQL que as 4 funções realmente têm o trecho novo (`ilike '%loja_nome%'`) e que a expressão de título monta certo pra "Loja 1 Teste" (`"Nova venda registrada — Loja 1 Teste"`). Sem teste de push real disparado de propósito, pra não mandar notificação de teste pra dispositivo real já inscrito.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
