@@ -41,11 +41,25 @@ html, body {
     @apply w-full border-2 border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-purple focus:ring-4 focus:ring-purple/15 transition-all;
   }
 
+  /* Nova identidade (2026-07): dourado vira a cor de ação padrão do app — o gradiente
+     roxo→rosa deixa de ser "todo botão" e fica reservado só pra comemoração de meta batida
+     (ver .btn-hype, usado nos 3 modais de "Parabéns!"). Isso muda TODO botão .btn do app de
+     uma vez só, sem precisar tocar em cada tela — é o efeito pretendido. */
   .btn {
+    @apply inline-flex items-center justify-center gap-2 text-navy rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-popgold;
+    background: linear-gradient(135deg, #e4c789, #c9a15a);
+  }
+  .btn:hover {
+    filter: brightness(1.05);
+  }
+
+  /* Botão de comemoração — era o .btn padrão antigo (gradiente roxo→rosa). Usar só nos
+     poucos call sites de "bateu a meta"/confete, nunca em ação de salvar/criar comum. */
+  .btn-hype {
     @apply inline-flex items-center justify-center gap-2 text-white rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-pop;
     background: linear-gradient(135deg, #7c3aed, #ec4899);
   }
-  .btn:hover {
+  .btn-hype:hover {
     filter: brightness(1.08);
   }
 
@@ -57,8 +71,71 @@ html, body {
     @apply border-2 border-line bg-white rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
   }
 
+  /* Superfície escura opt-in — usada nas telas de gestão que antes eram tabela crua sobre
+     fundo branco (Rankings, Funil por colaborador, Colaboradores). Não é dark mode do app
+     inteiro — é um cartão específico que assume fundo navy em vez de branco. */
+  .card-dark {
+    @apply rounded-3xl p-5 border border-white/10 shadow-navycard transition-all;
+    background: #1c2e4d;
+  }
+
+  /* Linha de lista dentro de .card-dark — substitui <tr>/<td> de tabela crua. */
+  .row-card {
+    @apply flex items-center gap-3 py-3 border-b border-white/10 last:border-0;
+  }
+
+  /* Avatar/ícone quadrado com leve dourado — âncora visual de cada linha, no lugar de
+     só texto puro como nas tabelas antigas. */
+  .avatar-chip {
+    @apply w-9 h-9 rounded-xl flex items-center justify-center text-xs font-extrabold shrink-0;
+    background: rgba(201, 161, 90, 0.16);
+    color: #e4c789;
+  }
+
+  .chip-ok {
+    @apply text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0;
+    background: rgba(22, 163, 74, 0.18);
+    color: #86efac;
+  }
+  .chip-warn {
+    @apply text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0;
+    background: rgba(217, 119, 6, 0.18);
+    color: #fbbf76;
+  }
+  .chip-danger {
+    @apply text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0;
+    background: rgba(220, 38, 38, 0.18);
+    color: #fca5a5;
+  }
+
+  /* Posição de ranking — 1º/2º/3º ganham medalha, o resto fica neutro sobre o fundo escuro. */
+  .rank-pos {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold shrink-0;
+  }
+  .rank-pos-1 {
+    background: linear-gradient(135deg, #e4c789, #c9a15a);
+    color: #12203a;
+  }
+  .rank-pos-2 {
+    background: #c7ccd6;
+    color: #12203a;
+  }
+  .rank-pos-3 {
+    background: #c88a5a;
+    color: #2b1608;
+  }
+  .rank-pos-plain {
+    @apply bg-white/10 text-white/70;
+  }
+
   .label {
     @apply block text-xs uppercase tracking-wider text-muted mb-1.5 font-bold;
+  }
+
+  /* Label equivalente pra dentro de .card-dark (texto claro em vez de --muted, que é
+     pensado pra fundo claro). */
+  .label-dark {
+    @apply block text-[11px] uppercase tracking-wider text-white/50 mb-1.5 font-bold;
   }
 
   .badge {

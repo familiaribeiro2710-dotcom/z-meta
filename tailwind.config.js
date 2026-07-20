@@ -34,6 +34,10 @@ module.exports = {
         soft: "0 2px 10px rgba(18,32,58,0.06)",
         card: "0 4px 20px rgba(18,32,58,0.08)",
         pop: "0 8px 24px rgba(124,58,237,0.18)",
+        // nova identidade: dourado vira a sombra de destaque padrão (botão/ação principal);
+        // "pop" (roxo→rosa) fica reservada só pros botões de comemoração (.btn-hype).
+        popgold: "0 8px 22px rgba(201,161,90,0.35)",
+        navycard: "0 4px 20px rgba(0,0,0,0.25)",
       },
       borderRadius: {
         "3xl": "1.75rem",

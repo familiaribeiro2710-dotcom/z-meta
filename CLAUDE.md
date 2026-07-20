@@ -144,18 +144,25 @@ npm run start    # roda o build de produção localmente
 
 Definida em `tailwind.config.js` e `app/globals.css`. Fonte: **Inter** (via `@fontsource`).
 
+**Nova identidade "navy + gold" (2026-07)**: dourado é a cor de ação/destaque padrão do app; o gradiente roxo→rosa foi rebaixado a "só comemoração" (meta batida, 100% das tarefas). Ver `CONTEXTO_PROJETO.md` seção 11 ("Nova identidade visual") pro racional completo e o que foi/não foi convertido.
+
 | Token | Cor | Uso |
 |---|---|---|
-| `navy` | `#12203a` | texto principal, base do tema "quiet" |
-| `gold` / `goldlight` | `#c9a15a` / `#e4c789` | acabamento premium |
-| `paper` | `#f5f3ee` | fundo da página |
-| `line` | `#e7e3d9` | bordas |
-| `muted` | `#7d7a6f` | texto secundário |
-| `purple` → `pink` | `#7c3aed` → `#ec4899` | gradiente principal de ação (`.btn`, `.gradient-text`) — paleta "vibrante" de gamificação |
-| `teal`, `orange`, `blue`, `lime` | — | cores de apoio por contexto (rankings, badges, ícones) |
-| `success` / `warn` / `danger` | `#16a34a` / `#d97706` / `#dc2626` | estados |
+| `navy` | `#12203a` | texto principal (fundo claro), base do tema |
+| `gold` / `goldlight` | `#c9a15a` / `#e4c789` | **cor de destaque padrão** — botão de ação (`.btn`), avatar fallback, valores em rankings/listas escuras |
+| `paper` | `#f5f3ee` | fundo da página (mantido claro — não houve flip pra dark mode global, decisão deliberada) |
+| `line` | `#e7e3d9` | bordas em cartões claros |
+| `muted` | `#7d7a6f` | texto secundário em fundo claro |
+| `purple` → `pink` | `#7c3aed` → `#ec4899` | gradiente **reservado só pra comemoração** (`.btn-hype`, `.gradient-text`) — nunca em botão de ação comum |
+| `teal`, `orange`, `blue`, `lime` | — | cores de apoio por contexto (ícones, badges pontuais) |
+| `success` / `warn` / `danger` | `#16a34a` / `#d97706` / `#dc2626` | estados (também usados nos chips `.chip-ok/warn/danger` em fundo escuro) |
 
-Classes utilitárias centrais (`@layer components` em `globals.css`): `.card` (borda + sombra + hover leve), `.input`, `.btn` (gradiente roxo→rosa, pill), `.btn-outline`, `.label`, `.badge`. Tema PWA: `theme_color`/`background_color` em `public/manifest.json`, ícones em `public/`.
+Classes utilitárias centrais (`@layer components` em `globals.css`):
+- **Fundo claro** (padrão da maioria das telas): `.card` (borda + sombra + hover leve), `.input`, `.label`, `.badge`.
+- **Botões**: `.btn` (dourado, ação padrão), `.btn-hype` (gradiente roxo→rosa, só comemoração — modais de "Parabéns!"), `.btn-outline` (contorno roxo).
+- **Superfície escura opt-in** (não é dark mode do app inteiro — só cartões específicos que trocaram de fundo branco pra navy): `.card-dark`, `.row-card` (linha de lista, substitui `<tr>/<td>` de tabela crua), `.avatar-chip`, `.label-dark`, `.chip-ok/warn/danger`, `.rank-pos` + `.rank-pos-1/2/3/plain` (medalha de ranking). Usadas hoje em: rankings (`HierarchyHome.js`), listas de Colaboradores/Gerentes (`EmpresaDashboard.js`), Funil por colaborador e Vendas do mês (`ConsorcioDashboard.js`). Financeiro/Faturamento **ainda não convertido**.
+
+Tema PWA: `theme_color`/`background_color` em `public/manifest.json`, ícones em `public/`.
 
 ## 8. Pendências abertas / limitações conhecidas
 
