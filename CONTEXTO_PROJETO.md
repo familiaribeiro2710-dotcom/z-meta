@@ -844,9 +844,19 @@ Item que estava anotado no roadmap desde a Fase 1/2 do consórcio ("Notificaçõ
 **Decisões deliberadas:**
 - "Colaborador vendeu" em vestuário dispara só em `daily_amount > 0` no INSERT — não em correção/edição nem em lançamento zerado, pra não ser "uma venda" que não é venda de fato.
 - Escopo do evento ficou só em sócio/supervisor, como pedido — **não muda** o que colaborador/gerente já recebem (advertência/premiação/lead novo pro colaborador; venda pro gerente, ambos decisões da Fase 5, intocadas).
-- **Gap identificado e não implementado (fora do escopo pedido):** gerente não recebe push de venda em vestuário hoje — só em consórcio (`trg_notify_push_venda` original só cobre `crm_leads`). Avisar o Felipe se isso for querido depois.
+- **Gap identificado nesta sessão, fechado na sessão seguinte (2026-07-20):** gerente não recebia push de venda em vestuário — só em consórcio (`trg_notify_push_venda` original só cobre `crm_leads`). Ver "Paridade de notificação de venda pro gerente em vestuário" abaixo.
 
 **Verificação:** schema conferido via `information_schema` antes de escrever (evitar suposição errada de coluna). Todas as 6 funções novas com `SECURITY DEFINER` + `search_path` fixo, mesmo padrão de hardening da Fase 5. Teste funcional real na empresa Teste Consórcio: meta baixa (R$1) já estava ultrapassada por vendas anteriores → corretamente NÃO notificou (camada já tinha sido cruzada antes); meta mais alta (R$220.000, cruzada de propósito por uma venda de teste) → notificou corretamente, junto com o evento de venda e o trigger de gerente já existente (3 requisições, todas HTTP 200, `sent:0` porque nenhum dispositivo real tem subscription ainda — mesma pendência já documentada na Fase 5). Metas e leads de teste usados nessa verificação foram apagados/revertidos ao final, sem deixar rastro nos dados que o Felipe vai usar pra testar os filtros.
+
+## Paridade de notificação de venda pro gerente em vestuário (2026-07-20)
+
+**Pedido do Felipe:** fechar o gap identificado na sessão anterior — em vestuário, quando um colaborador lançava venda (`sales_entries`), só sócio/supervisor eram notificados (`notify_push_venda_vestuario`); o gerente da equipe não recebia nada, diferente do consórcio, onde `notify_push_venda` (Fase 5) já notifica o gerente em toda venda (`crm_leads`→`vendido`).
+
+**Trigger nova:** `notify_push_venda_vestuario_gerente()` — mesma condição de disparo de `notify_push_venda_vestuario` (`AFTER INSERT` em `sales_entries`, só quando `daily_amount > 0`), mas resolve o destinatário como o gerente da equipe (`profiles.gerente_id` do colaborador que vendeu) em vez da hierarquia da loja, e chama `push_notify` diretamente (não `push_notify_hierarquia_loja`, que é só pra sócio/supervisor). Trigger nova e separada — não alterou `notify_push_venda_vestuario` (sócio/supervisor) nem `notify_push_venda` (gerente em consórcio), mesmo padrão de "somar canal novo sem tocar no existente" já usado antes.
+
+**Verificação:** grants (`information_schema.routine_privileges`) conferidos contra `notify_push_venda`/`notify_push_venda_vestuario` — mesma exposição a `anon`/`authenticated` (esperada e benigna pra função de trigger, `returns trigger`, não é RPC-chamável). Teste funcional real: inserida uma venda de teste (R$1,00) na empresa "Teste" (vestuário, não ArmyBR — produção real evitada de propósito) pro colaborador "Teste colaborador", que tem gerente vinculado. `net._http_response` confirmou 2 requisições HTTP 200 disparadas (uma da trigger de gerente nova, uma da hierarquia sócio/supervisor já existente), `sent:0` porque nenhum dispositivo real tem subscription ainda — mesma pendência de sempre. Linha de teste apagada ao final, sem deixar rastro.
+
+**Pendência do Felipe:** teste real do sino de notificação (ativar em dispositivo físico) ainda não foi feito — combinado que ele testa depois.
 
 ## Funil — paginação e filtros com botão "Aplicar" (2026-07-20)
 
@@ -877,6 +887,37 @@ Item que estava anotado no roadmap desde a Fase 1/2 do consórcio ("Notificaçõ
 Card "Minhas ligações" (`lib/ColaboradorViewConsorcio.js`, aba Início do colaborador de consórcio) convertido de `.card`/`divide-y` claro pra `.card-dark`/`.row-card`, mesma paleta usada em Funil/Colaboradores/Rankings. Componente novo `LeadRowDark` (com `Avatar`, chip de status em `STATUS_CHIP_DARK` — paleta duplicada da de `ConsorcioDashboard.js` de propósito, arquivos separados) criado **só** pra essa lista, em vez de adicionar uma prop condicional no `LeadRow` original — decisão deliberada pra não arriscar as outras duas telas que reaproveitam `LeadRow` (Agenda do dia e o detalhe de dia do Calendário), que **não foram pedidas** e continuam no tema claro. Toggle "Em aberto/Todos" também recolorido pro fundo escuro (pill `bg-white/5` com estado ativo `bg-goldlight text-navy`, mesmo padrão dos toggles já usados no Master Admin).
 
 Verificação: `eslint react/jsx-no-undef` sem erros novos (só o ruído já conhecido de `react-hooks/exhaustive-deps` por comentários `eslint-disable-next-line` pré-existentes, não relacionado) e `npm run build` → `✓ Compiled successfully`.
+
+## Bug real: sócio/supervisor via "Nenhuma loja atribuída" mesmo com loja_access no banco (2026-07-20)
+
+**Reportado pelo Felipe:** o usuário `suspervisorcon` (supervisor, empresa "Teste Consórcio") tinha uma linha real em `loja_access` (`permission: gerenciar`), mas ao fazer login via `/supervisor` a tela mostrava "Nenhuma loja atribuída a você ainda. Fale com o Master Admin."
+
+**Investigação:** dado e RLS foram descartados primeiro — simulação de RLS (`set local role authenticated` + `request.jwt.claims`) confirmou que as duas queries que `loadLojas()` faz (`loja_access` por `profile_id`, depois `lojas` por `id in (...)`) retornam a loja normalmente pra esse usuário. O bug era 100% client-side, em `lib/HierarchyHome.js`.
+
+**Causa raiz:** o efeito de mount fazia TODO o carregamento (categoria da empresa, `loadLojas`, hero, rankings, faturamento) dentro de um `if (!prof.must_change_password) { ... }`. Toda conta nova de sócio/supervisor nasce com `must_change_password: true` (`create-hierarchy/route.js`), então no PRIMEIRO login o usuário cai direto na tela de trocar senha — e o carregamento inteiro é pulado. O botão "Salvar" do `ChangePassword` (`onDone`) só troca a flag em memória via `setProfile(...)`, não remonta o componente nem dispara o efeito de novo (que só roda uma vez, no mount). Resultado: depois de trocar a senha, o dashboard renderizava com `lojas` ainda no estado inicial `[]`, pra sempre — mesmo a loja existindo de verdade no banco. Esse bug afeta **sócio E supervisor, em qualquer categoria** (vestuário ou consórcio), sempre que a conta ainda não tinha trocado a senha padrão na primeira sessão.
+
+**Por que colaborador/gerente nunca tiveram esse bug:** `app/colaborador/page.js` e `app/gerente/page.js` sempre carregam a categoria da empresa e passam o controle pra um componente filho (`ColaboradorView`/`GerenteView`) que só monta DEPOIS da troca de senha — e esse filho carrega os próprios dados no próprio mount, então funciona por acidente de arquitetura (delegação), não porque alguém preveniu esse bug de propósito. `HierarchyHome.js` é diferente: ele mesmo é quem renderiza tanto a tela de trocar senha quanto o dashboard, sem componente filho intermediário, então o gate malformado quebrava os dois estados dentro do mesmo componente.
+
+**Correção:** removido o `if (!prof.must_change_password)` — `resolveCategoriaSlug`/`loadLojas`/hero/rankings/faturamento agora carregam sempre, incondicionalmente, no mesmo efeito de mount (mesmo padrão que `app/colaborador/page.js`/`app/gerente/page.js` já usavam pra categoria). A tela de trocar senha continua sendo exibida enquanto `must_change_password` for `true` (isso não mudou), mas agora os dados já estão carregados em segundo plano — assim que a senha é trocada, o dashboard aparece completo na hora, sem precisar de reload manual da página.
+
+**Verificação:** `npm install` + `npm run build` → `✓ Compiled successfully` (erros de prerender de sempre, sandbox sem `.env.local`). Não foi possível reproduzir literalmente "trocar senha e ver o dashboard" nesta sessão (o usuário de teste já tinha `must_change_password: false`), mas a causa raiz foi confirmada por leitura de código (o gate cobria exatamente o carregamento que faltava) e o fluxo de dados (RLS + queries) foi validado via simulação SQL antes de mexer em qualquer linha — só depois disso o código foi alterado.
+
+## Notificações push: toggle ativar/desativar sempre visível (2026-07-20)
+
+**Reportado pelo Felipe:** dois problemas em `lib/PushNotifications.js` (`NotificationBell`, sino no header, `AppShell.js`):
+1. O prompt de permissão aparece em inglês.
+2. Depois de ativar, o sino some — sem nenhuma opção de desativar, em nenhuma categoria/papel.
+
+**Item 1 — investigado, não é um bug de código:** `Notification.requestPermission()` abre o diálogo NATIVO do navegador/SO ("site quer mostrar notificações" / Allow / Block). O texto desse diálogo é renderizado pelo próprio navegador, no idioma configurado nas preferências do navegador do usuário (ex. `chrome://settings/languages`) — **não** no idioma da página. Confirmado que `app/layout.js` já usa `<html lang="pt-BR">` (não é isso). Não existe API web que traduza esse diálogo específico; é uma limitação da plataforma, não do Z Meta. Se aparece em inglês, o navegador do usuário está configurado em inglês — a solução real é trocar o idioma do navegador, não algo que dê pra resolver no código.
+
+**Item 2 — bug real, corrigido:** `NotificationBell` tinha `if (!supported || subscribed) return null` — o botão literalmente desaparecia do DOM assim que a subscription era criada. Reescrito para:
+- Sempre visível quando o navegador suporta Web Push (`supported`), independente de estar `subscribed` ou não.
+- Estado visual: sino vazio/neutro quando desativado, sino preenchido dourado (`BellRing`, cor `gold`) quando ativado — mesmo clique alterna entre `activate()`/`deactivate()`.
+- `deactivate()` (novo): cancela a `PushSubscription` do navegador (`sub.unsubscribe()`) **e** apaga a linha correspondente de `push_subscriptions` no banco (por `profile_id` + `endpoint`) — não depende mais só da auto-limpeza reativa da Edge Function ao receber 404/410 do serviço de push.
+- Estado `permission === "denied"` tratado à parte: se o usuário já negou a permissão no navegador, JS não consegue reabrir o prompt (limitação da própria API) — o sino vira `BellOff` desabilitado com tooltip explicando que precisa ser resolvido nas configurações do site, em vez de ficar clicável sem fazer nada.
+- Título/`aria-label` 100% em português nos três estados (ativar / desativar / bloqueado pelo navegador).
+
+**Verificação:** `npm run build` → `✓ Compiled successfully`. Import de `BellOff`/`BellRing` (`lucide-react`) conferido manualmente contra o uso no JSX (sem eslint configurado neste ambiente desta sessão — não havia o `eslint.config.jsxundef.mjs` de sessões anteriores disponível aqui; conferência foi por leitura de código).
 
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
