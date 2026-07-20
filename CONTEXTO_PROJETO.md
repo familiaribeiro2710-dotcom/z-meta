@@ -976,6 +976,16 @@ Colaborador de consórcio tinha 3 abas (Início/Calendário/Tarefas) — diferen
 
 **Verificação:** `npm run build` → `✓ Compiled successfully`. Confirmado por grep que nenhuma outra referência a `tab === "tarefas"` sobrou no colaborador de consórcio, e que a aba "Tarefas" do gestor (EmpresaDashboard/ConsorcioDashboard) continua intacta.
 
+## Painel de notificações: corrigido corte no mobile + acesso permanente (2026-07-20)
+
+**Reportado pelo Felipe:** (1) o painel de preferências (`lib/PushNotifications.js`) ficava cortado no mobile; (2) só dava pra escolher as preferências uma vez — precisava ser possível ativar/desativar (geral ou específica) a qualquer momento.
+
+**Causa do corte no mobile:** o overlay usava `flex items-center justify-center` com o card em `max-h-[85vh] overflow-y-auto` (mesmo padrão já usado em outros modais do app). Em navegador mobile, `vh` pode ser calculado contra a altura "estática" do viewport (antes da barra de endereço recolher), maior que a área realmente visível — o card podia nascer mais alto que a tela, e como só o CARD tinha `overflow-y-auto` (não o overlay inteiro), a centralização do flex podia empurrar parte do conteúdo (inclusive os botões do rodapé) pra fora da área alcançável por scroll. Corrigido tornando o **overlay inteiro rolável** (`fixed inset-0 overflow-y-auto`, com um wrapper interno `min-h-full flex items-start sm:items-center justify-center` só pra centralizar quando cabe) — agora qualquer parte do painel é sempre alcançável via scroll, independente de como o navegador calcula viewport.
+
+**Causa do "só aparece uma vez":** antes, clicar no sino já ativado **desativava na hora** (sem abrir nada); o único jeito de reabrir o painel pra ajustar preferência era um ícone de engrenagem separado, fácil de não notar. Unificado: **o clique no sino agora sempre abre o painel**, ativado ou não — ícone de engrenagem removido (redundante). Dentro do painel, quando já está ativado, apareceu um botão à parte "Desativar notificações" (texto vermelho, abaixo dos botões principais) — ação geral (cancela a subscription inteira), deliberadamente separada de "Cancelar"/"Salvar" pra não confundir "ajustar preferência específica" com "desligar tudo".
+
+**Verificação:** `npm run build` → `✓ Compiled successfully`. Não houve teste em dispositivo físico real (mesma limitação já registrada — auditoria mobile é sempre estática nesse ambiente); recomendado o Felipe conferir num celular real depois do deploy.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
