@@ -1040,6 +1040,16 @@ Colaborador de consórcio tinha 3 abas (Início/Calendário/Tarefas) — diferen
 
 **Verificação:** `npm run build` → `✓ Compiled successfully`. Grep confirmou zero sobra de `yesterdayStr` no projeto.
 
+## Vestuário: tema escuro também na aba Início do colaborador (2026-07-20)
+
+**Pedido do Felipe:** a conversão anterior (mesmo dia) só tinha alcançado a aba Metas do colaborador (`Registros do mês`) — faltava algo escuro na aba Início (`atividades`) também, que continuava 100% em cartões claros.
+
+**Convertido:** card "Ranking de vendas" (aba Início, dentro da própria loja) em `lib/ColaboradorView.js` — de `.card` com pódio em círculo colorido pra `.card-dark` + `.row-card` + `.rank-pos`/`rank-pos-1/2/3/plain`, o mesmo padrão exato usado nos rankings de `HierarchyHome.js` (`RankingCard`/`LojaRankingCard`). Ganhou `Avatar` (import novo nesse arquivo) igual aos outros rankings do app. Destaque da própria linha do colaborador (`isMe`) trocou de roxo pra `goldlight`, seguindo a paleta padrão de destaque em fundo escuro.
+
+**Por que esse card e não outro:** era o candidato mais natural — ranking é exatamente o tipo de conteúdo que já é convencionalmente escuro em todo o resto do app (Rankings cross-loja do sócio/supervisor, Top vendedores, etc.), e ficar destoando (claro) bem ao lado da mesma informação em outros papéis quebrava a "regra de ouro" de consistência visual.
+
+**Verificação:** `npm run build` → `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
