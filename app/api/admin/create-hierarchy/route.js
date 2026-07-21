@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { resolveUsername } from "../../../../lib/generateUsername";
 
-const ALLOWED_ROLES = ["socio", "supervisor"];
+const ALLOWED_ROLES = ["socio", "supervisor", "administrativo"];
 const DEFAULT_PASSWORD = "123456789";
 
 export async function POST(req) {
@@ -42,10 +42,10 @@ export async function POST(req) {
       return NextResponse.json({ error: "Apenas o sócio ou o Master Admin podem cadastrar sócios e supervisores." }, { status: 403 });
     }
 
-    // sócio só cadastra supervisores (nunca outro sócio) e sempre dentro da própria empresa —
-    // o empresaId enviado pelo cliente é ignorado nesse caso, por segurança.
-    if (isSocio && role !== "supervisor") {
-      return NextResponse.json({ error: "Sócio só pode cadastrar supervisores." }, { status: 403 });
+    // sócio cadastra supervisor ou administrativo (nunca outro sócio) e sempre dentro da própria
+    // empresa — o empresaId enviado pelo cliente é ignorado nesse caso, por segurança.
+    if (isSocio && role !== "supervisor" && role !== "administrativo") {
+      return NextResponse.json({ error: "Sócio só pode cadastrar supervisor ou administrativo." }, { status: 403 });
     }
     const targetEmpresaId = isMasterAdmin ? empresaId : callerProfile.empresa_id;
 

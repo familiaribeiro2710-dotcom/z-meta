@@ -130,7 +130,7 @@ export default function AdminPage() {
     const { data: profileRows } = await supabase
       .from("profiles")
       .select("*")
-      .in("role", ["gerente", "colaborador", "socio", "supervisor"])
+      .in("role", ["gerente", "colaborador", "socio", "supervisor", "administrativo"])
       .order("full_name");
     setAllProfiles(profileRows || []);
     const { data: accessRows } = await supabase.from("loja_access").select("*");
@@ -762,6 +762,8 @@ function HeroStat({ Icon, value, label, sub, divider, danger }) {
 const ROLE_META = {
   socio: { label: "Sócio", color: "#6b7280", bg: "rgba(148,163,184,0.18)" },
   supervisor: { label: "Supervisor", color: "#2563eb", bg: "rgba(37,99,235,0.12)" },
+  // 2026-07-21: exclusivo de empresas consórcio — confirma/recusa vendas, sem gerenciar loja.
+  administrativo: { label: "Administrativo", color: "#c9a15a", bg: "rgba(201,161,90,0.15)" },
 };
 
 function FinanceiroTab() {
@@ -1273,7 +1275,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
   }
 
   const people = allProfiles.filter(
-    (p) => p.empresa_id === empresa.empresa_id && (p.role === "socio" || p.role === "supervisor")
+    (p) => p.empresa_id === empresa.empresa_id && (p.role === "socio" || p.role === "supervisor" || p.role === "administrativo")
   );
   const stale = empresa._worstStale;
   const neverActive = stale === Infinity;
@@ -1466,6 +1468,8 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
 const NEW_USER_ROLES = [
   { key: "socio", label: "Sócio" },
   { key: "supervisor", label: "Supervisor" },
+  // 2026-07-21: exclusivo de empresas consórcio — confirma/recusa vendas, sem gerenciar loja.
+  { key: "administrativo", label: "Administrativo" },
   { key: "gerente", label: "Gerente" },
   { key: "colaborador", label: "Colaborador" },
 ];
@@ -1510,7 +1514,7 @@ function AddUserCard({ empresaId, lojas, onChanged }) {
               </button>
             ))}
           </div>
-          {(role === "socio" || role === "supervisor") && (
+          {(role === "socio" || role === "supervisor" || role === "administrativo") && (
             <AddHierarchyForm role={role} empresaId={empresaId} lojas={lojas} onDone={done} onCancel={close} />
           )}
           {role === "gerente" && <AddGerenteForm empresaId={empresaId} lojas={lojas} onDone={done} onCancel={close} />}
@@ -1733,24 +1737,29 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
 
   return (
     <div className="space-y-3">
-      <p className="label mb-0 flex items-center gap-1.5"><ShieldCheck size={14} /> Sócios e supervisores ({people.length})</p>
+      <p className="label mb-0 flex items-center gap-1.5"><ShieldCheck size={14} /> Sócios, supervisores e administrativos ({people.length})</p>
 
-      {people.length === 0 && <p className="text-xs text-muted">Nenhum sócio ou supervisor cadastrado ainda.</p>}
+      {people.length === 0 && <p className="text-xs text-muted">Nenhum sócio, supervisor ou administrativo cadastrado ainda.</p>}
 
       <div className="space-y-2">
         {people.map((p) => {
           const meta = ROLE_META[p.role] || {};
           const access = lojaAccess.filter((a) => a.profile_id === p.id);
           const isSocio = p.role === "socio";
+          // 2026-07-21: administrativo não gerencia ninguém (só confirma vendas) — não faz sentido
+          // mostrar "gerentes sob gestão" pra ele, nem o toggle ver/gerenciar (fica sempre 'ver').
+          const isAdministrativo = p.role === "administrativo";
           // sócio enxerga automaticamente todas as lojas da empresa — o escopo de gestão é a
           // empresa inteira; supervisor só enxerga as lojas com loja_access explícito.
           const scopedLojaIds = isSocio ? lojas.map((l) => l.loja_id) : access.map((a) => a.loja_id);
           // "sob gestão" mostra sempre o próximo nível da hierarquia, nunca pula direto pro
           // colaborador: sócio gerencia supervisores e gerentes (empresa inteira); supervisor
           // gerencia só os gerentes das lojas que tem acesso.
-          const teamScope = isSocio
-            ? (allProfiles || []).filter((c) => (c.role === "supervisor" || c.role === "gerente") && c.empresa_id === p.empresa_id)
-            : (allProfiles || []).filter((c) => c.role === "gerente" && scopedLojaIds.includes(c.loja_id));
+          const teamScope = isAdministrativo
+            ? []
+            : isSocio
+              ? (allProfiles || []).filter((c) => (c.role === "supervisor" || c.role === "gerente") && c.empresa_id === p.empresa_id)
+              : (allProfiles || []).filter((c) => c.role === "gerente" && scopedLojaIds.includes(c.loja_id));
           const teamLabel = isSocio ? "Supervisores e gerentes sob gestão" : "Gerentes sob gestão";
           const unassignedLojas = lojas.filter((l) => !access.some((a) => a.loja_id === l.loja_id));
           const isOpen = openPersonId === p.id;
@@ -1827,19 +1836,19 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                             const loja = lojas.find((l) => l.loja_id === a.loja_id);
                             const isManage = a.permission === "gerenciar";
                             return (
-                              <span
+              <span
                                 key={a.loja_id}
                                 className={`badge transition-colors ${isManage ? "bg-purple/15 text-purple" : "bg-teal/10 text-teal"}`}
                               >
                                 <button
                                   type="button"
-                                  onClick={() => togglePermission(a)}
-                                  disabled={togglingId === a.id}
-                                  title="Clique para alternar entre ver e gerenciar"
-                                  className="flex items-center gap-1 hover:opacity-75"
+                                  onClick={() => !isAdministrativo && togglePermission(a)}
+                                  disabled={togglingId === a.id || isAdministrativo}
+                                  title={isAdministrativo ? undefined : "Clique para alternar entre ver e gerenciar"}
+                                  className={`flex items-center gap-1 ${isAdministrativo ? "cursor-default" : "hover:opacity-75"}`}
                                 >
-                                  <Store size={10} /> {loja?.loja_name || "loja"} · {isManage ? "gerenciar" : "ver"}
-                                  <ArrowLeftRight size={10} />
+                                  <Store size={10} /> {loja?.loja_name || "loja"}{!isAdministrativo && ` · ${isManage ? "gerenciar" : "ver"}`}
+                                  {!isAdministrativo && <ArrowLeftRight size={10} />}
                                 </button>
                                 <button
                                   type="button"
@@ -1893,6 +1902,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                     )}
                   </div>
 
+                  {!isAdministrativo && (
                   <div>
                     <p className="text-[11px] uppercase tracking-wider text-muted font-bold mb-1.5 flex items-center gap-1.5">
                       <Users size={11} /> {teamLabel} ({teamScope.length})
@@ -1925,6 +1935,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                       </ul>
                     )}
                   </div>
+                  )}
 
                   {isEditing && <EditUser user={p} onChanged={onChanged} onClose={() => setEditingPersonId(null)} />}
                 </div>
@@ -1955,7 +1966,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
   const [creating, setCreating] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const label = role === "socio" ? "sócio" : "supervisor";
+  const label = role === "socio" ? "sócio" : role === "administrativo" ? "administrativo" : "supervisor";
 
   function toggleLoja(lojaId) {
     setAccess((a) => {
@@ -1972,7 +1983,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
 
   async function submit(e) {
     e.preventDefault();
-    const selected = Object.entries(access).map(([lojaId, permission]) => ({ lojaId, permission }));
+    const selected = Object.entries(access).map(([lojaId, permission]) => ({ lojaId, permission: role === "administrativo" ? "ver" : permission }));
     if (!fullName.trim() || !password || selected.length === 0) {
       setMsg("Erro: preencha nome, senha e selecione ao menos uma loja.");
       return;
@@ -2029,7 +2040,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
                   <input type="checkbox" checked={!!perm} onChange={() => toggleLoja(l.loja_id)} />
                   {l.loja_name}
                 </label>
-                {perm && (
+                {perm && role !== "administrativo" && (
                   <div className="flex items-center gap-1">
                     {["ver", "gerenciar"].map((opt) => (
                       <button

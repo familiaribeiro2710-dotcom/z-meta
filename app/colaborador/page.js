@@ -44,7 +44,9 @@ export default function ColaboradorPage() {
                 ? "/socio"
                 : prof?.role === "supervisor"
                   ? "/supervisor"
-                  : "/login"
+                  : prof?.role === "administrativo"
+                    ? "/administrativo"
+                    : "/login"
         );
         return;
       }

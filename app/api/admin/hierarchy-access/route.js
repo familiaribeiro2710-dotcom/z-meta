@@ -47,11 +47,14 @@ export async function POST(req) {
     }
 
     if (action === "list") {
+      // 2026-07-21: administrativo (papel exclusivo de consórcio) segue o mesmo padrão de acesso
+      // multi-loja do supervisor (loja_access) — lista os dois juntos, o campo `role` no retorno
+      // deixa o front-end separar em duas seções.
       const { data: supervisores } = await admin
         .from("profiles")
-        .select("id, full_name, username, active, must_change_password")
+        .select("id, full_name, username, active, must_change_password, role")
         .eq("empresa_id", targetEmpresaId)
-        .eq("role", "supervisor")
+        .in("role", ["supervisor", "administrativo"])
         .order("full_name");
       const supIds = (supervisores || []).map((s) => s.id);
       let access = [];
@@ -68,8 +71,8 @@ export async function POST(req) {
         return NextResponse.json({ error: "Informe o supervisor e a loja." }, { status: 400 });
       }
       const { data: target } = await admin.from("profiles").select("id, role, empresa_id").eq("id", supervisorId).single();
-      if (!target || target.role !== "supervisor" || target.empresa_id !== targetEmpresaId) {
-        return NextResponse.json({ error: "Supervisor inválido para essa empresa." }, { status: 400 });
+      if (!target || !["supervisor", "administrativo"].includes(target.role) || target.empresa_id !== targetEmpresaId) {
+        return NextResponse.json({ error: "Usuário inválido para essa empresa." }, { status: 400 });
       }
       const { data: lojaRow } = await admin.from("lojas").select("id, empresa_id").eq("id", lojaId).single();
       if (!lojaRow || lojaRow.empresa_id !== targetEmpresaId) {

@@ -35,6 +35,8 @@ export default function Home() {
         router.replace("/supervisor");
       } else if (profile.role === "gerente") {
         router.replace("/gerente");
+      } else if (profile.role === "administrativo") {
+        router.replace("/administrativo");
       } else {
         router.replace("/colaborador");
       }
