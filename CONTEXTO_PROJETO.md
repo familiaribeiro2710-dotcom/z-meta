@@ -1124,6 +1124,16 @@ Todos seguiram o mesmo padrão já estabelecido (`RankingCard`/`LojaRankingCard`
 
 **Verificação:** `npm run build` → `✓ Compiled successfully`.
 
+## "Ver como administrativo" caía na tela de colaborador (2026-07-21)
+
+**Reportado pelo Felipe (com print, logado como master admin):** ao clicar no olhinho "ver como" de um usuário administrativo (papel novo, exclusivo de consórcio, adicionado numa sessão em paralelo no MacBook), a tela mostrava a experiência de **colaborador** em vez da experiência própria do administrativo.
+
+**Causa:** o branch de "ver como" em `app/admin/page.js` (dentro do bloco `if (viewingProfile) {...}`) nunca foi atualizado quando o papel `administrativo` foi criado — só sabia distinguir `socio`/`supervisor` (→ `HierarchyHome`) de `gerente` (→ `GerenteView`/`GerenteViewConsorcio`), e qualquer outro valor de `role` (inclusive `administrativo`, que nunca é `"gerente"`) caía direto no `else` final, que renderiza `ColaboradorView`/`ColaboradorViewConsorcio`. O resto do arquivo (lista "Sócios, supervisores e administrativos", cadastro, badge/cor no `ROLE_META`) já tratava o papel novo corretamente — só esse branch específico ficou pra trás. Confirmado direto no banco que o perfil em questão tem `role = 'administrativo'` de verdade (o `CHECK` da tabela `profiles` já foi ampliado pra incluir esse valor) — não é um dado corrompido, é mesmo um papel novo com um ponto da UI esquecido.
+
+**Fix:** `app/admin/page.js` — import de `AdministrativoView`/`ADMINISTRATIVO_TABS` (`lib/AdministrativoView.js`, já existente da sessão do MacBook); banner agora diferencia os 3 casos (Gerente/Administrativo/Colaborador); `viewingTabs` ganhou o caso `administrativo` → `ADMINISTRATIVO_TABS` (Início/Vendas, papel é sempre consórcio, não depende de `isConsorcioView`); render ganhou o branch `viewingProfile.role === "administrativo"` → `<AdministrativoView profile={viewingProfile} tab={effectiveViewTab} />`, antes do fallback de colaborador.
+
+**Verificação:** `npm run build` → `✓ Compiled successfully` (22 rotas, incluindo `/administrativo` já existente).
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
