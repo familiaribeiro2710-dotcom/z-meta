@@ -89,6 +89,10 @@ export default function AdminPage() {
   const [allProfiles, setAllProfiles] = useState([]);
   const [lojaAccess, setLojaAccess] = useState([]);
   const [sortKey, setSortKey] = useState("risco");
+  // draftSearch é o rascunho do campo — só vira o `search` de verdade (o que realmente filtra
+  // `empresasGrouped`) quando o usuário clica em "Aplicar" (pedido do Felipe: nenhum filtro do
+  // app pode recalcular a cada tecla digitada).
+  const [draftSearch, setDraftSearch] = useState("");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedLoja, setSelectedLoja] = useState(null);
@@ -596,15 +600,30 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="relative mb-3">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              className="input !pl-10"
-              placeholder="Buscar empresa pelo nome…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <form
+            onSubmit={(e) => { e.preventDefault(); setSearch(draftSearch); }}
+            className="flex items-center gap-2 mb-3"
+          >
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+              <input
+                className="input !pl-10"
+                placeholder="Buscar empresa pelo nome…"
+                value={draftSearch}
+                onChange={(e) => setDraftSearch(e.target.value)}
+              />
+            </div>
+            <button type="submit" className="btn !py-1.5 !text-xs whitespace-nowrap shrink-0">Aplicar</button>
+            {search.trim() && (
+              <button
+                type="button"
+                onClick={() => { setDraftSearch(""); setSearch(""); }}
+                className="text-[11px] font-bold uppercase tracking-wider text-white/50 hover:text-goldlight whitespace-nowrap shrink-0"
+              >
+                Limpar
+              </button>
+            )}
+          </form>
 
           <div>
             {empresasGrouped.length === 0 && search.trim() && (
@@ -770,6 +789,8 @@ function FinanceiroTab() {
   const [month, setMonth] = useState(firstDayOfMonth(todayStr()));
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  // draftSearch é o rascunho — só filtra de fato quando aplicado (botão "Aplicar").
+  const [draftSearch, setDraftSearch] = useState("");
   const [search, setSearch] = useState("");
 
   const load = useCallback(async (m) => {
@@ -829,13 +850,22 @@ function FinanceiroTab() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
+      <form
+        onSubmit={(e) => { e.preventDefault(); setSearch(draftSearch); }}
+        className="flex items-center gap-2 flex-wrap"
+      >
         <div className="relative flex-1 min-w-[200px]">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-          <input className="input !pl-10" placeholder="Buscar empresa pelo nome…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input !pl-10" placeholder="Buscar empresa pelo nome…" value={draftSearch} onChange={(e) => setDraftSearch(e.target.value)} />
         </div>
+        <button type="submit" className="btn !py-1.5 !text-xs whitespace-nowrap">Aplicar</button>
+        {search.trim() && (
+          <button type="button" onClick={() => { setDraftSearch(""); setSearch(""); }} className="text-[11px] font-bold uppercase tracking-wider text-muted hover:text-purple whitespace-nowrap">
+            Limpar
+          </button>
+        )}
         <MonthNav month={month} onChange={setMonth} maxMonth={firstDayOfMonth(todayStr())} />
-      </div>
+      </form>
 
       {loading ? (
         <p className="text-xs text-muted py-10 text-center flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" /> carregando…</p>
@@ -926,6 +956,8 @@ function DadosTab() {
   const [month, setMonth] = useState(firstDayOfMonth(todayStr()));
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  // draftSearch é o rascunho — só filtra de fato quando aplicado (botão "Aplicar").
+  const [draftSearch, setDraftSearch] = useState("");
   const [search, setSearch] = useState("");
   const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
@@ -984,13 +1016,22 @@ function DadosTab() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
+      <form
+        onSubmit={(e) => { e.preventDefault(); setSearch(draftSearch); }}
+        className="flex items-center gap-2 flex-wrap"
+      >
         <div className="relative flex-1 min-w-[200px]">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-          <input className="input !pl-10" placeholder="Buscar empresa pelo nome…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input !pl-10" placeholder="Buscar empresa pelo nome…" value={draftSearch} onChange={(e) => setDraftSearch(e.target.value)} />
         </div>
+        <button type="submit" className="btn !py-1.5 !text-xs whitespace-nowrap">Aplicar</button>
+        {search.trim() && (
+          <button type="button" onClick={() => { setDraftSearch(""); setSearch(""); }} className="text-[11px] font-bold uppercase tracking-wider text-muted hover:text-purple whitespace-nowrap">
+            Limpar
+          </button>
+        )}
         <MonthNav month={month} onChange={setMonth} maxMonth={firstDayOfMonth(todayStr())} />
-      </div>
+      </form>
 
       {loading ? (
         <p className="text-xs text-muted py-10 text-center flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" /> carregando…</p>
