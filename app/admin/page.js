@@ -1679,10 +1679,12 @@ function AddColaboradorForm({ empresaId, lojas, onDone, onCancel }) {
 }
 
 function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onViewAs }) {
+  const notifySaved = useSavedNotice();
   const [openPersonId, setOpenPersonId] = useState(null);
   const [editingPersonId, setEditingPersonId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
   const [addingLojaFor, setAddingLojaFor] = useState(null);
+  const [confirmTogglePerson, setConfirmTogglePerson] = useState(null);
 
   const lojaNameById = {};
   lojas.forEach((l) => { lojaNameById[l.loja_id] = l.loja_name; });
@@ -1712,14 +1714,20 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
   }
 
   async function toggleActive(p) {
+    const nextActive = p.active === false;
     setTogglingId(`active-${p.id}`);
     const { data: { session } } = await supabase.auth.getSession();
-    await fetch("/api/admin/update-employee", {
+    const res = await fetch("/api/admin/update-employee", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ employeeId: p.id, newActive: p.active === false }),
+      body: JSON.stringify({ employeeId: p.id, newActive: nextActive }),
     });
     setTogglingId(null);
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error || "não foi possível atualizar.");
+    }
+    notifySaved(`${p.full_name} ${nextActive ? "ativado(a)" : "desativado(a)"} com sucesso.`);
     onChanged();
   }
 
@@ -1786,7 +1794,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                   <button
                     title={p.active === false ? "Ativar" : "Desativar"}
                     aria-label={p.active === false ? "Ativar" : "Desativar"}
-                    onClick={() => toggleActive(p)}
+                    onClick={() => setConfirmTogglePerson(p)}
                     disabled={togglingId === `active-${p.id}`}
                     className={`p-1.5 rounded-lg hover:bg-line/60 transition-colors ${p.active === false ? "text-danger" : "text-muted hover:text-navy"}`}
                   >
@@ -1925,6 +1933,16 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
           );
         })}
       </div>
+
+      <ConfirmModal
+        open={!!confirmTogglePerson}
+        title={`${confirmTogglePerson?.active === false ? "Ativar" : "Desativar"} ${confirmTogglePerson?.full_name || ""}?`}
+        message={confirmTogglePerson?.active === false ? "A pessoa recupera o acesso imediatamente." : "A pessoa perde o acesso até você reativar."}
+        confirmLabel={confirmTogglePerson?.active === false ? "Ativar" : "Desativar"}
+        danger={confirmTogglePerson?.active !== false}
+        onConfirm={async () => { await toggleActive(confirmTogglePerson); setConfirmTogglePerson(null); }}
+        onCancel={() => setConfirmTogglePerson(null)}
+      />
     </div>
   );
 }
@@ -2364,17 +2382,19 @@ function EditUser({ user, onChanged, onClose }) {
     onChanged && onChanged();
   }
 
+  const [confirmReset, setConfirmReset] = useState(false);
+
   async function resetPassword() {
-    if (!window.confirm(`Redefinir a senha de ${user.full_name} para 123456789?`)) return;
     setResetting(true);
     setMsg("");
     const { ok, json } = await call({ resetPassword: true });
     setResetting(false);
     if (!ok) {
       setMsg("Erro: " + (json.error || "não foi possível redefinir."));
-      return;
+      throw new Error(json.error || "não foi possível redefinir.");
     }
     setMsg("Senha redefinida para 123456789 — a pessoa deve trocar no próximo acesso.");
+    notifySaved(`Senha de ${user.full_name} redefinida para 123456789.`);
     onChanged && onChanged();
   }
 
@@ -2401,7 +2421,7 @@ function EditUser({ user, onChanged, onClose }) {
         </button>
       </form>
       <button
-        onClick={resetPassword}
+        onClick={() => setConfirmReset(true)}
         className="flex items-center gap-1.5 text-xs font-bold text-danger border border-danger/40 hover:bg-danger/10 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
         disabled={resetting}
       >
@@ -2413,6 +2433,15 @@ function EditUser({ user, onChanged, onClose }) {
           {msg}
         </p>
       )}
+
+      <ConfirmModal
+        open={confirmReset}
+        title={`Redefinir senha de ${user.full_name}?`}
+        message="A senha volta para 123456789 e a pessoa precisa trocar no próximo acesso."
+        confirmLabel="Redefinir"
+        onConfirm={async () => { await resetPassword(); setConfirmReset(false); }}
+        onCancel={() => setConfirmReset(false)}
+      />
     </div>
   );
 }
