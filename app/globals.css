@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 html, body {
-  background:
-    radial-gradient(circle at 8% 0%, rgba(124,58,237,0.10), transparent 40%),
-    radial-gradient(circle at 92% 10%, rgba(236,72,153,0.10), transparent 38%),
-    radial-gradient(circle at 50% 100%, rgba(13,148,136,0.08), transparent 45%),
-    #f5f3ee;
+  /* Fundo sólido em todas as telas — antes tinha um gradiente radial roxo/rosa/teal sutil aqui,
+     removido porque ficava com cara de "tela rosada" (mais visível ainda em telas com bastante
+     espaço vazio, como a landing). Roxo→rosa continua existindo só nos lugares de comemoração
+     (.btn-hype, modais de "Parabéns!") — nunca mais como pano de fundo da página. */
+  background: #f5f3ee;
   color: #12203a;
   min-height: 100vh;
   /* trava qualquer overflow horizontal residual — em telas estreitas nunca deve

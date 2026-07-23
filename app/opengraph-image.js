@@ -23,45 +23,43 @@ export default async function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#f5f3ee",
-          backgroundImage:
-            "radial-gradient(circle at 12% 8%, rgba(124,58,237,0.22) 0%, rgba(124,58,237,0) 45%), radial-gradient(circle at 90% 12%, rgba(236,72,153,0.20) 0%, rgba(236,72,153,0) 42%), radial-gradient(circle at 50% 108%, rgba(13,148,136,0.18) 0%, rgba(13,148,136,0) 48%)",
+          backgroundColor: "#12203a",
         }}
       >
         <div
           style={{
             display: "flex",
             position: "relative",
-            width: 172,
-            height: 172,
+            width: 140,
+            height: 140,
             alignItems: "center",
             justifyContent: "center",
-            marginBottom: 40,
+            marginBottom: 36,
           }}
         >
           <div
             style={{
               position: "absolute",
-              width: 172,
-              height: 172,
+              width: 140,
+              height: 140,
               borderRadius: 999,
-              border: "13px solid #7c3aed",
+              border: "11px solid #7c3aed",
             }}
           />
           <div
             style={{
               position: "absolute",
-              width: 106,
-              height: 106,
+              width: 86,
+              height: 86,
               borderRadius: 999,
-              border: "13px solid #ec4899",
+              border: "11px solid #ec4899",
             }}
           />
           <div
             style={{
               display: "flex",
-              width: 42,
-              height: 42,
+              width: 34,
+              height: 34,
               borderRadius: 999,
               backgroundColor: "#7c3aed",
             }}
@@ -70,9 +68,9 @@ export default async function Image() {
         <div
           style={{
             display: "flex",
-            fontSize: 92,
+            fontSize: 80,
             fontWeight: 800,
-            color: "#12203a",
+            color: "#e4c789",
             letterSpacing: -2,
             fontFamily: "Inter",
           }}
@@ -82,14 +80,16 @@ export default async function Image() {
         <div
           style={{
             display: "flex",
-            fontSize: 32,
+            fontSize: 30,
             fontWeight: 700,
-            color: "#5b6578",
-            marginTop: 20,
+            color: "rgba(255,255,255,0.7)",
+            marginTop: 22,
             fontFamily: "Inter",
+            textAlign: "center",
+            maxWidth: 820,
           }}
         >
-          Tarefas, metas e comissão da equipe em um só lugar
+          Sua rede de lojas rodando no controle, não na planilha
         </div>
       </div>
     ),
