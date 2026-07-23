@@ -47,6 +47,13 @@ async function syncBillingFromSubscriptionId(stripe, admin, subscriptionId) {
       updated_at: new Date().toISOString(),
     })
     .eq("empresa_id", empresaId);
+
+  // reativa sozinho quando o pagamento volta a ficar em dia — cobre tanto quem só ficou
+  // "atrasado" (nunca chegou a passar da carência) quanto quem já tinha sido suspenso pela
+  // checagem diária da Fase 3.
+  if (paymentStatus === "pago") {
+    await admin.from("empresas").update({ active: true }).eq("id", empresaId);
+  }
 }
 
 export async function POST(req) {

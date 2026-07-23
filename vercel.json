@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/check-billing-grace",
+      "schedule": "0 12 * * *"
+    }
+  ]
+}
