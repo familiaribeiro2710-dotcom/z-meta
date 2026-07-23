@@ -1064,6 +1064,13 @@ function FinanceiroRow({ row, onSave }) {
 
   const cobrar = Math.max(0, Number(row.usuarios_count) * (Number(valor) || 0) - (Number(desconto) || 0));
   const hasLink = !!row.billing?.stripe_payment_link_url;
+  const graceDaysLeft = row.billing?.grace_until
+    ? Math.max(0, Math.ceil((new Date(row.billing.grace_until).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
+  const statusLabel =
+    row.billing?.payment_status === "atrasado" && graceDaysLeft !== null
+      ? `Atrasado (${graceDaysLeft === 0 ? "carência vence hoje" : `${graceDaysLeft} dia${graceDaysLeft !== 1 ? "s" : ""} de carência`})`
+      : BILLING_STATUS_LABEL[row.billing?.payment_status || "sem_link"];
 
   async function save() {
     setSaving(true);
@@ -1088,8 +1095,12 @@ function FinanceiroRow({ row, onSave }) {
           {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
         </p>
         <div className="flex items-center gap-2.5">
-          <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold whitespace-nowrap">
-            {BILLING_STATUS_LABEL[row.billing?.payment_status || "sem_link"]}
+          <span
+            className={`text-[10px] uppercase tracking-wider font-bold whitespace-nowrap ${
+              row.billing?.payment_status === "atrasado" ? "text-danger" : row.billing?.payment_status === "pago" ? "text-success" : "text-white/40"
+            }`}
+          >
+            {statusLabel}
           </span>
           <button
             type="button"
