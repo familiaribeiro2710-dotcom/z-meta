@@ -983,15 +983,14 @@ function DadosTab() {
   }, [rows, search]);
 
   const totals = useMemo(() => {
-    let faturamento = 0, usuarios = 0, premiacoes = 0, lojas = 0;
+    let faturamento = 0, usuarios = 0, lojas = 0;
     rows.forEach((r) => {
       faturamento += Number(r.faturamento);
       usuarios += Number(r.usuarios_count);
-      premiacoes += Number(r.premiacoes);
       lojas += Number(r.lojas_count);
     });
     const ticketPorEmpresa = rows.length ? faturamento / rows.length : 0;
-    return { faturamento, usuarios, premiacoes, lojas, ticketPorEmpresa };
+    return { faturamento, usuarios, lojas, empresas: rows.length, ticketPorEmpresa };
   }, [rows]);
 
   if (selectedEmpresa) {
@@ -1002,7 +1001,7 @@ function DadosTab() {
     <div className="space-y-6">
       <div>
         <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><BarChart3 size={20} className="text-purple" /> Dados</h1>
-        <p className="text-xs text-muted mt-1">Faturamento, usuários cadastrados e premiações de todas as empresas. Clique numa empresa pra ver o histórico completo de faturamento.</p>
+        <p className="text-xs text-muted mt-1">Faturamento, usuários cadastrados e média mensal de todas as empresas. Clique numa empresa pra ver o histórico completo de faturamento.</p>
       </div>
 
       <div
@@ -1017,7 +1016,7 @@ function DadosTab() {
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
           <HeroStatLight value={formatBRL(totals.faturamento)} label="Faturamento total" sub="todas as empresas" />
           <HeroStatLight value={totals.usuarios} label="Usuários cadastrados" sub="em todas as empresas" divider />
-          <HeroStatLight value={formatBRL(totals.premiacoes)} label="Premiações" sub="pagas no mês" divider />
+          <HeroStatLight value={totals.empresas} label="Empresas" sub="cadastradas no total" divider />
           <HeroStatLight value={totals.lojas} label="Lojas" sub="cadastradas no total" divider />
         </div>
       </div>
@@ -1058,7 +1057,7 @@ function DadosTab() {
                 </p>
                 <span className="text-xs text-white/50">{r.lojas_count} loja{r.lojas_count !== 1 ? "s" : ""}</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div className="min-w-0">
                   <p className="text-[11px] text-white/50">Faturamento no mês</p>
                   <AutoFitText className="text-goldlight font-bold">{formatBRL(r.faturamento)}</AutoFitText>
@@ -1068,8 +1067,12 @@ function DadosTab() {
                   <p className="text-white font-bold">{r.usuarios_count}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-white/50">Premiações pagas</p>
-                  <AutoFitText className="text-white font-bold">{formatBRL(r.premiacoes)}</AutoFitText>
+                  <p className="text-[11px] text-white/50">Média mensal</p>
+                  <AutoFitText className="text-white font-bold">{formatBRL(r.media_mensal_faturamento)}</AutoFitText>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] text-white/50">Cadastrada em</p>
+                  <p className="text-white font-bold">{r.created_at ? new Date(r.created_at).toLocaleDateString("pt-BR") : "—"}</p>
                 </div>
               </div>
             </div>
