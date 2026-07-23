@@ -98,6 +98,7 @@ export async function POST(req) {
       return NextResponse.json({ error: createErr.message }, { status: 400 });
     }
 
+    const pendingApproval = !isMasterAdmin;
     const { error: profileErr } = await admin.from("profiles").insert({
       id: created.user.id,
       full_name: gerenteName,
@@ -106,6 +107,8 @@ export async function POST(req) {
       empresa_id: targetEmpresaId,
       loja_id: lojaId,
       must_change_password: true,
+      created_by: userData.user.id,
+      pending_approval: pendingApproval,
     });
     if (profileErr) {
       await admin.auth.admin.deleteUser(created.user.id);
@@ -132,7 +135,7 @@ export async function POST(req) {
       });
     }
 
-    return NextResponse.json({ ok: true, gerenteId: created.user.id, username });
+    return NextResponse.json({ ok: true, gerenteId: created.user.id, username, pending: pendingApproval });
   } catch (e) {
     return NextResponse.json({ error: e.message || "Erro inesperado." }, { status: 500 });
   }

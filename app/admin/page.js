@@ -69,9 +69,12 @@ const TABS_CONSORCIO_COLAB = [
 
 const MASTER_TABS = [
   { key: "inicio", label: "Início", Icon: Home },
+  { key: "pendentes", label: "Pendentes", Icon: ShieldCheck },
   { key: "financeiro", label: "Financeiro", Icon: Wallet },
   { key: "dados", label: "Dados", Icon: BarChart3 },
 ];
+
+const PENDING_ROLE_LABEL = { colaborador: "Colaborador", gerente: "Gerente", supervisor: "Supervisor", administrativo: "Administrativo", socio: "Sócio" };
 
 function daysSince(dateStr) {
   if (!dateStr) return Infinity;
@@ -455,6 +458,7 @@ export default function AdminPage() {
       activeTab={masterTab}
       onTabChange={setMasterTab}
     >
+      {masterTab === "pendentes" && <PendentesTab />}
       {masterTab === "financeiro" && <FinanceiroTab />}
       {masterTab === "dados" && <DadosTab />}
       {masterTab === "inicio" && (
@@ -790,6 +794,137 @@ const ROLE_META = {
   // 2026-07-21: exclusivo de empresas consórcio — confirma/recusa vendas, sem gerenciar loja.
   administrativo: { label: "Administrativo", color: "#c9a15a", bg: "rgba(201,161,90,0.15)" },
 };
+
+function PendentesTab() {
+  const notifySaved = useSavedNotice();
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [confirmAction, setConfirmAction] = useState(null); // { type: "approve" | "reject", row }
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, role, username, empresa_id, loja_id, created_at, created_by")
+      .eq("pending_approval", true)
+      .order("created_at", { ascending: false });
+    const list = data || [];
+    const empresaIds = [...new Set(list.map((r) => r.empresa_id).filter(Boolean))];
+    const lojaIds = [...new Set(list.map((r) => r.loja_id).filter(Boolean))];
+    const creatorIds = [...new Set(list.map((r) => r.created_by).filter(Boolean))];
+    const [empresasRes, lojasRes, creatorsRes] = await Promise.all([
+      empresaIds.length ? supabase.from("empresas").select("id, name").in("id", empresaIds) : Promise.resolve({ data: [] }),
+      lojaIds.length ? supabase.from("lojas").select("id, name").in("id", lojaIds) : Promise.resolve({ data: [] }),
+      creatorIds.length ? supabase.from("profiles").select("id, full_name").in("id", creatorIds) : Promise.resolve({ data: [] }),
+    ]);
+    const empresaMap = Object.fromEntries((empresasRes.data || []).map((e) => [e.id, e.name]));
+    const lojaMap = Object.fromEntries((lojasRes.data || []).map((l) => [l.id, l.name]));
+    const creatorMap = Object.fromEntries((creatorsRes.data || []).map((c) => [c.id, c.full_name]));
+    setRows(
+      list.map((r) => ({
+        ...r,
+        empresa_name: empresaMap[r.empresa_id] || "sem empresa",
+        loja_name: lojaMap[r.loja_id] || "",
+        creator_name: creatorMap[r.created_by] || "—",
+      }))
+    );
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleConfirm() {
+    const { data: { session } } = await supabase.auth.getSession();
+    const endpoint = confirmAction.type === "approve" ? "/api/admin/approve-user" : "/api/admin/reject-user";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ employeeId: confirmAction.row.id }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "não foi possível concluir.");
+    notifySaved(
+      confirmAction.type === "approve"
+        ? `${confirmAction.row.full_name} aprovado com sucesso.`
+        : `${confirmAction.row.full_name} recusado e excluído.`
+    );
+    setConfirmAction(null);
+    load();
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2">
+          <ShieldCheck size={20} className="text-purple" /> Pendentes
+        </h1>
+        <p className="text-xs text-muted mt-1">Cadastros feitos por sócio, supervisor ou gerente, aguardando sua aprovação antes de conseguirem acessar.</p>
+      </div>
+
+      {loading ? (
+        <p className="text-xs text-muted py-10 text-center flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" /> carregando…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted py-6 text-center">Nenhum cadastro pendente no momento.</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((r) => (
+            <div key={r.id} className="card flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Avatar name={r.full_name} size={36} />
+                <div>
+                  <p className="font-medium text-navy text-sm flex items-center gap-1.5 flex-wrap">
+                    {r.full_name}
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted">{PENDING_ROLE_LABEL[r.role] || r.role}</span>
+                  </p>
+                  <p className="text-xs text-muted mt-0.5">{r.empresa_name}{r.loja_name ? `, ${r.loja_name}` : ""}</p>
+                  <p className="text-[11px] text-muted mt-0.5">
+                    Cadastrado por {r.creator_name} em {new Date(r.created_at).toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setConfirmAction({ type: "approve", row: r })}
+                  title="Aprovar"
+                  aria-label="Aprovar"
+                  className="p-2 rounded-lg text-success hover:bg-success/10 transition-colors"
+                >
+                  <Check size={18} strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmAction({ type: "reject", row: r })}
+                  title="Recusar"
+                  aria-label="Recusar"
+                  className="p-2 rounded-lg text-danger hover:bg-danger/10 transition-colors"
+                >
+                  <X size={18} strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmModal
+        open={!!confirmAction}
+        title={confirmAction?.type === "approve" ? "Aprovar cadastro?" : "Recusar cadastro?"}
+        message={
+          confirmAction
+            ? confirmAction.type === "approve"
+              ? `${confirmAction.row.full_name} vai conseguir acessar o Z Meta imediatamente.`
+              : `${confirmAction.row.full_name} será excluído por completo. Login e cadastro apagados, sem volta.`
+            : ""
+        }
+        confirmLabel={confirmAction?.type === "approve" ? "Aprovar" : "Recusar e excluir"}
+        danger={confirmAction?.type === "reject"}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmAction(null)}
+      />
+    </div>
+  );
+}
 
 function FinanceiroTab() {
   const [month, setMonth] = useState(firstDayOfMonth(todayStr()));

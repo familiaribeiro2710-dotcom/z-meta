@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Z Meta: mockup de landing page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#12203a;
+    --navy2:#0d1830;
+    --navy3:#1c2f52;
+    --gold:#c9a15a;
+    --goldlight:#e4c789;
+    --paper:#f5f3ee;
+    --white:#ffffff;
+    --line:#e7e3d9;
+    --muted:#7d7a6f;
+    --success:#16a34a;
+    --danger:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--paper);
+    color:var(--navy);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  img,svg{display:block;}
+  a{color:inherit; text-decoration:none;}
+  .wrap{max-width:1160px; margin:0 auto; padding:0 32px;}
+  section{padding:96px 0;}
+  h1,h2,h3,h4{font-weight:800; letter-spacing:-0.02em; line-height:1.12;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:18px;
+  }
+  .eyebrow::before{content:""; width:16px; height:2px; background:var(--gold); display:inline-block;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--gold); color:var(--navy2); font-weight:700; font-size:15px;
+    padding:15px 28px; border-radius:10px; border:none; cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+    box-shadow:0 1px 2px rgba(18,32,58,.08);
+  }
+  .btn:hover{background:var(--goldlight); transform:translateY(-1px); box-shadow:0 8px 20px rgba(201,161,90,.35);}
+  .btn-outline-dark{
+    background:transparent; color:var(--navy); font-weight:600; font-size:15px;
+    padding:14px 26px; border-radius:10px; border:1.5px solid var(--line);
+  }
+  .btn-outline-dark:hover{border-color:var(--gold); color:var(--gold);}
+
+  /* ===== NAV ===== */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(245,243,238,.88); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex; align-items:center; justify-content:space-between; padding:18px 32px; max-width:1160px; margin:0 auto;}
+  .logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:19px; letter-spacing:-0.02em; color:var(--navy);}
+  .logo-mark{width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%); position:relative; flex-shrink:0;}
+  .logo-mark::after{content:""; position:absolute; inset:8px; border:2px solid var(--gold); border-radius:4px;}
+  .nav-links{display:flex; align-items:center; gap:36px; font-size:14.5px; font-weight:600; color:var(--navy);}
+  .nav-links a{opacity:.72; transition:opacity .15s;}
+  .nav-links a:hover{opacity:1;}
+  .nav-cta{display:flex; align-items:center; gap:14px;}
+  .nav-cta .btn{padding:11px 22px; font-size:14px;}
+  .nav-login{font-size:14px; font-weight:600; opacity:.75;}
+  @media (max-width:860px){ .nav-links{display:none;} }
+
+  /* ===== HERO ===== */
+  .hero{
+    background:radial-gradient(1000px 480px at 12% -15%, rgba(201,161,90,.14) 0%, transparent 60%), var(--paper);
+    color:var(--navy); padding:110px 0 100px;
+    position:relative; overflow:hidden;
+  }
+  .hero::before{
+    content:""; position:absolute; top:-120px; right:-120px; width:520px; height:520px;
+    border-radius:50%; border:1px solid rgba(201,161,90,.22); pointer-events:none;
+  }
+  .hero::after{
+    content:""; position:absolute; top:-40px; right:-40px; width:340px; height:340px;
+    border-radius:50%; border:1px solid rgba(201,161,90,.18); pointer-events:none;
+  }
+  .hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center;}
+  @media (max-width:960px){ .hero-grid{grid-template-columns:1fr;} }
+  .hero h1{font-size:47px; color:var(--navy); margin-bottom:22px;}
+  .hero h1 em{font-style:normal; color:var(--gold);}
+  .hero p.lead{font-size:17.5px; color:var(--muted); max-width:490px; margin-bottom:34px; font-weight:400;}
+  .hero-actions{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:38px;}
+  .hero-proof{display:flex; align-items:center; gap:18px; font-size:13px; color:var(--muted);}
+  .hero-proof .dots{display:flex; gap:-6px;}
+  .hero-proof .avatars{display:flex;}
+  .hero-proof .avatars span{
+    width:28px; height:28px; border-radius:50%; background:var(--line); border:2px solid var(--paper);
+    margin-left:-8px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:var(--navy);
+  }
+  .hero-proof .avatars span:first-child{margin-left:0;}
+
+  /* mock dashboard card in hero */
+  .mock-card{
+    background:var(--white); border-radius:18px; padding:22px;
+    box-shadow:0 24px 48px rgba(18,32,58,.14); border:1px solid var(--line);
+  }
+  .mock-topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+  .mock-title{font-size:13px; font-weight:700; color:var(--navy);}
+  .mock-title span{display:block; font-size:11px; font-weight:500; color:var(--muted); margin-top:2px;}
+  .mock-pill{background:#eef7ee; color:var(--success); font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;}
+  .mock-bar-row{margin-bottom:14px;}
+  .mock-bar-label{display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--navy); margin-bottom:6px;}
+  .mock-bar-label b{color:var(--gold); font-weight:800;}
+  .mock-bar-track{height:8px; background:#f1efe8; border-radius:20px; overflow:hidden;}
+  .mock-bar-fill{height:100%; border-radius:20px; background:linear-gradient(90deg,var(--gold),var(--goldlight));}
+  .mock-divider{height:1px; background:var(--line); margin:18px 0;}
+  .mock-rank-row{display:flex; align-items:center; gap:10px; padding:8px 0; font-size:12.5px;}
+  .mock-rank-pos{width:20px; height:20px; border-radius:6px; background:var(--navy); color:var(--goldlight); font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .mock-rank-pos.gold{background:var(--gold); color:var(--navy);}
+  .mock-avatar{width:24px; height:24px; border-radius:50%; background:#e7e3d9; flex-shrink:0;}
+  .mock-rank-name{flex:1; font-weight:600; color:var(--navy);}
+  .mock-rank-val{font-weight:800; color:var(--navy);}
+
+  /* ===== LOGOS STRIP ===== */
+  .logos-strip{background:var(--white); border-bottom:1px solid var(--line); padding:34px 0;}
+  .logos-strip p{text-align:center; font-size:12.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:22px;}
+  .logos-row{display:flex; justify-content:center; align-items:center; gap:52px; flex-wrap:wrap; opacity:.55;}
+  .logos-row span{font-weight:800; font-size:18px; color:var(--navy); letter-spacing:-0.01em;}
+
+  /* ===== PAIN ===== */
+  .pain{background:var(--paper);}
+  .section-head{max-width:620px; margin-bottom:56px;}
+  .section-head.center{margin-left:auto; margin-right:auto; text-align:center;}
+  .section-head h2{font-size:34px; color:var(--navy); margin-bottom:14px;}
+  .section-head p{font-size:16px; color:var(--muted); font-weight:400;}
+  .pain-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  @media (max-width:860px){ .pain-grid{grid-template-columns:1fr;} }
+  .pain-card{
+    background:var(--white); border:1px solid var(--line); border-radius:14px; padding:26px;
+  }
+  .pain-icon{
+    width:38px; height:38px; border-radius:10px; background:#fdeeee; color:var(--danger);
+    display:flex; align-items:center; justify-content:center; margin-bottom:16px; font-size:18px; font-weight:800;
+  }
+  .pain-card h4{font-size:16px; font-weight:700; color:var(--navy); margin-bottom:8px;}
+  .pain-card p{font-size:14px; color:var(--muted); font-weight:400;}
+
+  /* ===== HOW IT WORKS ===== */
+  .how{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .how-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:40px; position:relative;}
+  @media (max-width:860px){ .how-grid{grid-template-columns:1fr;} }
+  .how-step{position:relative; padding-left:2px;}
+  .how-num{
+    width:44px; height:44px; border-radius:12px; background:var(--navy); color:var(--goldlight);
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; margin-bottom:20px;
+  }
+  .how-step h4{font-size:17px; color:var(--navy); margin-bottom:10px;}
+  .how-step p{font-size:14.5px; color:var(--muted); font-weight:400;}
+
+  /* ===== FEATURES ===== */
+  .features{background:var(--paper);}
+  .feat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  @media (max-width:860px){ .feat-grid{grid-template-columns:1fr;} }
+  .feat-card{
+    background:var(--white); border:1px solid var(--line); border-radius:14px; padding:28px;
+    transition:border-color .15s, transform .15s;
+  }
+  .feat-card:hover{border-color:var(--gold); transform:translateY(-2px);}
+  .feat-icon{
+    width:42px; height:42px; border-radius:10px; background:#faf5ea; color:var(--gold);
+    display:flex; align-items:center; justify-content:center; margin-bottom:18px;
+  }
+  .feat-card h4{font-size:16.5px; color:var(--navy); margin-bottom:9px;}
+  .feat-card p{font-size:14px; color:var(--muted); font-weight:400;}
+
+  /* ===== ROLES ===== */
+  .roles{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .role-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  @media (max-width:860px){ .role-grid{grid-template-columns:1fr 1fr;} }
+  @media (max-width:560px){ .role-grid{grid-template-columns:1fr;} }
+  .role-card{border:1px solid var(--line); border-radius:14px; padding:24px; background:var(--paper);}
+  .role-tag{
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--gold); background:rgba(201,161,90,.12); padding:4px 10px; border-radius:20px; margin-bottom:14px;
+  }
+  .role-card h4{font-size:16px; color:var(--navy); margin-bottom:10px;}
+  .role-card ul{list-style:none; display:flex; flex-direction:column; gap:7px;}
+  .role-card li{font-size:13px; color:var(--muted); font-weight:400; padding-left:16px; position:relative;}
+  .role-card li::before{content:"—"; position:absolute; left:0; color:var(--gold);}
+
+  /* ===== TESTIMONIAL ===== */
+  .testimonial{background:var(--paper);}
+  .testi-wrap{max-width:720px; margin:0 auto; text-align:center;}
+  .testi-box{background:var(--navy); border-radius:16px; padding:48px 44px;}
+  .testi-quote{font-size:24px; font-weight:600; line-height:1.4; color:var(--white); margin-bottom:28px; letter-spacing:-0.01em;}
+  .testi-person{display:flex; align-items:center; justify-content:center; gap:12px;}
+  .testi-avatar{width:44px; height:44px; border-radius:50%; background:var(--navy3); border:2px solid var(--gold);}
+  .testi-name{font-size:14px; font-weight:700; color:var(--white); text-align:left;}
+  .testi-role{font-size:12.5px; color:rgba(255,255,255,.55); font-weight:400; text-align:left;}
+  .testi-note{margin-top:22px; font-size:11.5px; color:var(--muted); font-weight:500; letter-spacing:.03em; text-transform:uppercase;}
+
+  /* ===== PRICING ===== */
+  .pricing{background:var(--paper);}
+  .pricing-box{
+    max-width:760px; margin:0 auto; background:var(--white); border:1px solid var(--line); border-radius:20px;
+    padding:48px; text-align:center;
+  }
+  .pricing-box h3{font-size:24px; color:var(--navy); margin-bottom:12px;}
+  .pricing-box > p{font-size:15px; color:var(--muted); font-weight:400; max-width:460px; margin:0 auto 30px;}
+  .pricing-points{display:flex; justify-content:center; gap:30px; flex-wrap:wrap; margin-bottom:32px;}
+  .pricing-point{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--navy);}
+  .check{
+    width:18px; height:18px; border-radius:50%; background:var(--gold); color:var(--navy2);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0;
+  }
+
+  /* ===== FINAL CTA ===== */
+  .final-cta{background:var(--paper); text-align:center;}
+  .final-cta-box{
+    max-width:640px; margin:0 auto; background:var(--white); border:1px solid var(--line); border-radius:20px;
+    padding:56px 48px; position:relative;
+  }
+  .final-cta h2{font-size:34px; color:var(--navy); max-width:520px; margin:0 auto 16px;}
+  .final-cta p{font-size:16px; color:var(--muted); max-width:440px; margin:0 auto 34px; font-weight:400;}
+  .final-cta .hero-actions{justify-content:center;}
+
+  /* ===== FOOTER ===== */
+  footer{background:var(--white); color:var(--muted); padding:52px 0 30px; border-top:1px solid var(--line);}
+  .footer-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:40px; flex-wrap:wrap; gap:30px;}
+  .footer-logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; color:var(--navy); margin-bottom:12px;}
+  .footer-top p{font-size:13.5px; max-width:280px; font-weight:400;}
+  .footer-cols{display:flex; gap:64px; flex-wrap:wrap;}
+  .footer-col h5{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px;}
+  .footer-col a{display:block; font-size:13.5px; color:var(--navy); opacity:.75; margin-bottom:10px; font-weight:400;}
+  .footer-col a:hover{color:var(--gold); opacity:1;}
+  .footer-bottom{border-top:1px solid var(--line); padding-top:22px; display:flex; justify-content:space-between; font-size:12.5px; flex-wrap:wrap; gap:10px;}
+
+  .mockup-banner{
+    background:var(--gold); color:var(--navy2); text-align:center; font-size:12.5px; font-weight:700;
+    padding:9px; letter-spacing:.03em;
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">Mockup: visualização de conceito. Nenhum dado ou link nesta página é real.</div>
+
+<header>
+  <div class="nav">
+    <div class="logo"><span class="logo-mark"></span>Z Meta</div>
+    <nav class="nav-links">
+      <a href="#solucao">Como funciona</a>
+      <a href="#recursos">Recursos</a>
+      <a href="#papeis">Para sua equipe</a>
+      <a href="#planos">Planos</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="#" class="nav-login">Entrar</a>
+      <a href="#planos" class="btn">Agendar demonstração</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Gestão de equipes de varejo</div>
+      <h1>Sua rede de lojas rodando no <em>controle</em>, não na planilha.</h1>
+      <p class="lead">O Z Meta organiza tarefas, metas em camadas, comissão e ranking de cada loja, automaticamente, todos os dias. Da colaboradora ao sócio, cada um vê exatamente o que precisa.</p>
+      <div class="hero-actions">
+        <a href="#planos" class="btn">Agendar demonstração</a>
+        <a href="#solucao" class="btn-outline-dark">Ver como funciona</a>
+      </div>
+      <div class="hero-proof">
+        <div class="avatars"><span>M</span><span>R</span><span>S</span><span>G</span></div>
+        <span>Feito para redes de moda, atacado e franquias multi-loja</span>
+      </div>
+    </div>
+    <div class="mock-card">
+      <div class="mock-topbar">
+        <div class="mock-title">Loja Centro<span>Placar de hoje</span></div>
+        <div class="mock-pill">98% da equipe ativa</div>
+      </div>
+      <div class="mock-bar-row">
+        <div class="mock-bar-label"><span>Meta do mês</span><b>74%</b></div>
+        <div class="mock-bar-track"><div class="mock-bar-fill" style="width:74%"></div></div>
+      </div>
+      <div class="mock-bar-row">
+        <div class="mock-bar-label"><span>Super meta</span><b>41%</b></div>
+        <div class="mock-bar-track"><div class="mock-bar-fill" style="width:41%"></div></div>
+      </div>
+      <div class="mock-divider"></div>
+      <div class="mock-title" style="margin-bottom:10px;">Ranking de vendedores</div>
+      <div class="mock-rank-row">
+        <div class="mock-rank-pos gold">1</div>
+        <div class="mock-avatar"></div>
+        <div class="mock-rank-name">Camila Souza</div>
+        <div class="mock-rank-val">R$ 8.420</div>
+      </div>
+      <div class="mock-rank-row">
+        <div class="mock-rank-pos">2</div>
+        <div class="mock-avatar"></div>
+        <div class="mock-rank-name">Diego Alves</div>
+        <div class="mock-rank-val">R$ 7.110</div>
+      </div>
+      <div class="mock-rank-row">
+        <div class="mock-rank-pos">3</div>
+        <div class="mock-avatar"></div>
+        <div class="mock-rank-name">Bruna Lima</div>
+        <div class="mock-rank-val">R$ 6.980</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="logos-strip">
+  <div class="wrap">
+    <p>Pensado para operações que vivem de execução diária</p>
+    <div class="logos-row">
+      <span>MODA</span><span>ATACADO</span><span>FRANQUIAS</span><span>MULTI-LOJA</span><span>CONSÓRCIO</span>
+    </div>
+  </div>
+</div>
+
+<section class="pain" id="dores">
+  <div class="wrap">
+    <div class="section-head center">
+      <div class="eyebrow" style="justify-content:center;">O problema</div>
+      <h2>Gerir loja por planilha custa caro, e ninguém percebe até o mês fechar</h2>
+      <p>Sem visibilidade em tempo real, pequenos furos em tarefa, meta e comissão viram um rombo silencioso em cada loja.</p>
+    </div>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-icon">✕</div>
+        <h4>Ninguém sabe quem está batendo meta</h4>
+        <p>O sócio só descobre o resultado da loja no fechamento do mês, tarde demais para corrigir a rota.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">✕</div>
+        <h4>Comissão calculada na mão, com erro</h4>
+        <p>Planilha de comissão que não bate, colaborador desconfiado e gerente perdendo horas todo mês.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">✕</div>
+        <h4>Tarefa do dia a dia sem registro</h4>
+        <p>Checklist de loja no papel ou no grupo de WhatsApp, sem histórico, sem cobrança, sem consequência.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="solucao">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Como funciona</div>
+      <h2>Três passos para colocar a operação no automático</h2>
+    </div>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">01</div>
+        <h4>Configure metas e comissão por loja</h4>
+        <p>Meta, Super Meta e Hiper Meta em camadas, com o percentual de comissão de cada uma. O sistema sempre calcula pela maior camada realmente atingida.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">02</div>
+        <h4>A equipe usa o app todos os dias</h4>
+        <p>Colaborador marca tarefa, lança venda e acompanha a própria meta. Gerente acompanha a equipe. Tudo pelo celular.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">03</div>
+        <h4>Você acompanha tudo, de qualquer lugar</h4>
+        <p>Ranking, faturamento, comissão e saúde de cada loja atualizados em tempo real, sem esperar planilha nenhuma.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="recursos">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Recursos</div>
+      <h2>Tudo que a gestão de loja precisa, num só lugar</h2>
+      <p>Nenhuma funcionalidade solta: cada peça conversa com a outra automaticamente.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon">◧</div>
+        <h4>Metas em camadas</h4>
+        <p>Meta, Super Meta e Hiper Meta por loja e por colaborador, com comissão calculada pela camada efetivamente batida.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">%</div>
+        <h4>Comissionamento automático</h4>
+        <p>Sem planilha, sem divergência. A comissão de cada colaborador e gerente é calculada sozinha, todo mês.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">☑</div>
+        <h4>Tarefas diárias</h4>
+        <p>Checklist recorrente por loja, diário, semanal ou pontual, com histórico completo de execução.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚑</div>
+        <h4>Advertências e premiações</h4>
+        <p>Registro formal de advertência com desconto configurável, e premiações lançadas direto pelo gestor.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">↥</div>
+        <h4>Rankings em tempo real</h4>
+        <p>Ranking de vendedores, lojas e tarefas concluídas, o mesmo estímulo de competição saudável, todos os dias.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">▤</div>
+        <h4>Multi-loja e multi-empresa</h4>
+        <p>Uma empresa, várias lojas, vários times, cada nível da hierarquia vendo só o que precisa ver.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="roles" id="papeis">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Para sua equipe</div>
+      <h2>Uma tela certa para cada papel</h2>
+      <p>Sem planilha genérica tentando servir todo mundo. Cada nível da hierarquia vê exatamente o que precisa decidir.</p>
+    </div>
+    <div class="role-grid">
+      <div class="role-card">
+        <span class="role-tag">Sócio</span>
+        <h4>Visão de todas as lojas</h4>
+        <ul>
+          <li>Faturamento consolidado</li>
+          <li>Ranking entre lojas</li>
+          <li>Saúde de cada loja</li>
+          <li>Cadastro de supervisores</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <span class="role-tag">Supervisor</span>
+        <h4>Lojas sob sua gestão</h4>
+        <ul>
+          <li>Acompanha metas em tempo real</li>
+          <li>Aprova advertências e premiações</li>
+          <li>Compara desempenho entre lojas</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <span class="role-tag">Gerente</span>
+        <h4>Dono da própria equipe</h4>
+        <ul>
+          <li>Venda diária da loja</li>
+          <li>Ranking da equipe</li>
+          <li>Tarefas e advertências</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <span class="role-tag">Colaborador</span>
+        <h4>Foco no que gera comissão</h4>
+        <ul>
+          <li>Meta do dia, clara e simples</li>
+          <li>Checklist de tarefas</li>
+          <li>Própria comissão e ranking</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="testimonial">
+  <div class="wrap testi-wrap">
+    <div class="eyebrow" style="justify-content:center;">Depoimento</div>
+    <div class="testi-box">
+      <p class="testi-quote">"Antes eu só sabia se a loja tinha batido meta no fechamento do mês. Hoje eu vejo em tempo real e consigo corrigir a rota no meio do caminho."</p>
+      <div class="testi-person">
+        <div class="testi-avatar"></div>
+        <div>
+          <div class="testi-name">Sócio de rede de moda</div>
+          <div class="testi-role">8 lojas em operação</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-note">Exemplo ilustrativo para este mockup</div>
+  </div>
+</section>
+
+<section class="pricing" id="planos">
+  <div class="wrap">
+    <div class="pricing-box">
+      <div class="eyebrow" style="justify-content:center;">Planos</div>
+      <h3>Um valor pensado para o tamanho da sua operação</h3>
+      <p>Cobrança por usuário cadastrado, com condição comercial personalizada para o número de lojas e colaboradores da sua empresa.</p>
+      <div class="pricing-points">
+        <div class="pricing-point"><span class="check">✓</span>Sem limite de lojas</div>
+        <div class="pricing-point"><span class="check">✓</span>Suporte na implantação</div>
+        <div class="pricing-point"><span class="check">✓</span>Sem fidelidade</div>
+      </div>
+      <a href="#" class="btn">Falar com um especialista</a>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="wrap">
+    <div class="final-cta-box">
+      <h2>Pronto para tirar sua operação da planilha?</h2>
+      <p>Marque uma demonstração de 20 minutos e veja o Z Meta rodando com o cenário da sua rede.</p>
+      <div class="hero-actions">
+        <a href="#" class="btn">Agendar demonstração</a>
+        <a href="#" class="btn-outline-dark">Falar no WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <div class="footer-logo"><span class="logo-mark"></span>Z Meta</div>
+        <p>Gestão de equipes de varejo para redes de moda, atacado e franquias multi-loja. Um produto FORGE GROUP.</p>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h5>Produto</h5>
+          <a href="#solucao">Como funciona</a>
+          <a href="#recursos">Recursos</a>
+          <a href="#planos">Planos</a>
+        </div>
+        <div class="footer-col">
+          <h5>Empresa</h5>
+          <a href="#">FORGE GROUP</a>
+          <a href="#">Contato</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Z Meta. Todos os direitos reservados.</span>
+      <span>zmeta.com.br</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

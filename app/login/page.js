@@ -28,11 +28,17 @@ export default function LoginPage() {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, pending_approval")
       .eq("id", data.user.id)
       .single();
     if (!profile) {
       setError("Conta sem perfil configurado. Fale com o gerente.");
+      await supabase.auth.signOut();
+      setLoading(false);
+      return;
+    }
+    if (profile.pending_approval) {
+      setError("Seu cadastro está aguardando aprovação do administrador. Você será avisado quando puder acessar.");
       await supabase.auth.signOut();
       setLoading(false);
       return;
