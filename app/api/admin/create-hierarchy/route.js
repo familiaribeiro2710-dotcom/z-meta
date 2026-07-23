@@ -69,10 +69,15 @@ export async function POST(req) {
         return NextResponse.json({ error: "Permissão inválida." }, { status: 400 });
       }
     }
+    // Defesa em profundidade: administrativo nunca pode ganhar permission='gerenciar' (que daria
+    // can_manage_loja() de graça) — a UI já só manda 'ver' pra esse papel, mas isso trava também
+    // uma chamada direta à rota. Nunca rejeitar aqui, só forçar o valor seguro.
+    const normalizedAccess =
+      role === "administrativo" ? access.map((a) => ({ ...a, permission: "ver" })) : access;
 
     const admin = getSupabaseAdmin();
 
-    const lojaIds = access.map((a) => a.lojaId);
+    const lojaIds = normalizedAccess.map((a) => a.lojaId);
     const { data: lojas } = await admin.from("lojas").select("id, empresa_id").in("id", lojaIds);
     if (!lojas || lojas.length !== lojaIds.length || lojas.some((l) => l.empresa_id !== targetEmpresaId)) {
       return NextResponse.json({ error: "Uma ou mais lojas selecionadas são inválidas para essa empresa." }, { status: 400 });
@@ -112,7 +117,7 @@ export async function POST(req) {
       return NextResponse.json({ error: profileErr.message }, { status: 400 });
     }
 
-    const accessRows = access.map((a) => ({
+    const accessRows = normalizedAccess.map((a) => ({
       profile_id: created.user.id,
       loja_id: a.lojaId,
       permission: a.permission,

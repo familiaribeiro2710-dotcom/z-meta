@@ -23,10 +23,11 @@ export default function AdministrativoPage() {
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
       if (!prof || prof.role !== "administrativo") {
         router.replace(
-          prof?.role === "master_admin" ? "/admin"
-            : prof?.role === "socio" ? "/socio"
-            : prof?.role === "supervisor" ? "/supervisor"
-            : prof?.role === "gerente" ? "/gerente"
+          !prof ? "/login"
+            : prof.role === "master_admin" ? "/admin"
+            : prof.role === "socio" ? "/socio"
+            : prof.role === "supervisor" ? "/supervisor"
+            : prof.role === "gerente" ? "/gerente"
             : "/colaborador"
         );
         return;

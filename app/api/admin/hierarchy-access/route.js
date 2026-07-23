@@ -88,9 +88,13 @@ export async function POST(req) {
       if (!["ver", "gerenciar"].includes(permission)) {
         return NextResponse.json({ error: "Permissão inválida." }, { status: 400 });
       }
+      // Defesa em profundidade: administrativo nunca pode ganhar permission='gerenciar' (que daria
+      // can_manage_loja() de graça) — a UI já só manda 'ver' pra esse papel, mas isso trava também
+      // uma chamada direta à rota. Nunca rejeitar aqui, só forçar o valor seguro.
+      const finalPermission = target.role === "administrativo" ? "ver" : permission;
       const { error: upsertErr } = await admin
         .from("loja_access")
-        .upsert({ profile_id: supervisorId, loja_id: lojaId, permission }, { onConflict: "profile_id,loja_id" });
+        .upsert({ profile_id: supervisorId, loja_id: lojaId, permission: finalPermission }, { onConflict: "profile_id,loja_id" });
       if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 400 });
       return NextResponse.json({ ok: true });
     }
