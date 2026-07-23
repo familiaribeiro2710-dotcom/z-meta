@@ -1,9 +1,22 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import Logo from "../../lib/Logo";
+
+// "/login" agora é o ponto de entrada universal do app (a landing pública vive em "/", ver
+// lib/LandingPage.js) — inclusive pro PWA instalado (public/manifest.json aponta start_url pra
+// cá). Por isso, ao montar, checa se já existe sessão ativa e redireciona direto pro dashboard
+// sem obrigar quem já está logado a ver o formulário de novo.
+function dashboardPathForRole(role) {
+  if (role === "master_admin") return "/admin";
+  if (role === "socio") return "/socio";
+  if (role === "supervisor") return "/supervisor";
+  if (role === "gerente") return "/gerente";
+  if (role === "administrativo") return "/administrativo";
+  return "/colaborador";
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +24,28 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!active || !session) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, pending_approval")
+        .eq("id", session.user.id)
+        .single();
+      if (!active) return;
+      if (!profile || profile.pending_approval) {
+        // sessão órfã ou cadastro ainda não aprovado — não deixa "preso" logado sem poder usar
+        // nada, só desloga de volta pro formulário.
+        await supabase.auth.signOut();
+        return;
+      }
+      router.replace(dashboardPathForRole(profile.role));
+    })();
+    return () => { active = false; };
+  }, [router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -43,11 +78,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    if (profile.role === "master_admin") router.replace("/admin");
-    else if (profile.role === "socio") router.replace("/socio");
-    else if (profile.role === "supervisor") router.replace("/supervisor");
-    else if (profile.role === "gerente") router.replace("/gerente");
-    else router.replace("/colaborador");
+    router.replace(dashboardPathForRole(profile.role));
   }
 
   return (

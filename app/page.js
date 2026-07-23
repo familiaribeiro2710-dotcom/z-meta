@@ -2,8 +2,14 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
-import Logo from "../lib/Logo";
+import LandingPage from "../lib/LandingPage";
 
+// "/" agora é a landing page de vendas (pública, mesmo domínio zmeta.com.br/www.zmeta.com.br).
+// Quem JÁ tem sessão ativa (inclusive quem abre o PWA instalado, cujo start_url antigo ainda
+// aponta pra "/" em quem instalou antes dessa mudança — ver public/manifest.json) é redirecionado
+// direto pro próprio dashboard sem nem ver a landing. Quem não tem sessão só vê a landing mesmo,
+// sem redirecionamento nenhum — o botão "Entrar" dela leva pra /login, que é quem hoje cuida de
+// verdade do fluxo de autenticação.
 export default function Home() {
   const router = useRouter();
 
@@ -11,11 +17,7 @@ export default function Home() {
     let active = true;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!active) return;
-      if (!session) {
-        router.replace("/login");
-        return;
-      }
+      if (!active || !session) return;
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
@@ -24,7 +26,6 @@ export default function Home() {
       if (!active) return;
       if (!profile) {
         await supabase.auth.signOut();
-        router.replace("/login");
         return;
       }
       if (profile.role === "master_admin") {
@@ -44,12 +45,5 @@ export default function Home() {
     return () => { active = false; };
   }, [router]);
 
-  return (
-    <main className="min-h-screen flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <Logo size="lg" />
-        <p className="text-xs text-muted tracking-wide">carregando…</p>
-      </div>
-    </main>
-  );
+  return <LandingPage />;
 }

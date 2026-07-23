@@ -2,7 +2,7 @@
   "name": "Z Meta",
   "short_name": "Z Meta",
   "description": "Gestão diária de tarefas, advertências e metas de vendas",
-  "start_url": "/",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
