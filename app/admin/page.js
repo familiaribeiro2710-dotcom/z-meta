@@ -958,6 +958,41 @@ function FinanceiroRow({ row, onSave }) {
   );
 }
 
+// Ordenação da lista de empresas na aba Dados. Cada opção já embute a direção (não tem
+// controle separado de asc/desc) pra manter só um dropdown — "maior/menor primeiro" já fica
+// explícito no rótulo.
+const DADOS_SORT_OPTIONS = [
+  { key: "name_asc", label: "Nome (A→Z)" },
+  { key: "faturamento_desc", label: "Fatura mais" },
+  { key: "faturamento_asc", label: "Fatura menos" },
+  { key: "media_desc", label: "Média mensal — mais alta" },
+  { key: "media_asc", label: "Média mensal — mais baixa" },
+  { key: "created_asc", label: "Mais antiga no app" },
+  { key: "created_desc", label: "Mais recente no app" },
+  { key: "usuarios_desc", label: "Mais usuários" },
+  { key: "lojas_desc", label: "Mais lojas" },
+];
+
+// viewMode decide qual campo de faturamento a ordenação usa: "mes" (r.faturamento, o mês do
+// MonthNav) ou "total" (r.faturamento_total, histórico completo até hoje).
+function sortDadosRows(rows, sortKey, viewMode) {
+  const fatField = viewMode === "total" ? "faturamento_total" : "faturamento";
+  const arr = [...rows];
+  switch (sortKey) {
+    case "faturamento_desc": return arr.sort((a, b) => Number(b[fatField]) - Number(a[fatField]));
+    case "faturamento_asc": return arr.sort((a, b) => Number(a[fatField]) - Number(b[fatField]));
+    case "media_desc": return arr.sort((a, b) => Number(b.media_mensal_faturamento) - Number(a.media_mensal_faturamento));
+    case "media_asc": return arr.sort((a, b) => Number(a.media_mensal_faturamento) - Number(b.media_mensal_faturamento));
+    case "created_asc": return arr.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    case "created_desc": return arr.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    case "usuarios_desc": return arr.sort((a, b) => Number(b.usuarios_count) - Number(a.usuarios_count));
+    case "lojas_desc": return arr.sort((a, b) => Number(b.lojas_count) - Number(a.lojas_count));
+    case "name_asc":
+    default:
+      return arr.sort((a, b) => a.empresa_name.localeCompare(b.empresa_name));
+  }
+}
+
 function DadosTab() {
   const [month, setMonth] = useState(firstDayOfMonth(todayStr()));
   const [rows, setRows] = useState([]);
@@ -965,6 +1000,10 @@ function DadosTab() {
   // draftSearch é o rascunho — só filtra de fato quando aplicado (botão "Aplicar").
   const [draftSearch, setDraftSearch] = useState("");
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState("name_asc");
+  // "mes": faturamento do mês selecionado no MonthNav. "total": histórico completo até hoje,
+  // independente do mês selecionado (o MonthNav continua na tela, só não afeta esse modo).
+  const [viewMode, setViewMode] = useState("mes");
   const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
   const load = useCallback(async (m) => {
@@ -978,20 +1017,21 @@ function DadosTab() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => r.empresa_name.toLowerCase().includes(q));
-  }, [rows, search]);
+    const base = q ? rows.filter((r) => r.empresa_name.toLowerCase().includes(q)) : rows;
+    return sortDadosRows(base, sortKey, viewMode);
+  }, [rows, search, sortKey, viewMode]);
 
   const totals = useMemo(() => {
     let faturamento = 0, usuarios = 0, lojas = 0;
+    const fatField = viewMode === "total" ? "faturamento_total" : "faturamento";
     rows.forEach((r) => {
-      faturamento += Number(r.faturamento);
+      faturamento += Number(r[fatField]);
       usuarios += Number(r.usuarios_count);
       lojas += Number(r.lojas_count);
     });
     const ticketPorEmpresa = rows.length ? faturamento / rows.length : 0;
     return { faturamento, usuarios, lojas, empresas: rows.length, ticketPorEmpresa };
-  }, [rows]);
+  }, [rows, viewMode]);
 
   if (selectedEmpresa) {
     return <FaturamentoHistorico empresa={selectedEmpresa} onBack={() => setSelectedEmpresa(null)} />;
@@ -1014,11 +1054,30 @@ function DadosTab() {
           <span className="text-xs font-bold uppercase tracking-wider text-navy">Dados · {monthLabel(month)}</span>
         </div>
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
-          <HeroStatLight value={formatBRL(totals.faturamento)} label="Faturamento total" sub="todas as empresas" />
+          <HeroStatLight
+            value={formatBRL(totals.faturamento)}
+            label={viewMode === "total" ? "Faturamento total" : "Faturamento no mês"}
+            sub={viewMode === "total" ? "histórico · todas as empresas" : "todas as empresas"}
+          />
           <HeroStatLight value={totals.usuarios} label="Usuários cadastrados" sub="em todas as empresas" divider />
           <HeroStatLight value={totals.empresas} label="Empresas" sub="cadastradas no total" divider />
           <HeroStatLight value={totals.lojas} label="Lojas" sub="cadastradas no total" divider />
         </div>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        {[{ key: "mes", label: "No mês" }, { key: "total", label: "Total histórico" }].map((m) => (
+          <button
+            key={m.key}
+            type="button"
+            onClick={() => setViewMode(m.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
+              viewMode === m.key ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
       </div>
 
       <form
@@ -1035,6 +1094,9 @@ function DadosTab() {
             Limpar
           </button>
         )}
+        <SelectField className="min-w-[190px]" value={sortKey} onChange={(e) => setSortKey(e.target.value)}>
+          {DADOS_SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </SelectField>
         <MonthNav month={month} onChange={setMonth} maxMonth={firstDayOfMonth(todayStr())} />
       </form>
 
@@ -1059,8 +1121,8 @@ function DadosTab() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div className="min-w-0">
-                  <p className="text-[11px] text-white/50">Faturamento no mês</p>
-                  <AutoFitText className="text-goldlight font-bold">{formatBRL(r.faturamento)}</AutoFitText>
+                  <p className="text-[11px] text-white/50">{viewMode === "total" ? "Faturamento total" : "Faturamento no mês"}</p>
+                  <AutoFitText className="text-goldlight font-bold">{formatBRL(viewMode === "total" ? r.faturamento_total : r.faturamento)}</AutoFitText>
                 </div>
                 <div className="min-w-0">
                   <p className="text-[11px] text-white/50">Usuários</p>
