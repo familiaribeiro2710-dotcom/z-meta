@@ -36,6 +36,7 @@ import {
   DollarSign,
   Tag,
   Lock,
+  Link as LinkIcon,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -937,7 +938,16 @@ function FinanceiroTab() {
   const load = useCallback(async (m) => {
     setLoading(true);
     const { data } = await supabase.rpc("admin_financeiro", { p_month: m });
-    setRows(data || []);
+    const list = data || [];
+    const ids = list.map((r) => r.empresa_id);
+    const { data: billingRows } = ids.length
+      ? await supabase
+          .from("empresa_billing")
+          .select("empresa_id, stripe_payment_link_url, payment_status, current_period_end, grace_until")
+          .in("empresa_id", ids)
+      : { data: [] };
+    const billingMap = Object.fromEntries((billingRows || []).map((b) => [b.empresa_id, b]));
+    setRows(list.map((r) => ({ ...r, billing: billingMap[r.empresa_id] || null })));
     setLoading(false);
   }, []);
 
@@ -964,6 +974,14 @@ function FinanceiroTab() {
 
   async function saveRow(empresaId, valorPorUsuario, desconto) {
     await supabase.from("empresas").update({ valor_por_usuario: valorPorUsuario, desconto }).eq("id", empresaId);
+    // gera o link de pagamento (Price + Payment Link novos no Stripe) já com o valor atualizado —
+    // se ainda não der pra gerar (valor zerado, por exemplo) só ignora, o valor em si já salvou.
+    const { data: { session } } = await supabase.auth.getSession();
+    await fetch("/api/admin/billing/sync-price", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ empresaId }),
+    }).catch(() => {});
     await load(month);
   }
 
@@ -1020,12 +1038,21 @@ function FinanceiroTab() {
   );
 }
 
+const BILLING_STATUS_LABEL = {
+  sem_link: "Sem link ainda",
+  aguardando_pagamento: "Aguardando 1º pagamento",
+  pago: "Pago",
+  atrasado: "Atrasado",
+  cancelado: "Cancelado",
+};
+
 function FinanceiroRow({ row, onSave }) {
   const notifySaved = useSavedNotice();
   const [valor, setValor] = useState(String(row.valor_por_usuario ?? 0));
   const [desconto, setDesconto] = useState(String(row.desconto ?? 0));
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!dirty) {
@@ -1036,6 +1063,7 @@ function FinanceiroRow({ row, onSave }) {
   }, [row.valor_por_usuario, row.desconto]);
 
   const cobrar = Math.max(0, Number(row.usuarios_count) * (Number(valor) || 0) - (Number(desconto) || 0));
+  const hasLink = !!row.billing?.stripe_payment_link_url;
 
   async function save() {
     setSaving(true);
@@ -1045,6 +1073,13 @@ function FinanceiroRow({ row, onSave }) {
     notifySaved();
   }
 
+  async function copyLink() {
+    if (!hasLink) return;
+    await navigator.clipboard.writeText(row.billing.stripe_payment_link_url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <div className={`card-dark ${!row.active ? "opacity-60" : ""}`}>
       <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
@@ -1052,8 +1087,24 @@ function FinanceiroRow({ row, onSave }) {
           <Building2 size={14} className="text-goldlight" /> {row.empresa_name}
           {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
         </p>
-        <span className="text-xs text-white/50">{row.usuarios_count} usuário{row.usuarios_count !== 1 ? "s" : ""} cadastrado{row.usuarios_count !== 1 ? "s" : ""}</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold whitespace-nowrap">
+            {BILLING_STATUS_LABEL[row.billing?.payment_status || "sem_link"]}
+          </span>
+          <button
+            type="button"
+            onClick={copyLink}
+            disabled={!hasLink}
+            title={hasLink ? "Copiar link de pagamento" : "Salve um valor por usuário maior que zero pra gerar o link"}
+            aria-label="Copiar link de pagamento"
+            className={`p-1.5 rounded-lg transition-colors ${hasLink ? "text-goldlight hover:bg-white/10" : "text-white/20 cursor-not-allowed"}`}
+          >
+            <LinkIcon size={15} />
+          </button>
+          <span className="text-xs text-white/50 whitespace-nowrap">{row.usuarios_count} usuário{row.usuarios_count !== 1 ? "s" : ""} cadastrado{row.usuarios_count !== 1 ? "s" : ""}</span>
+        </div>
       </div>
+      {copied && <p className="text-[11px] text-success -mt-2 mb-2">Link copiado.</p>}
       <div className="grid sm:grid-cols-3 gap-3">
         <div>
           <label className="label-dark">Valor por usuário</label>
