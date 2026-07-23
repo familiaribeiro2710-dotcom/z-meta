@@ -2316,7 +2316,6 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
           </p>
           <p className="text-[11px] text-muted mt-0.5">
             {neverActive ? "nunca teve atividade" : `última atividade há ${stale} dia(s)`}
-            {" · "}barra do mês: {Number(loja.team_pct || 0).toFixed(0)}% (meta {Number(loja.team_threshold || 95).toFixed(0)}%)
           </p>
           {alerts.length > 0 && (
             <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
