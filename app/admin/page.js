@@ -46,6 +46,7 @@ import GerenteView from "../../lib/GerenteView";
 import ConsorcioDashboard, { CONSORCIO_TABS } from "../../lib/ConsorcioDashboard";
 import ColaboradorViewConsorcio from "../../lib/ColaboradorViewConsorcio";
 import GerenteViewConsorcio, { GERENTE_TABS as GERENTE_TABS_CONSORCIO } from "../../lib/GerenteViewConsorcio";
+import AdministrativoView, { ADMINISTRATIVO_TABS } from "../../lib/AdministrativoView";
 import HierarchyHome from "../../lib/HierarchyHome";
 import MonthNav from "../../lib/MonthNav";
 import SelectField from "../../lib/SelectField";
@@ -316,11 +317,14 @@ export default function AdminPage() {
     // (e por consequência empresaDetail, com sua categoria_slug) continua setado por baixo — não
     // precisa recarregar categoria aqui.
     const isConsorcioView = empresaDetail?.categoria_slug === "consorcio";
-    // colaborador de consórcio tem abas diferentes de gerente/vestuário (sem Metas, com Calendário) —
-    // precisa do próprio conjunto de tabs, e viewTab (estado solto, reaproveitado entre "ver comos"
-    // de pessoas/categorias diferentes) precisa ser validado contra ele, senão uma chave de outro
-    // conjunto (ex: "metas" vindo de uma visita anterior a um gerente) deixaria a tela em branco.
-    const viewingTabs = isConsorcioView
+    // colaborador de consórcio tem abas diferentes de gerente/vestuário (sem Metas, com Calendário),
+    // e administrativo (exclusivo de consórcio) tem seu próprio conjunto (Início/Vendas) — precisa
+    // validar viewTab (estado solto, reaproveitado entre "ver comos" de pessoas/categorias
+    // diferentes) contra o conjunto certo, senão uma chave de outro conjunto (ex: "metas" vindo de
+    // uma visita anterior a um gerente) deixaria a tela em branco.
+    const viewingTabs = viewingProfile.role === "administrativo"
+      ? ADMINISTRATIVO_TABS
+      : isConsorcioView
       ? (viewingProfile.role === "gerente" ? GERENTE_TABS_CONSORCIO : TABS_CONSORCIO_COLAB)
       : EMPRESA_TABS;
     const effectiveViewTab = viewingTabs.some((t) => t.key === viewTab) ? viewTab : "atividades";
@@ -338,7 +342,7 @@ export default function AdminPage() {
       >
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4 p-3 rounded-xl bg-gold/10 border border-gold/30">
           <p className="text-xs text-navy font-semibold flex items-center gap-1.5">
-            <Crown size={13} className="text-gold" /> Visualizando como Master Admin — {viewingProfile.role === "gerente" ? "Gerente" : "Colaborador"} {viewingProfile.full_name}
+            <Crown size={13} className="text-gold" /> Visualizando como Master Admin — {viewingProfile.role === "gerente" ? "Gerente" : viewingProfile.role === "administrativo" ? "Administrativo" : "Colaborador"} {viewingProfile.full_name}
           </p>
           <button className="btn-outline !py-1.5 !text-xs whitespace-nowrap" onClick={() => setViewingProfile(null)}>
             ← Voltar para Master Admin
@@ -350,6 +354,8 @@ export default function AdminPage() {
           ) : (
             <GerenteView key={viewingProfile.id} profile={viewingProfile} tab={effectiveViewTab} viewedBySupervisor onBack={() => setViewingProfile(null)} />
           )
+        ) : viewingProfile.role === "administrativo" ? (
+          <AdministrativoView key={viewingProfile.id} profile={viewingProfile} tab={effectiveViewTab} />
         ) : isConsorcioView ? (
           <ColaboradorViewConsorcio key={viewingProfile.id} profile={viewingProfile} tab={effectiveViewTab} viewedByManager onBack={() => setViewingProfile(null)} />
         ) : (
