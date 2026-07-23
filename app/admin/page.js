@@ -53,6 +53,7 @@ import MonthNav from "../../lib/MonthNav";
 import SelectField from "../../lib/SelectField";
 import { CnpjInput, PhoneInput } from "../../lib/MaskedInputs";
 import AutoFitText from "../../lib/AutoFitText";
+import CountUp from "../../lib/CountUp";
 import Avatar from "../../lib/Avatar";
 import { formatBRL } from "../../lib/scoring";
 import { greeting, todayStr, firstDayOfMonth, monthLabel } from "../../lib/date";
@@ -482,9 +483,9 @@ export default function AdminPage() {
               <span className="text-xs font-bold uppercase tracking-wider text-navy">Master Admin · Visão geral</span>
             </div>
             <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
-              <HeroStat Icon={Building2} value={overview.empresas_ativas} label="Empresas ativas" sub={`${overview.total_empresas} no total`} />
-              <HeroStat Icon={Users} value={overview.total_usuarios} label="Usuários cadastrados" sub="em toda a plataforma" divider />
-              <HeroStat Icon={Sprout} value={overview.empresas_novas_30d} label="Novas (30 dias)" sub="crescimento recente" divider />
+              <HeroStat Icon={Building2} value={overview.empresas_ativas} label="Empresas ativas" sub={`${overview.total_empresas} no total`} delay={0} />
+              <HeroStat Icon={Users} value={overview.total_usuarios} label="Usuários cadastrados" sub="em toda a plataforma" divider delay={70} />
+              <HeroStat Icon={Sprout} value={overview.empresas_novas_30d} label="Novas (30 dias)" sub="crescimento recente" divider delay={140} />
               <HeroStat
                 Icon={AlertTriangle}
                 value={overview.empresas_esquecidas}
@@ -492,6 +493,7 @@ export default function AdminPage() {
                 sub="sem atividade há 7+ dias"
                 divider
                 danger={Number(overview.empresas_esquecidas) > 0}
+                delay={210}
               />
             </div>
           </div>
@@ -777,10 +779,10 @@ function EmpresaAvatar({ empresaId, logoUrl, name, onChanged }) {
   );
 }
 
-function HeroStat({ Icon, value, label, sub, divider, danger }) {
+function HeroStat({ Icon, value, label, sub, divider, danger, delay = 0 }) {
   const tone = danger ? "text-[#7a1f1f]" : "text-navy";
   return (
-    <div className={`min-w-0 ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`}>
+    <div className={`min-w-0 reveal-up ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`} style={{ animationDelay: `${delay}ms` }}>
       <Icon size={20} className={tone} />
       <AutoFitText className={`text-xl sm:text-3xl font-extrabold mt-2 ${tone}`}>{value ?? 0}</AutoFitText>
       <p className={`text-xs font-semibold mt-0.5 ${tone}`}>{label}</p>
@@ -1255,10 +1257,11 @@ function DadosTab() {
             value={formatBRL(totals.faturamento)}
             label={viewMode === "total" ? "Faturamento total" : "Faturamento no mês"}
             sub={viewMode === "total" ? "histórico · todas as empresas" : "todas as empresas"}
+            delay={0}
           />
-          <HeroStatLight value={totals.usuarios} label="Usuários cadastrados" sub="em todas as empresas" divider />
-          <HeroStatLight value={totals.empresas} label="Empresas" sub="cadastradas no total" divider />
-          <HeroStatLight value={totals.lojas} label="Lojas" sub="cadastradas no total" divider />
+          <HeroStatLight value={totals.usuarios} label="Usuários cadastrados" sub="em todas as empresas" divider delay={70} />
+          <HeroStatLight value={totals.empresas} label="Empresas" sub="cadastradas no total" divider delay={140} />
+          <HeroStatLight value={totals.lojas} label="Lojas" sub="cadastradas no total" divider delay={210} />
         </div>
       </div>
 
@@ -1498,10 +1501,10 @@ function FaturamentoHistorico({ empresa, onBack }) {
           <div className="card-dark">
             <p className="label-dark mb-3">Detalhe por mês</p>
             <ul>
-              {filtered.slice().reverse().map((r) => (
-                <li key={r.month} className="row-card">
+              {filtered.slice().reverse().map((r, idx) => (
+                <li key={r.month} className="row-card reveal-up" style={{ animationDelay: `${idx * 50}ms` }}>
                   <span className="font-medium text-white text-xs sm:text-sm flex-1 min-w-0">{monthLabel(r.month)}</span>
-                  <span className="font-bold text-goldlight text-xs sm:text-sm shrink-0 whitespace-nowrap">{formatBRL(r.faturamento)}</span>
+                  <span className="font-bold text-goldlight text-xs sm:text-sm shrink-0 whitespace-nowrap"><CountUp value={r.faturamento} currency /></span>
                 </li>
               ))}
             </ul>
@@ -1512,9 +1515,9 @@ function FaturamentoHistorico({ empresa, onBack }) {
   );
 }
 
-function HeroStatLight({ value, label, sub, divider }) {
+function HeroStatLight({ value, label, sub, divider, delay = 0 }) {
   return (
-    <div className={`min-w-0 ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`}>
+    <div className={`min-w-0 reveal-up ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`} style={{ animationDelay: `${delay}ms` }}>
       <AutoFitText className="text-xl sm:text-3xl font-extrabold mt-0 text-navy">{value ?? 0}</AutoFitText>
       <p className="text-xs font-semibold mt-0.5 text-navy">{label}</p>
       <p className="text-[11px] mt-0.5 text-navy/65">{sub}</p>

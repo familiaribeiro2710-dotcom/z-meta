@@ -207,6 +207,20 @@ input[type="date"].date-input {
   animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Entrada escalonada de cards ao abrir uma tela — opacity/transform puros (nunca width/font),
+   de propósito, pra não interferir com AutoFitText.js (que mede scrollWidth/clientWidth do
+   conteúdo real; se o elemento tivesse largura/conteúdo mudando durante a animação, a medição
+   ficaria instável). Uso: className="reveal-up" + style={{ animationDelay: `${i * 70}ms` }} pra
+   escalonar uma lista. Como os dashboards desmontam/remontam o componente a cada troca de aba
+   (`{tab === "x" && <Componente />}`), o efeito replay sozinho toda vez que a aba é reaberta. */
+@keyframes revealUp {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.reveal-up {
+  animation: revealUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @keyframes confettiFall {
   0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
   100% { transform: translateY(110vh) rotate(540deg); opacity: 0.9; }
