@@ -6,6 +6,7 @@ import "@fontsource/inter/800.css";
 import "./globals.css";
 
 export const metadata = {
+  metadataBase: new URL("https://zmeta.com.br"),
   title: "Z Meta",
   description: "Gestão diária de tarefas, advertências e metas de vendas",
   manifest: "/manifest.json",
@@ -21,6 +22,18 @@ export const metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Z Meta",
+  },
+  openGraph: {
+    title: "Z Meta",
+    description: "Gestão diária de tarefas, advertências e metas de vendas",
+    siteName: "Z Meta",
+    locale: "pt_BR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Z Meta",
+    description: "Gestão diária de tarefas, advertências e metas de vendas",
   },
 };
 
