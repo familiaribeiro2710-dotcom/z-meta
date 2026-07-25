@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import Logo from "../../lib/Logo";
 
@@ -9,6 +9,10 @@ import Logo from "../../lib/Logo";
 // lib/LandingPage.js) — inclusive pro PWA instalado (public/manifest.json aponta start_url pra
 // cá). Por isso, ao montar, checa se já existe sessão ativa e redireciona direto pro dashboard
 // sem obrigar quem já está logado a ver o formulário de novo.
+// 2026-07-25: essa checagem só resolvia DEPOIS do primeiro paint, então o formulário de login
+// sempre aparecia (mesmo com sessão válida) antes do redirect. Igual fix aplicado em app/page.js:
+// segura a tela com spinner neutro (mesmo padrão de app/colaborador/page.js) até confirmar que
+// não há sessão, só então desenha o formulário.
 function dashboardPathForRole(role) {
   if (role === "master_admin") return "/admin";
   if (role === "socio") return "/socio";
@@ -24,12 +28,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
     let active = true;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!active || !session) return;
+      if (!active) return;
+      if (!session) {
+        setCheckingSession(false);
+        return;
+      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("role, pending_approval")
@@ -40,6 +49,7 @@ export default function LoginPage() {
         // sessão órfã ou cadastro ainda não aprovado — não deixa "preso" logado sem poder usar
         // nada, só desloga de volta pro formulário.
         await supabase.auth.signOut();
+        if (active) setCheckingSession(false);
         return;
       }
       router.replace(dashboardPathForRole(profile.role));
@@ -79,6 +89,14 @@ export default function LoginPage() {
       return;
     }
     router.replace(dashboardPathForRole(profile.role));
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-xs text-muted gap-2">
+        <Loader2 size={16} className="animate-spin" /> carregando…
+      </div>
+    );
   }
 
   return (
