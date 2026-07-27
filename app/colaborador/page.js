@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Home, Wallet, Loader2, CalendarDays } from "lucide-react";
+import { Home, Wallet, Loader2, CalendarDays, Globe } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
@@ -11,6 +11,7 @@ import ColaboradorViewConsorcio from "../../lib/ColaboradorViewConsorcio";
 const TABS_VESTUARIO = [
   { key: "atividades", label: "Início", Icon: Home },
   { key: "metas", label: "Metas", Icon: Wallet },
+  { key: "online", label: "Online", Icon: Globe },
 ];
 
 // 2026-07-20: "Tarefas" deixou de ser aba própria — o checklist agora é um card dentro do
