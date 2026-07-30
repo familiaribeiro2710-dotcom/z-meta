@@ -243,7 +243,11 @@ export default function AdminPage() {
     });
     const list = Array.from(map.values());
     list.forEach((e) => {
-      e._worstStale = e.lojas.length ? Math.max(...e.lojas.map((l) => daysSince(l.last_activity))) : Infinity;
+      // Lojas desativadas não entram no cálculo de "parada" — uma loja de teste desligada há
+      // meses não pode arrastar a empresa inteira pro alerta de risco se as lojas ativas
+      // estiverem saudáveis. Só entram no Math.max as lojas com loja_active=true.
+      const activeLojas = e.lojas.filter((l) => l.loja_active);
+      e._worstStale = activeLojas.length ? Math.max(...activeLojas.map((l) => daysSince(l.last_activity))) : Infinity;
       e._worstPct = e.lojas.length ? Math.min(...e.lojas.map((l) => Number(l.team_pct))) : 0;
       e._colabTotal = e.lojas.reduce((s, l) => s + Number(l.colaboradores_count), 0);
     });
