@@ -1142,6 +1142,26 @@ Todos seguiram o mesmo padrão já estabelecido (`RankingCard`/`LojaRankingCard`
 
 **Verificação:** `npm run build` → `✓ Compiled successfully` (28 rotas, incluindo o que veio de outra sessão em paralelo no MacBook nesse meio-tempo — nada relacionado a esse pedido).
 
+## Sócio/supervisor/gerente ganham mês seguinte nas abas Metas/Online + auditoria de "virar o mês" (2026-07-21)
+
+**Pedido do Felipe:** liberar sócio, supervisor e gerente pra ver o mês seguinte (adiantado) só nas abas Metas e Online — o resto do app continua travado no mês corrente. Pediu também pra aproveitar e revisar em todo o app como está a lógica de virada de mês.
+
+**Fix:**
+- `lib/date.js` — nova `nextMonth(dateStr)`, espelhando `previousMonth` (mesmo padrão, `Date.UTC` + `setUTCMonth`).
+- `lib/HierarchyHome.js` (sócio/supervisor) — um único `MonthNav` é compartilhado entre Início/Metas/Online/Rankings/Faturamento; `maxMonth` virou condicional: `nextMonth(today)` só quando `tab === "metas" || tab === "online"`, `firstDayOfMonth(today)` nos outros (Início/Rankings/Faturamento continuam travados no corrente).
+- `lib/GerenteView.js` (gerente, vestuário) — o `MonthNav` já vivia num bloco só de `tab === "metas" || tab === "online"` (separado do da aba Início), então só trocou `maxMonth` pra `nextMonth(today)` nesse bloco.
+- `lib/GerenteViewConsorcio.js` (gerente, consórcio) — mesma ideia, só que o bloco é só `tab === "metas"` (consórcio não tem aba Online, é exclusiva de vestuário).
+- `lib/MonthNav.js` — comentário do componente atualizado (não é mais verdade que "mês seguinte nunca existe"; o componente sempre foi agnóstico disso, só respeita o `maxMonth` que vier).
+
+**Auditoria da lógica de virada de mês (pedido explícito, sem achar bug):**
+- `todayStr()` já resolve corretamente no fuso America/Sao_Paulo (`Intl.DateTimeFormat`), não UTC do servidor.
+- Todo `isCurrentMonth` do app (`AdministrativoView.js`/`ColaboradorView.js`/`GerenteView.js`/`HierarchyHome.js`) segue o mesmo padrão consistente: `month === firstDayOfMonth(today)`, comparação de string, sem risco de fuso.
+- `MonthNav.shift()` constrói e lê o `Date` sempre em horário local (nunca mistura com UTC no meio do cálculo) — sem bug de fuso na navegação dos botões.
+- Achado (não corrigido, é só duplicação, não bug): o cálculo de "primeiro dia do mês seguinte" pra delimitar queries (`.gte(mes).lt(mesSeguinte)`) está repetido cru em ~7 arquivos (`ColaboradorView.js`, `EmpresaDashboard.js`, `ConsorcioDashboard.js`, `GerenteView.js`, `GerenteViewConsorcio.js`, `HierarchyHome.js`) em vez de usar a `nextMonth()` nova — funciona certo do jeito que está, então não mexi pra não arriscar nada sem necessidade; fica registrado como possível limpeza futura (usar `nextMonth()` nesses lugares em vez do cálculo inline).
+- Nenhum lugar mostra "mês fechado" pra um mês FUTURO por engano — o texto "mês fechado" só existe nos herocards da aba Início (que continuam travados no mês corrente, nunca mostram mês futuro) e no card "Registros do mês" do colaborador; a aba Metas (`EmpresaDashboard.js`/`ConsorcioDashboard.js`) não tem esse texto, só o título com `monthLabel(month)`.
+
+**Verificação:** `npm run build` → `✓ Compiled successfully`.
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
