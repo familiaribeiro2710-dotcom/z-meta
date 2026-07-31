@@ -1134,6 +1134,14 @@ Todos seguiram o mesmo padrão já estabelecido (`RankingCard`/`LojaRankingCard`
 
 **Verificação:** `npm run build` → `✓ Compiled successfully` (22 rotas, incluindo `/administrativo` já existente).
 
+## Premiações: total geral lançado no mês (2026-07-21)
+
+**Pedido do Felipe:** na aba Premiações (visão do gerente — componente `Premiacoes`, compartilhado com supervisor/sócio/master e com o segmento consórcio), faltava mostrar em algum lugar o valor TOTAL de premiações lançadas, só existia o subtotal por colaborador/gerente.
+
+**Fix:** `lib/EmpresaDashboard.js` (`Premiacoes`) — cabeçalho do card "Premiações lançadas — {mês}" ganhou, ao lado, a soma de `prizes` inteiro (`prizes.reduce((s, p) => s + Number(p.amount || 0), 0)`), formatada em R$. Como o componente é `export`ado e reaproveitado direto por `ConsorcioDashboard.js`, o total aparece automaticamente pras duas categorias e pra todo papel que usa essa aba (gerente/supervisor/sócio/master), sem precisar duplicar em outro arquivo.
+
+**Verificação:** `npm run build` → `✓ Compiled successfully` (28 rotas, incluindo o que veio de outra sessão em paralelo no MacBook nesse meio-tempo — nada relacionado a esse pedido).
+
 ## 12. Funcionalidade recusada (em aberto, sem follow-up do Felipe)
 
 Felipe perguntou se o master_admin poderia **ver as senhas cadastradas** de cada usuário. Foi recusado com justificativa técnica (senhas ficam com hash bcrypt via Supabase Auth, irreversível; armazenar em texto puro seria antipadrão grave de segurança, com risco real de vazamento e responsabilidade legal — ainda mais relevante porque o Z Meta será vendido a outras empresas). Alternativa proposta (permitir ao master definir uma senha temporária customizada no reset, em vez de sempre a senha padrão fixa `123456789`) — **nunca construída nem confirmada por Felipe**. Não fazer nada aqui a menos que ele volte a tocar no assunto.
