@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
-import { hierarquiaCanManageLoja } from "../../../../lib/serverPermissions";
 
 export async function POST(req) {
   try {
@@ -35,12 +34,15 @@ export async function POST(req) {
       .eq("id", userData.user.id)
       .single();
 
+    // 2026-08-04 (pedido do Felipe): excluir um usuário passou a ser exclusivo do Master Admin —
+    // gerente/sócio/supervisor não excluem mais de forma alguma (antes podiam, dentro do próprio
+    // escopo). No front, o botão continua visível pra esses papéis, mas cai num modal de "fale com
+    // o suporte" em vez de chamar essa rota — esse bloqueio aqui é a garantia de verdade, pra não
+    // depender só da UI.
     const isMasterAdmin = callerProfile?.role === "master_admin";
-    const isGerente = callerProfile?.role === "gerente" && !!callerProfile.loja_id;
-    const isHierarquia = callerProfile?.role === "supervisor" || callerProfile?.role === "socio";
-    if (!callerProfile || (!isMasterAdmin && !isGerente && !isHierarquia)) {
+    if (!callerProfile || !isMasterAdmin) {
       return NextResponse.json(
-        { error: "Apenas o gerente, supervisor, sócio ou o Master Admin podem excluir colaboradores." },
+        { error: "Apenas o Master Admin pode excluir um usuário. Entre em contato com o suporte." },
         { status: 403 }
       );
     }
@@ -55,26 +57,6 @@ export async function POST(req) {
 
     if (!target || !["colaborador", "gerente"].includes(target.role)) {
       return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
-    }
-    // gerente só exclui colaboradores da própria equipe — nunca outro gerente
-    if (isGerente && (target.role !== "colaborador" || target.gerente_id !== callerProfile.id)) {
-      return NextResponse.json({ error: "Esse colaborador não pertence à sua equipe." }, { status: 403 });
-    }
-    // excluir um gerente só pode master admin, supervisor ou sócio (nunca outro gerente)
-    if (target.role === "gerente" && !isMasterAdmin && !isHierarquia) {
-      return NextResponse.json({ error: "Apenas supervisor, sócio ou Master Admin podem excluir um gerente." }, { status: 403 });
-    }
-    if (isHierarquia) {
-      const allowed = await hierarquiaCanManageLoja({
-        callerClient,
-        callerProfile,
-        userId: userData.user.id,
-        lojaId: target.loja_id,
-        lojaEmpresaId: target.empresa_id,
-      });
-      if (!allowed) {
-        return NextResponse.json({ error: "Você não tem permissão de gerenciar essa loja." }, { status: 403 });
-      }
     }
 
     const { error: profileDeleteErr } = await admin.from("profiles").delete().eq("id", employeeId);
