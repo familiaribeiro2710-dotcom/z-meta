@@ -43,7 +43,7 @@ export default async function Image() {
               width: 140,
               height: 140,
               borderRadius: 999,
-              border: "11px solid #7c3aed",
+              border: "11px solid #c9a15a",
             }}
           />
           <div
@@ -52,7 +52,7 @@ export default async function Image() {
               width: 86,
               height: 86,
               borderRadius: 999,
-              border: "11px solid #ec4899",
+              border: "11px solid #e4c789",
             }}
           />
           <div
@@ -61,7 +61,7 @@ export default async function Image() {
               width: 34,
               height: 34,
               borderRadius: 999,
-              backgroundColor: "#7c3aed",
+              backgroundColor: "#c9a15a",
             }}
           />
         </div>
