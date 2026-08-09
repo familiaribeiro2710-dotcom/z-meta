@@ -37,6 +37,7 @@ import {
   Tag,
   Lock,
   Link as LinkIcon,
+  Kanban,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
@@ -64,8 +65,12 @@ import ConfirmModal from "../../lib/ConfirmModal";
 // sem Metas — espelha TABS_CONSORCIO de app/colaborador/page.js, que não é exportado de lá).
 // 2026-07-20: "Tarefas" deixou de ser aba própria — virou card do dashboard de Início (ver
 // lib/ColaboradorViewConsorcio.js) — removida daqui também (regra de ouro de UI).
+// 2026-08-08: "Pipeline" precisa estar em toda lista de abas de colaborador consórcio (essa, a de
+// app/colaborador/page.js e a de lib/HierarchyHome.js) — bug real corrigido: só tinha sido
+// adicionada na de app/colaborador/page.js, faltando aqui e em HierarchyHome.js.
 const TABS_CONSORCIO_COLAB = [
   { key: "atividades", label: "Início", Icon: Home },
+  { key: "pipeline", label: "Pipeline", Icon: Kanban, hideOnMobile: true },
   { key: "calendario", label: "Calendário", Icon: Calendar },
 ];
 
