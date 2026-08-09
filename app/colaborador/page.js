@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Home, Wallet, Loader2, CalendarDays, Globe } from "lucide-react";
+import { Home, Wallet, Loader2, CalendarDays, Globe, Kanban } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
@@ -17,8 +17,10 @@ const TABS_VESTUARIO = [
 // 2026-07-20: "Tarefas" deixou de ser aba própria — o checklist agora é um card dentro do
 // dashboard de Início (mesmo padrão do colaborador de vestuário, que nunca teve aba separada
 // pra isso). Ver lib/ColaboradorViewConsorcio.js.
+// 2026-08-08: "Pipeline" — só desktop (hideOnMobile, ver AppShell.js), quadro dos próprios leads.
 const TABS_CONSORCIO = [
   { key: "atividades", label: "Início", Icon: Home },
+  { key: "pipeline", label: "Pipeline", Icon: Kanban, hideOnMobile: true },
   { key: "calendario", label: "Calendário", Icon: CalendarDays },
 ];
 
