@@ -46,11 +46,18 @@ html, body {
      (ver .btn-hype, usado nos 3 modais de "Parabéns!"). Isso muda TODO botão .btn do app de
      uma vez só, sem precisar tocar em cada tela — é o efeito pretendido. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 text-navy rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-popgold;
+    @apply inline-flex items-center justify-center gap-2 text-navy rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 disabled:hover:translate-y-0 disabled:hover:shadow-popgold shadow-popgold;
     background: linear-gradient(135deg, #e4c789, #c9a15a);
   }
-  .btn:hover {
-    filter: brightness(1.05);
+  /* 2026-08-09 (pedido do Felipe, aprovado por mockup): leve "levante" no hover, além do
+     active:scale-95 que já existia — só desktop de verdade (hover:hover evita ficar "grudado"
+     em toque em tablet/celular, onde não existe estado de hover real). */
+  @media (hover: hover) {
+    .btn:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(201, 161, 90, 0.4);
+    }
   }
 
   /* Botão de comemoração — era o .btn padrão antigo (gradiente roxo→rosa). Usar só nos
@@ -59,12 +66,20 @@ html, body {
     @apply inline-flex items-center justify-center gap-2 text-white rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-pop;
     background: linear-gradient(135deg, #7c3aed, #ec4899);
   }
-  .btn-hype:hover {
-    filter: brightness(1.08);
+  @media (hover: hover) {
+    .btn-hype:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
   }
 
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 border-2 border-purple text-purple rounded-full px-5 py-2.5 text-sm font-bold tracking-wide hover:bg-purple hover:text-white active:scale-95 transition-all disabled:opacity-40;
+  }
+  @media (hover: hover) {
+    .btn-outline:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
   }
 
   /* Botão de confirmação pra ação destrutiva de verdade (excluir empresa/loja) — dentro de
@@ -73,8 +88,11 @@ html, body {
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 bg-danger text-white rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40;
   }
-  .btn-danger:hover {
-    filter: brightness(1.1);
+  @media (hover: hover) {
+    .btn-danger:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
   }
 
   .card {
