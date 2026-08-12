@@ -68,9 +68,13 @@ import ConfirmModal from "../../lib/ConfirmModal";
 // 2026-08-08: "Pipeline" precisa estar em toda lista de abas de colaborador consórcio (essa, a de
 // app/colaborador/page.js e a de lib/HierarchyHome.js) — bug real corrigido: só tinha sido
 // adicionada na de app/colaborador/page.js, faltando aqui e em HierarchyHome.js.
+// 2026-08-12: "Leads" entrou aqui também (generalização da aba, ver LeadsTab em
+// ConsorcioDashboard.js) — mesma régua do Pipeline: sem ela, some especificamente em "ver como
+// colaborador" pelo Master Admin.
 const TABS_CONSORCIO_COLAB = [
   { key: "atividades", label: "Início", Icon: Home },
   { key: "pipeline", label: "Pipeline", Icon: Kanban, hideOnMobile: true },
+  { key: "leads", label: "Leads", Icon: Users },
   { key: "calendario", label: "Calendário", Icon: Calendar },
 ];
 
@@ -438,6 +442,7 @@ export default function AdminPage() {
               lojaId={selectedLoja.lojaId}
               empresaId={selectedLoja.empresaId}
               viewerRole="master_admin"
+              viewerId={profile.id}
               tab={lojaTab}
               onOpenEmployee={setViewingProfile}
               onOpenGerente={setViewingProfile}

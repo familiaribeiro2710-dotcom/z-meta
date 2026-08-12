@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Home, Wallet, Loader2, CalendarDays, Globe, Kanban } from "lucide-react";
+import { Home, Wallet, Loader2, CalendarDays, Globe, Kanban, Users } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
@@ -18,9 +18,13 @@ const TABS_VESTUARIO = [
 // dashboard de Início (mesmo padrão do colaborador de vestuário, que nunca teve aba separada
 // pra isso). Ver lib/ColaboradorViewConsorcio.js.
 // 2026-08-08: "Pipeline" — só desktop (hideOnMobile, ver AppShell.js), quadro dos próprios leads.
+// 2026-08-12: "Leads" — generalização pra todos os papéis (ver LeadsTab em ConsorcioDashboard.js);
+// pro colaborador é a lista dos próprios leads + cadastro rápido de cliente (adicional ao
+// "Cadastrar ligação" que já existe dentro de Início).
 const TABS_CONSORCIO = [
   { key: "atividades", label: "Início", Icon: Home },
   { key: "pipeline", label: "Pipeline", Icon: Kanban, hideOnMobile: true },
+  { key: "leads", label: "Leads", Icon: Users },
   { key: "calendario", label: "Calendário", Icon: CalendarDays },
 ];
 
