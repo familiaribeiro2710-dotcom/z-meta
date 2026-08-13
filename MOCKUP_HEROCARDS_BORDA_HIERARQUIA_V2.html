@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Z Meta — Herocards escuros com borda por hierarquia (v2, dados reais)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  :root{ --navy:#12203a; --navy2:#1c2e4d; --paper:#f0eee7; --muted:#7d7a6f; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--paper);font-family:'Inter',system-ui,sans-serif;color:var(--navy);}
+  .wrap{ max-width:760px; margin:0 auto; padding:26px 18px 60px; }
+  .intro{ font-size:12.5px; color:var(--muted); font-weight:600; margin-bottom:22px; line-height:1.5; }
+  .intro b{ color:var(--navy); }
+  .stack{ display:flex; flex-direction:column; gap:20px; }
+
+  .row .who{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:800; color:var(--muted); margin-bottom:8px; }
+
+  .hero{
+    position:relative; overflow:hidden; border-radius:28px; padding:24px 24px 20px;
+    background:linear-gradient(160deg, var(--navy2), var(--navy));
+    border:2px solid var(--accent);
+    box-shadow:0 10px 26px rgba(18,32,58,.16);
+  }
+  .hero::after{
+    content:""; position:absolute; right:-50px; top:-50px; width:180px; height:180px; border-radius:50%;
+    background:radial-gradient(circle, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%);
+  }
+  .hero .head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; position:relative; }
+  .hero .head i{ width:17px; height:17px; color:var(--accent); }
+  .hero .head span{ font-size:11px; text-transform:uppercase; letter-spacing:.07em; font-weight:800; color:var(--accent); }
+  .hero .val{ font-size:32px; font-weight:900; color:#fff; letter-spacing:-.02em; line-height:1.1; position:relative; }
+  .hero .sub{ font-size:12px; color:#9aa3b5; font-weight:600; margin-top:5px; position:relative; }
+
+  .statgrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px 10px; margin-top:18px; padding-top:16px; border-top:1px solid rgba(255,255,255,.1); position:relative; }
+  @media(min-width:520px){ .statgrid.c3{ grid-template-columns:repeat(3,1fr); } .statgrid.c4{ grid-template-columns:repeat(4,1fr); } }
+  .stat .sv{ font-size:16px; font-weight:800; color:#fff; }
+  .stat .sl{ font-size:10.5px; color:#8b94a6; font-weight:600; display:flex; align-items:center; gap:4px; margin-top:2px; }
+  .stat .sl i{ width:11px; height:11px; color:var(--accent); flex-shrink:0; }
+  .stat .se{ font-size:9.5px; color:#6b7385; margin-top:1px; }
+
+  .swatches{ display:flex; align-items:center; gap:6px; margin-top:10px; flex-wrap:wrap; }
+  .sw{ width:20px; height:20px; border-radius:6px; cursor:pointer; border:2px solid transparent; }
+  .sw.active{ border-color:var(--navy); }
+  .colorname{ font-size:10.5px; color:var(--muted); font-weight:700; margin-left:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    Mesmo conceito de antes (fundo navy fixo, borda colorida por hierarquia) — agora com o
+    <b>conteúdo real</b> de cada herocard, copiado direto do código (label, valor grande, linhas de
+    contexto e a grade de estatísticas de baixo, exatamente como cada papel já mostra hoje).
+  </div>
+
+  <div class="stack" id="stack"></div>
+</div>
+
+<script>
+  const palette = [["#c9a15a","dourado"],["#a78bfa","lilás"],["#f97316","laranja"],["#16a34a","verde"],["#2563eb","azul"],["#94a3b8","cinza"],["#0d9488","teal"]];
+
+  const cards = [
+    {
+      who: "Colaborador — meta do dia (loja)", accent:"#a78bfa", icon:"target",
+      label:"Meta em jogo · dia", val:"R$ 184", sub:"pra bater a meta do mês em 12 dias restantes · Vendido até hoje: R$ 6.420",
+      cols:"c4",
+      stats:[
+        ["R$ 3.180","rocket","Falta pra meta do mês"],
+        ["12","calendar-clock","Dias restantes no mês"],
+        ["1","list-todo","Atividades pendentes"],
+        ["R$ 412","coins","Comissão até agora","6% · Super Meta"],
+        ["R$ 150","gift","Premiações"],
+        ["3º","trophy","Posição no ranking"],
+      ]
+    },
+    {
+      who: "Colaborador — aba Online", accent:"#f97316", icon:"globe",
+      label:"Online · agosto 2026", val:"R$ 2.340", sub:"faltam R$ 660 pra Meta Prata",
+      cols:"c4",
+      stats:[
+        ["14","receipt","Vendas lançadas"],
+        ["R$ 120","gift","Prêmio em jogo"],
+        ["R$ 60","circle-check-big","Prêmio garantido"],
+        ["78%","trophy","Meta Prata"],
+      ]
+    },
+    {
+      who: "Gerente — meta da equipe (loja)", accent:"#16a34a", icon:"store",
+      label:"Meta em jogo · dia · Loja 1", val:"R$ 2.040", sub:"pra bater a meta da loja em 12 dias restantes · Vendido até hoje: R$ 61.200",
+      cols:"c3",
+      stats:[
+        ["R$ 18.800","rocket","Falta pra meta do mês"],
+        ["12","calendar-clock","Dias restantes no mês"],
+        ["4","list-todo","Atividades pendentes"],
+        ["R$ 2.940","coins","Comissão até agora","4% · Super Meta"],
+        ["Marina Costa","trophy","Líder de vendas"],
+      ]
+    },
+    {
+      who: "Supervisor — visão da loja selecionada", accent:"#2563eb", icon:"store",
+      label:"Meta de hoje · Loja 1", val:"R$ 2.040", sub:"pra bater a meta da loja nos 12 dias restantes · Vendido até hoje: R$ 61.200",
+      cols:"c4",
+      stats:[
+        ["R$ 18.800","rocket","Falta pra meta do mês"],
+        ["12","calendar-clock","Dias restantes no mês"],
+        ["4","list-todo","Atividades pendentes"],
+        ["Marina Costa","trophy","Líder de vendas"],
+      ]
+    },
+    {
+      who: "Sócio — visão da loja selecionada (mesmo conteúdo do supervisor)", accent:"#94a3b8", icon:"store",
+      label:"Meta de hoje · Loja 1", val:"R$ 2.040", sub:"pra bater a meta da loja nos 12 dias restantes · Vendido até hoje: R$ 61.200",
+      cols:"c4",
+      stats:[
+        ["R$ 18.800","rocket","Falta pra meta do mês"],
+        ["12","calendar-clock","Dias restantes no mês"],
+        ["4","list-todo","Atividades pendentes"],
+        ["Marina Costa","trophy","Líder de vendas"],
+      ]
+    },
+    {
+      who: "Administrativo — visão da loja (consórcio)", accent:"#94a3b8", icon:"store",
+      label:"Vendido no mês · Loja 1", val:"R$ 61.200", sub:"agosto 2026",
+      cols:"c4",
+      stats:[
+        ["5","clock","Aguardando confirmação"],
+        ["9","phone-call","Ligações hoje"],
+        ["3","calendar-clock","Agendamentos hoje"],
+        ["7","list-todo","Colaboradores ativos"],
+      ]
+    },
+    {
+      who: "Master Admin — visão geral da plataforma", accent:"#c9a15a", icon:"crown",
+      label:"Master Admin · Visão geral", val:null, sub:null,
+      cols:"c4",
+      stats:[
+        ["18","building-2","Empresas ativas","23 no total"],
+        ["312","users","Usuários cadastrados","em toda a plataforma"],
+        ["4","sprout","Novas (30 dias)","crescimento recente"],
+        ["2","alert-triangle","Esquecidas","sem atividade há 7+ dias"],
+      ]
+    },
+  ];
+
+  const stack = document.getElementById('stack');
+  stack.innerHTML = cards.map((c,i) => `
+    <div class="row">
+      <div class="who">${c.who}</div>
+      <div class="hero" id="hero-${i}" style="--accent:${c.accent};">
+        <div class="head"><i data-lucide="${c.icon}"></i><span>${c.label}</span></div>
+        ${c.val ? `<div class="val">${c.val}</div>` : ""}
+        ${c.sub ? `<div class="sub">${c.sub}</div>` : ""}
+        <div class="statgrid ${c.cols}">
+          ${c.stats.map(([v,ic,l,e]) => `
+            <div class="stat">
+              <div class="sv">${v}</div>
+              <div class="sl"><i data-lucide="${ic}"></i>${l}</div>
+              ${e ? `<div class="se">${e}</div>` : ""}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="swatches" id="sw-${i}"></div>
+    </div>
+  `).join('');
+
+  cards.forEach((c,i) => {
+    const sw = document.getElementById(`sw-${i}`);
+    sw.innerHTML = palette.map(([hex,name]) =>
+      `<div class="sw ${hex===c.accent?'active':''}" style="background:${hex}" data-hex="${hex}" title="${name}"></div>`
+    ).join('') + `<span class="colorname" id="cn-${i}">${palette.find(p=>p[0]===c.accent)?.[1]||''}</span>`;
+    sw.addEventListener('click', (e) => {
+      const el = e.target.closest('.sw'); if(!el) return;
+      const hex = el.dataset.hex;
+      document.getElementById(`hero-${i}`).style.setProperty('--accent', hex);
+      [...sw.querySelectorAll('.sw')].forEach(s => s.classList.toggle('active', s===el));
+      document.getElementById(`cn-${i}`).textContent = palette.find(p=>p[0]===hex)?.[1] || '';
+    });
+  });
+
+  lucide.createIcons();
+</script>
+</body>
+</html>

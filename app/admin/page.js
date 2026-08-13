@@ -488,13 +488,13 @@ export default function AdminPage() {
 
         {overview && (
           <div
-            className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
-            style={{ background: "linear-gradient(135deg, #c9a15a 0%, #e4c789 100%)", boxShadow: "0 10px 28px rgba(201,161,90,0.4)" }}
+            className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border-2"
+            style={{ background: "linear-gradient(160deg, #1c2e4d 0%, #12203a 100%)", borderColor: "#c9a15a", boxShadow: "0 10px 26px rgba(18,32,58,0.35)" }}
           >
-            <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
+            <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-[#c9a15a]/15" />
             <div className="relative flex items-center gap-2 mb-5">
-              <Crown size={18} className="text-navy" />
-              <span className="text-xs font-bold uppercase tracking-wider text-navy">Master Admin · Visão geral</span>
+              <Crown size={18} className="text-[#e4c789]" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[#e4c789]">Master Admin · Visão geral</span>
             </div>
             <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
               <HeroStat Icon={Building2} value={overview.empresas_ativas} label="Empresas ativas" sub={`${overview.total_empresas} no total`} delay={0} />
@@ -794,13 +794,13 @@ function EmpresaAvatar({ empresaId, logoUrl, name, onChanged }) {
 }
 
 function HeroStat({ Icon, value, label, sub, divider, danger, delay = 0 }) {
-  const tone = danger ? "text-[#7a1f1f]" : "text-navy";
+  const tone = danger ? "text-[#fca5a5]" : "text-white";
   return (
-    <div className={`min-w-0 reveal-up ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`} style={{ animationDelay: `${delay}ms` }}>
+    <div className={`min-w-0 reveal-up ${divider ? "sm:border-l sm:border-white/15 sm:pl-4" : ""}`} style={{ animationDelay: `${delay}ms` }}>
       <Icon size={20} className={tone} />
       <AutoFitText className={`text-xl sm:text-3xl font-extrabold mt-2 ${tone}`}>{value ?? 0}</AutoFitText>
       <p className={`text-xs font-semibold mt-0.5 ${tone}`}>{label}</p>
-      <p className={`text-[11px] mt-0.5 ${danger ? "text-[#7a1f1f]/80" : "text-navy/65"}`}>{sub}</p>
+      <p className={`text-[11px] mt-0.5 ${danger ? "text-[#fca5a5]/80" : "text-white/55"}`}>{sub}</p>
     </div>
   );
 }
@@ -1009,13 +1009,13 @@ function FinanceiroTab() {
       </div>
 
       <div
-        className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
-        style={{ background: "linear-gradient(135deg, #c9a15a 0%, #e4c789 100%)", boxShadow: "0 10px 28px rgba(201,161,90,0.4)" }}
+        className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border-2"
+        style={{ background: "linear-gradient(160deg, #1c2e4d 0%, #12203a 100%)", borderColor: "#c9a15a", boxShadow: "0 10px 26px rgba(18,32,58,0.35)" }}
       >
-        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
+        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-[#c9a15a]/15" />
         <div className="relative flex items-center gap-2 mb-5">
-          <Wallet size={18} className="text-navy" />
-          <span className="text-xs font-bold uppercase tracking-wider text-navy">Financeiro · {monthLabel(month)}</span>
+          <Wallet size={18} className="text-[#e4c789]" />
+          <span className="text-xs font-bold uppercase tracking-wider text-[#e4c789]">Financeiro · {monthLabel(month)}</span>
         </div>
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
           <HeroStat Icon={DollarSign} value={formatBRL(totals.receita)} label="Receita total" sub="a cobrar no mês" />
@@ -1258,13 +1258,13 @@ function DadosTab() {
       </div>
 
       <div
-        className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
-        style={{ background: "linear-gradient(135deg, #c9a15a 0%, #e4c789 100%)", boxShadow: "0 10px 28px rgba(201,161,90,0.4)" }}
+        className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border-2"
+        style={{ background: "linear-gradient(160deg, #1c2e4d 0%, #12203a 100%)", borderColor: "#c9a15a", boxShadow: "0 10px 26px rgba(18,32,58,0.35)" }}
       >
-        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
+        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-[#c9a15a]/15" />
         <div className="relative flex items-center gap-2 mb-5">
-          <TrendingUp size={18} className="text-navy" />
-          <span className="text-xs font-bold uppercase tracking-wider text-navy">Dados · {monthLabel(month)}</span>
+          <TrendingUp size={18} className="text-[#e4c789]" />
+          <span className="text-xs font-bold uppercase tracking-wider text-[#e4c789]">Dados · {monthLabel(month)}</span>
         </div>
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
           <HeroStatLight
@@ -1435,16 +1435,16 @@ function FaturamentoHistorico({ empresa, onBack }) {
       </div>
 
       <div
-        className="relative overflow-hidden rounded-3xl p-6 sm:p-7"
-        style={{ background: "linear-gradient(135deg, #c9a15a 0%, #e4c789 100%)", boxShadow: "0 10px 28px rgba(201,161,90,0.4)" }}
+        className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border-2"
+        style={{ background: "linear-gradient(160deg, #1c2e4d 0%, #12203a 100%)", borderColor: "#c9a15a", boxShadow: "0 10px 26px rgba(18,32,58,0.35)" }}
       >
-        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-white/10" />
+        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-[#c9a15a]/15" />
         <div className="relative flex items-center gap-2 mb-3">
-          <TrendingUp size={18} className="text-navy" />
-          <span className="text-xs font-bold uppercase tracking-wider text-navy">Faturamento no período</span>
+          <TrendingUp size={18} className="text-[#e4c789]" />
+          <span className="text-xs font-bold uppercase tracking-wider text-[#e4c789]">Faturamento no período</span>
         </div>
-        <AutoFitText className="relative text-4xl sm:text-5xl font-extrabold text-navy leading-tight">{formatBRL(totalPeriodo)}</AutoFitText>
-        <p className="relative text-xs font-semibold text-navy/65 mt-1">
+        <AutoFitText className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(totalPeriodo)}</AutoFitText>
+        <p className="relative text-xs font-semibold text-white/55 mt-1">
           {fromMonth && toMonth ? `${monthShortLabel(fromMonth)} até ${monthShortLabel(toMonth)}` : "sem dados no período"}
         </p>
       </div>
@@ -1531,10 +1531,10 @@ function FaturamentoHistorico({ empresa, onBack }) {
 
 function HeroStatLight({ value, label, sub, divider, delay = 0 }) {
   return (
-    <div className={`min-w-0 reveal-up ${divider ? "sm:border-l sm:border-navy/15 sm:pl-4" : ""}`} style={{ animationDelay: `${delay}ms` }}>
-      <AutoFitText className="text-xl sm:text-3xl font-extrabold mt-0 text-navy">{value ?? 0}</AutoFitText>
-      <p className="text-xs font-semibold mt-0.5 text-navy">{label}</p>
-      <p className="text-[11px] mt-0.5 text-navy/65">{sub}</p>
+    <div className={`min-w-0 reveal-up ${divider ? "sm:border-l sm:border-white/15 sm:pl-4" : ""}`} style={{ animationDelay: `${delay}ms` }}>
+      <AutoFitText className="text-xl sm:text-3xl font-extrabold mt-0 text-white">{value ?? 0}</AutoFitText>
+      <p className="text-xs font-semibold mt-0.5 text-white">{label}</p>
+      <p className="text-[11px] mt-0.5 text-white/55">{sub}</p>
     </div>
   );
 }
