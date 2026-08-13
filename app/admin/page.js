@@ -693,14 +693,14 @@ export default function AdminPage() {
                     <button
                       title={row.active ? "Desativar empresa" : "Ativar empresa"}
                       onClick={() => setEmpresaConfirm({ type: "toggle", row })}
-                      className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${row.active ? "text-white/60 hover:text-warn" : "text-success"}`}
+                      className={`p-1.5 rounded-xl hover:bg-white/10 transition-colors ${row.active ? "text-white/60 hover:text-warn" : "text-success"}`}
                     >
                       <Power size={13} />
                     </button>
                     <button
                       title="Excluir empresa"
                       onClick={() => setEmpresaConfirm({ type: "delete", row })}
-                      className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-white/10 transition-colors"
+                      className="p-1.5 rounded-xl text-white/60 hover:text-danger hover:bg-white/10 transition-colors"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -905,7 +905,7 @@ function PendentesTab() {
                   onClick={() => setConfirmAction({ type: "approve", row: r })}
                   title="Aprovar"
                   aria-label="Aprovar"
-                  className="p-2 rounded-lg text-success hover:bg-success/10 transition-colors"
+                  className="p-2 rounded-xl text-success hover:bg-success/10 transition-colors"
                 >
                   <Check size={18} strokeWidth={2.5} />
                 </button>
@@ -914,7 +914,7 @@ function PendentesTab() {
                   onClick={() => setConfirmAction({ type: "reject", row: r })}
                   title="Recusar"
                   aria-label="Recusar"
-                  className="p-2 rounded-lg text-danger hover:bg-danger/10 transition-colors"
+                  className="p-2 rounded-xl text-danger hover:bg-danger/10 transition-colors"
                 >
                   <X size={18} strokeWidth={2.5} />
                 </button>
@@ -1124,7 +1124,7 @@ function FinanceiroRow({ row, onSave }) {
             disabled={!hasLink}
             title={hasLink ? "Copiar link de pagamento" : "Salve um valor por usuário maior que zero pra gerar o link"}
             aria-label="Copiar link de pagamento"
-            className={`p-1.5 rounded-lg transition-colors ${hasLink ? "text-goldlight hover:bg-white/10" : "text-white/20 cursor-not-allowed"}`}
+            className={`p-1.5 rounded-xl transition-colors ${hasLink ? "text-goldlight hover:bg-white/10" : "text-white/20 cursor-not-allowed"}`}
           >
             <LinkIcon size={15} />
           </button>
@@ -1629,11 +1629,11 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
                       if (e.key === "Escape") setEditingName(false);
                     }}
                   />
-                  <button className="p-1.5 rounded-lg border border-success text-success hover:bg-success/10 transition-colors" onClick={saveName}>
+                  <button className="p-1.5 rounded-xl border border-success text-success hover:bg-success/10 transition-colors" onClick={saveName}>
                     <Check size={14} />
                   </button>
                   <button
-                    className="p-1.5 rounded-lg border border-line text-muted hover:border-navy hover:text-navy transition-colors"
+                    className="p-1.5 rounded-xl border border-line text-muted hover:border-navy hover:text-navy transition-colors"
                     onClick={() => setEditingName(false)}
                   >
                     <X size={14} />
@@ -1661,14 +1661,14 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
             <button
               title={empresa.active ? "Desativar empresa" : "Ativar empresa"}
               onClick={() => onToggleActive(empresa)}
-              className={`p-2 rounded-lg border transition-colors ${empresa.active ? "border-line text-muted hover:border-warn hover:text-warn" : "border-success text-success"}`}
+              className={`p-2 rounded-xl border transition-colors ${empresa.active ? "border-line text-muted hover:border-warn hover:text-warn" : "border-success text-success"}`}
             >
               <Power size={15} />
             </button>
             <button
               title="Excluir empresa"
               onClick={() => onDelete(empresa)}
-              className="p-2 rounded-lg border border-line text-muted hover:border-danger hover:text-danger transition-colors"
+              className="p-2 rounded-xl border border-line text-muted hover:border-danger hover:text-danger transition-colors"
             >
               <Trash2 size={15} />
             </button>
@@ -1680,7 +1680,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
             <p className="text-[11px] uppercase tracking-wider text-muted font-bold">Dados da empresa</p>
             {!editingContact && (
               <button
-                className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
+                className="p-1.5 rounded-xl text-muted hover:text-purple hover:bg-line/60 transition-colors"
                 onClick={() => setEditingContact(true)}
                 title="Editar dados da empresa"
                 aria-label="Editar dados da empresa"
@@ -1738,7 +1738,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
           </p>
           {!categoriaLocked && !editingCategoria && (
             <button
-              className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
+              className="p-1.5 rounded-xl text-muted hover:text-purple hover:bg-line/60 transition-colors"
               onClick={() => setEditingCategoria(true)}
               title="Trocar categoria"
               aria-label="Trocar categoria"
@@ -2114,7 +2114,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                 </button>
                 <div className="flex items-center gap-0.5 shrink-0">
                   {onViewAs && (
-                    <button title={`Ver como ${p.full_name}`} onClick={() => onViewAs(p)} className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors">
+                    <button title={`Ver como ${p.full_name}`} onClick={() => onViewAs(p)} className="p-1.5 rounded-xl text-muted hover:text-purple hover:bg-line/60 transition-colors">
                       <Eye size={14} />
                     </button>
                   )}
@@ -2122,7 +2122,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                     title="Editar"
                     aria-label="Editar"
                     onClick={() => { setOpenPersonId(p.id); setEditingPersonId(isEditing ? null : p.id); }}
-                    className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
+                    className="p-1.5 rounded-xl text-muted hover:text-purple hover:bg-line/60 transition-colors"
                   >
                     <Pencil size={14} />
                   </button>
@@ -2131,7 +2131,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                     aria-label={p.active === false ? "Ativar" : "Desativar"}
                     onClick={() => setConfirmTogglePerson(p)}
                     disabled={togglingId === `active-${p.id}`}
-                    className={`p-1.5 rounded-lg hover:bg-line/60 transition-colors ${p.active === false ? "text-danger" : "text-muted hover:text-navy"}`}
+                    className={`p-1.5 rounded-xl hover:bg-line/60 transition-colors ${p.active === false ? "text-danger" : "text-muted hover:text-navy"}`}
                   >
                     <Power size={14} />
                   </button>
@@ -2139,7 +2139,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                     title={isOpen ? "Recolher" : "Ver detalhes"}
                     aria-label={isOpen ? "Recolher" : "Ver detalhes"}
                     onClick={() => setOpenPersonId(isOpen ? null : p.id)}
-                    className="p-1.5 rounded-lg text-muted hover:text-navy hover:bg-line/60 transition-colors"
+                    className="p-1.5 rounded-xl text-muted hover:text-navy hover:bg-line/60 transition-colors"
                   >
                     {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </button>
@@ -2208,7 +2208,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                                 type="button"
                                 title="Cancelar"
                                 aria-label="Cancelar"
-                                className="p-1 rounded-lg text-muted hover:text-navy hover:bg-line/60 transition-colors"
+                                className="p-1 rounded-xl text-muted hover:text-navy hover:bg-line/60 transition-colors"
                                 onClick={() => setAddingLojaFor(null)}
                               >
                                 <X size={12} />
@@ -2545,18 +2545,18 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
           <button
             title={loja.loja_active ? "Desativar loja" : "Ativar loja"}
             onClick={() => setConfirmType("toggle")}
-            className={`p-1.5 rounded-lg border transition-colors ${loja.loja_active ? "border-line text-muted hover:border-warn hover:text-warn" : "border-success text-success"}`}
+            className={`p-1.5 rounded-xl border transition-colors ${loja.loja_active ? "border-line text-muted hover:border-warn hover:text-warn" : "border-success text-success"}`}
           >
             <Power size={13} />
           </button>
           <button
             title="Excluir loja"
             onClick={() => setConfirmType("delete")}
-            className="p-1.5 rounded-lg border border-line text-muted hover:border-danger hover:text-danger transition-colors"
+            className="p-1.5 rounded-xl border border-line text-muted hover:border-danger hover:text-danger transition-colors"
           >
             <Trash2 size={13} />
           </button>
-          <button onClick={onToggle} className="p-1.5 rounded-lg border border-line text-muted hover:border-navy hover:text-navy transition-colors">
+          <button onClick={onToggle} className="p-1.5 rounded-xl border border-line text-muted hover:border-navy hover:text-navy transition-colors">
             {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
         </div>
@@ -2585,7 +2585,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
                   <button
                     title={`Ver como ${loja.gerente_name}`}
                     onClick={() => onViewAs(gerenteProfile)}
-                    className="p-1.5 rounded-lg border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
+                    className="p-1.5 rounded-xl border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
                   >
                     <Eye size={12} />
                   </button>
@@ -2629,7 +2629,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
                       <button
                         title={`Ver como ${c.full_name}`}
                         onClick={() => onViewAs(c)}
-                        className="p-1.5 rounded-lg border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
+                        className="p-1.5 rounded-xl border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
                       >
                         <Eye size={12} />
                       </button>
@@ -2758,7 +2758,7 @@ function EditUser({ user, onChanged, onClose }) {
       </form>
       <button
         onClick={() => setConfirmReset(true)}
-        className="flex items-center gap-1.5 text-xs font-bold text-danger border border-danger/40 hover:bg-danger/10 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 text-xs font-bold text-danger border border-danger/40 hover:bg-danger/10 rounded-xl px-3 py-1.5 transition-colors disabled:opacity-50"
         disabled={resetting}
       >
         <KeyRound size={13} /> {resetting ? "Redefinindo…" : "Redefinir senha para 123456789"}
