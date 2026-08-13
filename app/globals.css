@@ -37,12 +37,8 @@ html, body {
 }
 
 @layer components {
-  /* 2026-08-12 (pedido do Felipe: padronizar visual, corrigir "cara de wireframe"). .input e .card
-     usavam border-2 (bordas grossas de 2px) — trocado pra border (1px, hairline) + mais dependência
-     de sombra pra dar profundidade, que é o que dá sensação de app nativo em vez de maquete/rascunho.
-     Cor de foco/hover não mudou. */
   .input {
-    @apply w-full border border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-purple focus:ring-4 focus:ring-purple/15 transition-all;
+    @apply w-full border-2 border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-purple focus:ring-4 focus:ring-purple/15 transition-all;
   }
 
   /* Nova identidade (2026-07): dourado vira a cor de ação padrão do app — o gradiente
@@ -100,7 +96,7 @@ html, body {
   }
 
   .card {
-    @apply border border-line bg-white rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
+    @apply border-2 border-line bg-white rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
   }
 
   /* Superfície escura opt-in — usada nas telas de gestão que antes eram tabela crua sobre
