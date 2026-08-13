@@ -107,7 +107,7 @@ export default function LoginPage() {
             <Logo size="lg" />
           </div>
         </div>
-        <form onSubmit={handleSubmit} className="card space-y-4 border-purple/20">
+        <form onSubmit={handleSubmit} className="card space-y-4 border-gold/20">
           <div>
             <label className="label">Usuário</label>
             <input

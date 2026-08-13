@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Z Meta — Padronização de campos e botões (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  :root{ --navy:#12203a; --paper:#f0eee7; --muted:#7d7a6f; --line:#e7e3d9; --purple:#7c3aed; --gold:#c9a15a; --goldlight:#e4c789; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--paper);font-family:'Inter',system-ui,sans-serif;color:var(--navy);}
+  .wrap{ max-width:820px; margin:0 auto; padding:26px 18px 60px; }
+  .intro{ font-size:12.5px; color:var(--muted); font-weight:600; margin-bottom:22px; line-height:1.55; }
+  .intro b{ color:var(--navy); }
+
+  .panel{ background:#fff; border:2px solid var(--line); border-radius:24px; padding:22px; margin-bottom:20px; }
+  .panel .tag{ font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; font-weight:800; margin-bottom:14px; display:inline-block; padding:4px 11px; border-radius:100px; }
+  .tag.atual{ color:#991b1b; background:rgba(220,38,38,.1); }
+  .tag.novo{ color:#166534; background:rgba(22,163,74,.1); }
+
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; }
+  .field{ display:flex; flex-direction:column; gap:5px; }
+  .field label{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:800; color:var(--muted); }
+
+  /* ATUAL: input retangular neutro */
+  .inp-atual{ border:2px solid var(--line); border-radius:16px; padding:9px 13px; font-size:13px; font-weight:600; width:180px; }
+  .inp-atual:focus{ outline:none; border-color:var(--purple); box-shadow:0 0 0 4px rgba(124,58,237,.15); }
+  /* ATUAL: select pílula roxa */
+  .sel-atual{ display:flex; align-items:center; gap:6px; background:#fff; border:2px solid rgba(124,58,237,.3); border-radius:100px; padding:8px 12px; font-size:12px; font-weight:700; color:var(--navy); }
+  .sel-atual i{ width:13px; height:13px; color:var(--purple); }
+  .btn-atual{ background:linear-gradient(135deg,var(--goldlight),var(--gold)); border:0; border-radius:100px; padding:10px 18px; font-size:12.5px; font-weight:800; color:var(--navy); }
+  .icon-atual{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--purple); }
+  .icon-atual i{ width:15px; height:15px; }
+  .icon-atual:hover{ background:rgba(124,58,237,.1); }
+
+  /* NOVO: input e select com o MESMO raio (16px) e a MESMA cor de destaque (dourado) */
+  .inp-novo{ border:2px solid var(--line); border-radius:16px; padding:9px 13px; font-size:13px; font-weight:600; width:180px; }
+  .inp-novo:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 4px rgba(201,161,90,.18); }
+  .sel-novo{ display:flex; align-items:center; gap:6px; background:#fff; border:2px solid var(--line); border-radius:16px; padding:9px 13px; font-size:12px; font-weight:700; color:var(--navy); }
+  .sel-novo i{ width:13px; height:13px; color:var(--gold); }
+  .sel-novo:hover{ border-color:rgba(201,161,90,.5); }
+  .btn-novo{ background:linear-gradient(135deg,var(--goldlight),var(--gold)); border:0; border-radius:100px; padding:10px 18px; font-size:12.5px; font-weight:800; color:var(--navy); }
+  .icon-novo{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--gold); }
+  .icon-novo i{ width:15px; height:15px; }
+  .icon-novo:hover{ background:rgba(201,161,90,.12); }
+
+  .note{ font-size:11.5px; color:var(--muted); font-weight:600; display:flex; align-items:center; gap:6px; margin-top:4px; }
+  .note i{ width:13px; height:13px; flex-shrink:0; }
+  .note.bad i{ color:#dc2626; }
+  .note.good i{ color:#16a34a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    Isolei só campos e botões (sem mexer nos herocards, que você já aprovou, nem na navegação).
+    <b>Atual</b> é como está hoje de verdade no código — campo de texto retangular com borda neutra,
+    seletor em formato de pílula com borda roxa, botões de ícone com hover roxo. <b>Novo</b> deixa
+    campo e seletor com o mesmo raio de canto e usa dourado como única cor de destaque em tudo —
+    roxo/rosa fica só pra comemoração, como já é a regra do app.
+  </div>
+
+  <div class="panel">
+    <span class="tag atual">Atual — como está hoje</span>
+    <div class="row">
+      <div class="field"><label>Buscar</label><input class="inp-atual" placeholder="nome ou telefone"></div>
+      <div class="field"><label>&nbsp;</label><div class="sel-atual"><i data-lucide="user"></i>Colaborador<i data-lucide="chevron-down"></i></div></div>
+      <button class="btn-atual">Aplicar filtros</button>
+      <div class="icon-atual"><i data-lucide="pencil"></i></div>
+      <div class="icon-atual"><i data-lucide="eye"></i></div>
+    </div>
+    <p class="note bad"><i data-lucide="x-circle"></i>Campo de texto é retângulo (16px), seletor é pílula (borda roxa) — dois formatos e duas cores diferentes lado a lado.</p>
+  </div>
+
+  <div class="panel">
+    <span class="tag novo">Novo — padronizado</span>
+    <div class="row">
+      <div class="field"><label>Buscar</label><input class="inp-novo" placeholder="nome ou telefone"></div>
+      <div class="field"><label>&nbsp;</label><div class="sel-novo"><i data-lucide="user"></i>Colaborador<i data-lucide="chevron-down"></i></div></div>
+      <button class="btn-novo">Aplicar filtros</button>
+      <div class="icon-novo"><i data-lucide="pencil"></i></div>
+      <div class="icon-novo"><i data-lucide="eye"></i></div>
+    </div>
+    <p class="note good"><i data-lucide="check-circle-2"></i>Mesmo raio de canto (16px) em campo e seletor, mesma cor de destaque (dourado) em foco, borda e ícones de ação.</p>
+  </div>
+
+  <div class="intro" style="margin-top:6px;">
+    Isso muda 2 coisas no código: (1) o componente <b>SelectField</b> (usado em todo seletor do app)
+    passa a ter o mesmo raio e cor do <b>.input</b>; (2) todo botão-ícone e borda que hoje usa roxo
+    como "cor padrão" (91 ocorrências em 17 arquivos, sobra da identidade antiga) passa a usar
+    dourado — sem tocar nos 3 lugares que já usam roxo/rosa de propósito, que são as telas de
+    comemoração (meta batida, 100% das tarefas).
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

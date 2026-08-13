@@ -38,7 +38,7 @@ html, body {
 
 @layer components {
   .input {
-    @apply w-full border-2 border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-purple focus:ring-4 focus:ring-purple/15 transition-all;
+    @apply w-full border-2 border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-4 focus:ring-gold/15 transition-all;
   }
 
   /* Nova identidade (2026-07): dourado vira a cor de ação padrão do app — o gradiente
@@ -73,8 +73,11 @@ html, body {
     }
   }
 
+  /* 2026-08-13 (pedido do Felipe: padronizar cor de destaque — dourado em vez de roxo, que era
+     sobra da identidade antiga de antes da virada pra navy+dourado em julho). Roxo/rosa continua
+     reservado só pra comemoração (.btn-hype). */
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 border-2 border-purple text-purple rounded-full px-5 py-2.5 text-sm font-bold tracking-wide hover:bg-purple hover:text-white active:scale-95 transition-all disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 border-2 border-gold text-gold rounded-full px-5 py-2.5 text-sm font-bold tracking-wide hover:bg-gold hover:text-navy active:scale-95 transition-all disabled:opacity-40;
   }
   @media (hover: hover) {
     .btn-outline:hover:not(:disabled) {

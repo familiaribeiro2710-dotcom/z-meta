@@ -430,7 +430,7 @@ export default function AdminPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Store size={20} className="text-purple" /> {selectedLoja.lojaName}</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Store size={20} className="text-gold" /> {selectedLoja.lojaName}</h1>
               <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><Crown size={13} className="text-gold" /> Visualizando como Master Admin — dados completos desta loja</p>
             </div>
             <button className="btn-outline whitespace-nowrap" onClick={() => setSelectedLoja(null)}>
@@ -603,7 +603,7 @@ export default function AdminPage() {
               {filterOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setFilterOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 z-40 w-56 max-w-[calc(100vw-1.5rem)] card !p-2 animate-pop border-purple/20">
+                  <div className="absolute right-0 top-full mt-2 z-40 w-56 max-w-[calc(100vw-1.5rem)] card !p-2 animate-pop border-gold/20">
                     {[
                       { key: "risco", label: "mais em risco" },
                       { key: "recente", label: "mais recente" },
@@ -614,7 +614,7 @@ export default function AdminPage() {
                         key={s.key}
                         onClick={() => { setSortKey(s.key); setFilterOpen(false); }}
                         className={`w-full text-left text-xs px-3 py-2 rounded-xl transition-all flex items-center justify-between gap-2 ${
-                          sortKey === s.key ? "bg-purple/10 text-purple font-bold" : "text-muted hover:bg-paper hover:text-navy"
+                          sortKey === s.key ? "bg-gold/10 text-gold font-bold" : "text-muted hover:bg-paper hover:text-navy"
                         }`}
                       >
                         {s.label}
@@ -766,7 +766,7 @@ function EmpresaAvatar({ empresaId, logoUrl, name, onChanged }) {
 
   return (
     <div
-      className="relative w-11 h-11 rounded-full shrink-0 overflow-hidden cursor-pointer group border-2 border-purple/20"
+      className="relative w-11 h-11 rounded-full shrink-0 overflow-hidden cursor-pointer group border-2 border-gold/20"
       onClick={() => inputRef.current?.click()}
       title="Alterar logotipo da empresa"
     >
@@ -873,7 +873,7 @@ function PendentesTab() {
     <div className="space-y-6">
       <div>
         <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2">
-          <ShieldCheck size={20} className="text-purple" /> Pendentes
+          <ShieldCheck size={20} className="text-gold" /> Pendentes
         </h1>
         <p className="text-xs text-muted mt-1">Cadastros feitos por sócio, supervisor ou gerente, aguardando sua aprovação antes de conseguirem acessar.</p>
       </div>
@@ -1004,7 +1004,7 @@ function FinanceiroTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-purple" /> Financeiro</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Wallet size={20} className="text-gold" /> Financeiro</h1>
         <p className="text-xs text-muted mt-1">Cobrança mensal por empresa, com base na quantidade de usuários cadastrados.</p>
       </div>
 
@@ -1035,7 +1035,7 @@ function FinanceiroTab() {
         </div>
         <button type="submit" className="btn !py-1.5 !text-xs whitespace-nowrap">Aplicar</button>
         {search.trim() && (
-          <button type="button" onClick={() => { setDraftSearch(""); setSearch(""); }} className="text-[11px] font-bold uppercase tracking-wider text-muted hover:text-purple whitespace-nowrap">
+          <button type="button" onClick={() => { setDraftSearch(""); setSearch(""); }} className="text-[11px] font-bold uppercase tracking-wider text-muted hover:text-gold whitespace-nowrap">
             Limpar
           </button>
         )}
@@ -1253,7 +1253,7 @@ function DadosTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><BarChart3 size={20} className="text-purple" /> Dados</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><BarChart3 size={20} className="text-gold" /> Dados</h1>
         <p className="text-xs text-muted mt-1">Faturamento, usuários cadastrados e média mensal de todas as empresas. Clique numa empresa pra ver o histórico completo de faturamento.</p>
       </div>
 
@@ -1304,7 +1304,7 @@ function DadosTab() {
         </div>
         <button type="submit" className="btn !py-1.5 !text-xs whitespace-nowrap">Aplicar</button>
         {search.trim() && (
-          <button type="button" onClick={() => { setDraftSearch(""); setSearch(""); }} className="text-[11px] font-bold uppercase tracking-wider text-muted hover:text-purple whitespace-nowrap">
+          <button type="button" onClick={() => { setDraftSearch(""); setSearch(""); }} className="text-[11px] font-bold uppercase tracking-wider text-muted hover:text-gold whitespace-nowrap">
             Limpar
           </button>
         )}
@@ -1430,7 +1430,7 @@ function FaturamentoHistorico({ empresa, onBack }) {
       </button>
 
       <div>
-        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Building2 size={20} className="text-purple" /> {empresa.name}</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2"><Building2 size={20} className="text-gold" /> {empresa.name}</h1>
         <p className="text-xs text-muted mt-1">Histórico de faturamento mês a mês.</p>
       </div>
 
@@ -1642,7 +1642,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
               ) : (
                 <h1 className="text-lg sm:text-xl font-bold text-navy flex items-center gap-2">
                   {empresa.empresa_name}
-                  <button className="text-muted hover:text-purple transition-colors" onClick={() => setEditingName(true)} title="Editar nome">
+                  <button className="text-muted hover:text-gold transition-colors" onClick={() => setEditingName(true)} title="Editar nome">
                     <Pencil size={14} />
                   </button>
                   {!empresa.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
@@ -1680,7 +1680,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
             <p className="text-[11px] uppercase tracking-wider text-muted font-bold">Dados da empresa</p>
             {!editingContact && (
               <button
-                className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
+                className="p-1.5 rounded-lg text-muted hover:text-gold hover:bg-line/60 transition-colors"
                 onClick={() => setEditingContact(true)}
                 title="Editar dados da empresa"
                 aria-label="Editar dados da empresa"
@@ -1738,7 +1738,7 @@ function EmpresaDetail({ empresa, allProfiles, lojaAccess, categorias, onBack, o
           </p>
           {!categoriaLocked && !editingCategoria && (
             <button
-              className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
+              className="p-1.5 rounded-lg text-muted hover:text-gold hover:bg-line/60 transition-colors"
               onClick={() => setEditingCategoria(true)}
               title="Trocar categoria"
               aria-label="Trocar categoria"
@@ -2114,7 +2114,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                 </button>
                 <div className="flex items-center gap-0.5 shrink-0">
                   {onViewAs && (
-                    <button title={`Ver como ${p.full_name}`} onClick={() => onViewAs(p)} className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors">
+                    <button title={`Ver como ${p.full_name}`} onClick={() => onViewAs(p)} className="p-1.5 rounded-lg text-muted hover:text-gold hover:bg-line/60 transition-colors">
                       <Eye size={14} />
                     </button>
                   )}
@@ -2122,7 +2122,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                     title="Editar"
                     aria-label="Editar"
                     onClick={() => { setOpenPersonId(p.id); setEditingPersonId(isEditing ? null : p.id); }}
-                    className="p-1.5 rounded-lg text-muted hover:text-purple hover:bg-line/60 transition-colors"
+                    className="p-1.5 rounded-lg text-muted hover:text-gold hover:bg-line/60 transition-colors"
                   >
                     <Pencil size={14} />
                   </button>
@@ -2164,7 +2164,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                             return (
               <span
                                 key={a.loja_id}
-                                className={`badge transition-colors ${isManage ? "bg-purple/15 text-purple" : "bg-teal/10 text-teal"}`}
+                                className={`badge transition-colors ${isManage ? "bg-gold/15 text-gold" : "bg-teal/10 text-teal"}`}
                               >
                                 <button
                                   type="button"
@@ -2199,7 +2199,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                                   type="button"
                                   onClick={() => addAccess(p.id, l.loja_id)}
                                   disabled={togglingId === `add-${l.loja_id}`}
-                                  className="badge bg-line text-muted hover:bg-purple/10 hover:text-purple transition-colors"
+                                  className="badge bg-line text-muted hover:bg-gold/10 hover:text-gold transition-colors"
                                 >
                                   <Store size={10} /> {l.loja_name}
                                 </button>
@@ -2218,7 +2218,7 @@ function HierarquiaList({ lojas, people, allProfiles, lojaAccess, onChanged, onV
                             <button
                               type="button"
                               onClick={() => setAddingLojaFor(p.id)}
-                              className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
+                              className="text-[11px] uppercase tracking-wider font-bold text-gold hover:text-goldlight transition-colors flex items-center gap-1"
                             >
                               <Plus size={11} /> vincular loja
                             </button>
@@ -2341,7 +2341,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
   }
 
   return (
-    <form onSubmit={submit} className="p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
+    <form onSubmit={submit} className="p-3 rounded-xl bg-gold/5 border border-gold/15 space-y-3">
       <div className="grid sm:grid-cols-3 gap-2">
         <input className="input !py-1.5 !text-xs" placeholder={`nome do ${label}`} value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={18} />
         <input
@@ -2461,7 +2461,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
         </p>
         <button
           onClick={() => setAddingLoja((v) => !v)}
-          className="text-[11px] uppercase tracking-wider font-bold text-purple hover:text-pink transition-colors flex items-center gap-1"
+          className="text-[11px] uppercase tracking-wider font-bold text-gold hover:text-goldlight transition-colors flex items-center gap-1"
         >
           <Plus size={12} /> nova loja
         </button>
@@ -2569,7 +2569,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
               <div className="w-full flex items-center justify-between gap-2">
                 <button
                   onClick={() => setOpenUserId(openUserId === loja.gerente_id ? null : loja.gerente_id)}
-                  className="flex-1 text-left text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+                  className="flex-1 text-left text-xs flex items-center justify-between gap-2 hover:text-gold transition-colors"
                 >
                   <span className="text-navy font-medium flex items-center gap-1.5">
                     <ShieldCheck size={12} /> {loja.gerente_name} <span className="text-muted font-normal">({loja.gerente_username})</span>
@@ -2585,7 +2585,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
                   <button
                     title={`Ver como ${loja.gerente_name}`}
                     onClick={() => onViewAs(gerenteProfile)}
-                    className="p-1.5 rounded-lg border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
+                    className="p-1.5 rounded-lg border border-line text-muted hover:border-gold hover:text-gold transition-colors shrink-0"
                   >
                     <Eye size={12} />
                   </button>
@@ -2613,7 +2613,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
                   <div className="w-full flex items-center justify-between gap-2">
                     <button
                       onClick={() => setOpenUserId(openUserId === c.id ? null : c.id)}
-                      className="flex-1 text-left text-xs flex items-center justify-between gap-2 hover:text-purple transition-colors"
+                      className="flex-1 text-left text-xs flex items-center justify-between gap-2 hover:text-gold transition-colors"
                     >
                       <span className={`font-medium ${c.active ? "text-navy" : "text-muted line-through"}`}>
                         {c.full_name} <span className="text-muted font-normal">({c.username})</span>
@@ -2629,7 +2629,7 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
                       <button
                         title={`Ver como ${c.full_name}`}
                         onClick={() => onViewAs(c)}
-                        className="p-1.5 rounded-lg border border-line text-muted hover:border-purple hover:text-purple transition-colors shrink-0"
+                        className="p-1.5 rounded-lg border border-line text-muted hover:border-gold hover:text-gold transition-colors shrink-0"
                       >
                         <Eye size={12} />
                       </button>
@@ -2735,7 +2735,7 @@ function EditUser({ user, onChanged, onClose }) {
   }
 
   return (
-    <div className="mt-2 mb-1 p-3 rounded-xl bg-purple/5 border border-purple/15 space-y-3">
+    <div className="mt-2 mb-1 p-3 rounded-xl bg-gold/5 border border-gold/15 space-y-3">
       <form onSubmit={saveName} className="flex items-center gap-2">
         <input className="input !py-1.5 !text-xs flex-1" value={name} onChange={(e) => setName(e.target.value)} maxLength={18} />
         <button type="submit" className="btn-outline !px-3 !py-1.5 !text-xs whitespace-nowrap" disabled={savingName}>
