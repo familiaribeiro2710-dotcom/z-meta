@@ -1271,4 +1271,17 @@ Felipe reportou um problema de fundo na regra de premiação de vestuário: a "B
 
 ---
 
+## Nova aba "Leads" ao lado de "Online" (vestuário, visão gerente/master_admin) (2026-08-16)
+
+Felipe pediu uma aba nova, ao lado de "Online", listando todos os leads/contatos cadastrados pelos colaboradores no módulo "Ativação Online" (tabela `online_activations` — nome/telefone/código do cliente + data do contato, distinto de `online_sales`, que é venda de verdade). Pediu filtro por período e por colaborador.
+
+- **`EMPRESA_TABS`** ganhou a 4ª aba `{ key: "leads", label: "Leads", Icon: PhoneCall }` — como esse array é compartilhado (`GerenteView.js` reexporta, `app/admin/page.js` consome direto), gerente e master_admin ganharam a aba de graça, mesmo padrão de quando "Online" foi criada. Sócio/supervisor (`HierarchyHome.js`, lista de abas própria) não ganharam — mesma exceção deliberada que "Online" já tinha.
+- **Novo componente `OnlineLeadsTab`** (`EmpresaDashboard.js`, ao lado de `OnlineTab`) — somente leitura (sem status/funil/edição, diferente do `LeadsTab` de consórcio, que é uma aba de CRM de verdade): tabela com Cliente/Telefone/Código/Colaborador (só se a equipe tiver mais de 1 pessoa)/Data. Filtro por período (De/Até, sobre `contact_date`) + colaborador + busca (nome/telefone/código), mesmo padrão de "rascunho + Aplicar filtros" já usado na aba Leads do consórcio (`ConsorcioDashboard.js`), com paginação de 20 por página.
+- **Fetch**: `loadAll` (`EmpresaDashboard.js`) busca todos os `online_activations` da loja, sem filtro de mês — a aba tem o próprio filtro de período, independente do `MonthNav` do resto da tela (mesmo espírito da aba Leads de consórcio, que também ignora o período selecionado alhures). Escopo por colaborador é feito no componente reaproveitando `employees` (já vem certo por `viewerRole` — gerente só a própria equipe).
+- **RLS confirmada antes de implementar** (`execute_sql`, projeto `fjscwmrjkxgygdzwwrdh`): policy de leitura de `online_activations` já libera `loja_id = my_loja_id()` — gerente lendo o próprio loja não precisou de nenhuma policy nova.
+
+**Build verificado**: `✓ Compiled successfully`, 28 rotas, via cópia pra `/tmp` (sandbox do Cowork não permite `npm install` na pasta montada).
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
