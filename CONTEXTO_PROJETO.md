@@ -1304,4 +1304,16 @@ Felipe pediu pra aumentar, em todas as categorias de empresa — como o componen
 
 ---
 
+## Bug de layout: advertência longa empurrava data/porcentagem pra baixo no mobile (2026-08-17)
+
+Felipe reportou (mobile, visão colaborador): quando o motivo de uma advertência era longo, a data e a porcentagem "pulavam" pra uma segunda linha, saindo do lugar. Causa raiz em `lib/ColaboradorView.js` (card "Advertências no mês", linha ~1162): o `<li>` usava `flex justify-between flex-wrap` com o motivo e a data/% como dois irmãos soltos, sem nenhum dos dois com largura controlada — quando o motivo não cabia, o `flex-wrap` quebrava a LINHA INTEIRA (empurrando o segundo irmão inteiro pra baixo), em vez de só o texto do motivo.
+
+**Fix:** `flex-wrap` saiu do container (a linha em si nunca mais quebra); motivo virou `flex-1 min-w-0 break-words` (pode ocupar várias linhas sozinho); data/% virou `shrink-0 whitespace-nowrap` (nunca sai da posição, sempre à direita). `items-start` no container pra alinhar a data no topo quando o motivo ocupa mais de uma linha.
+
+**Auditoria pedida pelo Felipe** ("provavelmente tá acontecendo nas tarefas também"): conferido todo `flex-wrap` de `ColaboradorView.js` — a lista "Tarefas de hoje" (checklist) não tem nada alinhado à direita pra ser empurrado (só checkbox + título), estruturalmente não sofre desse bug. Único ponto afetado no arquivo era mesmo o de Advertências.
+
+**Build verificado**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
