@@ -1284,4 +1284,16 @@ Felipe pediu uma aba nova, ao lado de "Online", listando todos os leads/contatos
 
 ---
 
+## Paginação na lista de tarefas cadastradas (10 por página) (2026-08-17)
+
+Felipe reportou (com print) que a lista de tarefas cadastradas do colaborador, no card "Tarefas" (componente `Tarefas`, `EmpresaDashboard.js` — compartilhado vestuário/consórcio), tende a crescer bastante e ficar longa demais na tela.
+
+- Novo `TASKS_PAGE_SIZE = 10`. Lista (`myActiveTasks`) agora é fatiada em `pagedActiveTasks`; controles de página (mesmo visual "Página X de Y" + setas que já existem na aba Leads) só aparecem quando há mais de 10 tarefas.
+- `taskPage` reseta pra 0 sempre que troca o colaborador selecionado no seletor do topo — senão o índice de página antigo podia sobrar apontando pra uma página inexistente na lista da pessoa nova. Se a lista encolher (tarefa excluída) e a página atual ficar vazia, `taskPageClamped` (`Math.min(taskPage, totalPages-1)`) se autocorrige sozinho, mesmo padrão usado na aba Leads.
+- Não mexeu na "Checklist do dia" (lista de baixo) — essa já é filtrada só pelas tarefas que valem naquele dia específico via `isTaskDueOn`, raramente passa de 10.
+
+**Build verificado**: `✓ Compiled successfully`, 28 rotas.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
