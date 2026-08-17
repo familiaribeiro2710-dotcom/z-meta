@@ -1296,4 +1296,12 @@ Felipe reportou (com print) que a lista de tarefas cadastradas do colaborador, n
 
 ---
 
+## Limite do nome da tarefa: 18 → 40 caracteres (2026-08-17)
+
+Felipe pediu pra aumentar, em todas as categorias de empresa — como o componente `Tarefas()` (`lib/EmpresaDashboard.js`) já é compartilhado entre vestuário e consórcio, uma única mudança cobre os dois. `maxLength` trocado de 18 pra 40 nos dois inputs de título (criação e edição inline). Coluna `tasks.title` é `text` sem limite no banco, então não precisou de migração — era só o limite client-side documentado na sessão anterior como "apertado, vale reconsiderar".
+
+**Build verificado**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
