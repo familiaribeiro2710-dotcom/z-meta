@@ -1316,4 +1316,18 @@ Felipe reportou (mobile, visão colaborador): quando o motivo de uma advertênci
 
 ---
 
+## Calendário de vendas por dia no card "Venda da loja" (vestuário) (2026-08-17)
+
+Felipe pediu pra poder ver a venda de cada dia do mês num calendário, ao tocar no card "Venda da loja" (`Placar()`, `lib/EmpresaDashboard.js` — vestuário, visão gerente/supervisor/sócio). Mockup (`MOCKUP_CALENDARIO_VENDA_LOJA.html`) aprovado antes de implementar; primeira versão do mockup usava um "bottom sheet", corrigida pra usar o mesmo modal centralizado que o resto do app já usa (`ConfirmModal.js`) depois do Felipe perguntar especificamente "e no mobile?".
+
+- Card ganhou `cursor-pointer` + `onClick` abrindo o calendário; as setinhas do `DateNav` (navegação dia a dia já existente) ficaram num `<div onClick={stopPropagation}>` pra não abrir o calendário sem querer ao só trocar de dia.
+- Modal: mesmo padrão de `ConfirmModal.js` (`fixed inset-0 bg-navy/70`, `pt-[calc(env(safe-area-inset-top)+1rem)]`, overlay rolável, card centralizado `.card border-gold/30`) — não um componente novo, reaproveita a convenção visual já estabelecida.
+- Navegação de mês **independente** do `MonthNav` do resto da tela (trava em não passar do mês corrente) — é só uma lupa sobre o histórico que já está 100% carregado em `entries` (`sales_entries` da loja, sem filtro de data desde a implementação do Placar), então não precisou de query nova nem de estado sincronizado com o resto da tela.
+- Grid de 7 colunas, cada dia mostra o valor compacto (`formatCompactBRL`, nova função — ex.: "1,9k" em vez de "R$ 1.900,00", cabe no espaço de uma célula pequena). Hoje com borda dourada, dia selecionado (`viewDate`) em navy sólido. Tocar num dia seta `viewDate` pro card de trás e fecha o modal — mesma variável que já alimentava a navegação por setinhas, só um jeito mais rápido de pular direto pro dia.
+- Dias futuros ficam desabilitados (opacidade reduzida, sem clique).
+
+**Build**: não foi possível rodar `npm run build` nesta sessão (sandbox do Cowork indisponível — timeout de conexão da VM isolada). Revisão manual cuidadosa feita em troca: conferido bloco a bloco que todo JSX abre/fecha corretamente, e que todo identificador novo (`Calendar` do lucide-react, `formatCompactBRL`) foi de fato importado/definido antes do uso — mas **Felipe precisa rodar `npm run build` local antes do deploy**, sem essa confirmação automática de costume.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
