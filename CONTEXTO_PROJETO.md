@@ -1330,4 +1330,18 @@ Felipe pediu pra poder ver a venda de cada dia do mês num calendário, ao tocar
 
 ---
 
+## Bug de padrão visual: SelectField menor/diferente do .input em todo o app (2026-08-24)
+
+Felipe reportou (aba Leads, filtro "Colaborador", visão hierarquia/master admin): o seletor "Colaborador" aparecia visivelmente menor e mais fino que os campos de texto/data ao lado, dentro do mesmo grid de filtros (Buscar/Colaborador/De/Até). Pediu pra corrigir e auditar o app inteiro atrás do mesmo problema em qualquer botão/campo.
+
+**Causa raiz:** `lib/SelectField.js` — o wrapper usava `py-1.5` + `shadow-soft` e o `<select>` interno vinha em `text-xs font-bold`, enquanto `.input` (`app/globals.css`, usado em todo campo de texto/data do app) é `border-2 border-line rounded-2xl px-3.5 py-2.5 text-sm`, sem negrito e sem sombra. Como `SelectField` é o único componente de seletor do app inteiro (~40 usos em `EmpresaDashboard.js`, `ConsorcioDashboard.js`, `HierarchyHome.js`, `GerenteViewConsorcio.js`, `AdministrativoView.js`, `ColaboradorViewConsorcio.js`, `Pipeline.js`, `app/admin/page.js` — nenhum `<select>` cru fora dele, confirmado por grep), a causa era um único ponto — não precisou tocar em nenhum call site.
+
+**Fix:** wrapper do `SelectField` alinhado 1:1 com `.input` (`px-3.5 py-2.5`, sem `shadow-soft`); texto interno de `text-xs font-bold` pra `text-sm` (sem negrito) — mesma altura, borda, raio e tipografia de qualquer campo de texto/data do app agora, em qualquer tela que use o componente. Um dos call sites (`Pipeline.js:382`, filtro compacto de colaborador no Kanban) tem `selectClassName="!text-[11px]"` — override intencional preservado (usa `!important`, continua menor de propósito ali).
+
+**Auditoria pedida pelo Felipe:** grep por `<select` com `className` contendo `input` fora de `SelectField.js` não encontrou nenhum caso — confirma que não existe select "solto" no app fugindo do padrão. Não foi identificado nenhum outro padrão de botão fora do `.btn`/`.btn-outline`/`.btn-danger`/`.btn-hype` usado de forma solta.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
