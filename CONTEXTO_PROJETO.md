@@ -1358,4 +1358,14 @@ Felipe pediu pra avisar gerente, supervisor e sócio quando um lead do funil de 
 
 ---
 
+## Colaborador não vê mais o % de desconto de cada advertência (2026-08-29)
+
+Felipe pediu pra tirar da visão do colaborador a porcentagem de desconto de cada advertência. Único ponto que mostrava isso: `lib/ColaboradorView.js` (vestuário, card "Advertências no mês", linha ~1183) — cada item da lista tinha `{w.warning_date} · -{w.points}%`. Removido o `-{w.points}%`, mantendo só a data. `lib/ColaboradorViewConsorcio.js` não tem essa seção (consórcio não expõe advertências pro colaborador), então não precisou mexer lá.
+
+Importante: isso é só visual, na listagem. O cálculo real de desconto continua rodando por trás igual sempre (`app_settings.warning_penalty_points` × quantidade de advertências, dentro de `calcIndividualPct`/`lib/scoring.js`) — o gate de nota do colaborador (tarefas/comissão) não mudou, só parou de expor o número de cada advertência individual na lista.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
