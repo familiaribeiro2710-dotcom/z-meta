@@ -1344,4 +1344,18 @@ Felipe reportou (aba Leads, filtro "Colaborador", visão hierarquia/master admin
 
 ---
 
+## Notificação de agendamento pra gerente/supervisor/sócio (consórcio) (2026-08-24)
+
+Felipe pediu pra avisar gerente, supervisor e sócio quando um lead do funil de consórcio é agendado — mesmo padrão já usado pra venda/meta/lead novo.
+
+- **Migration** (`notify_push_agendamento_consorcio`): nova coluna `push_preferences.agendamento` (boolean, default `true`, opt-out como todas as outras). `push_pref_enabled()` ganhou o case `'agendamento'`.
+- **Trigger** `trg_notify_push_agendamento_consorcio` (`AFTER INSERT OR UPDATE` em `crm_leads`) dispara quando `status` **vira** `'agendado'` (`NEW.status = 'agendado' and (TG_OP = 'INSERT' or OLD.status is distinct from 'agendado')`) — cobre lead novo já cadastrado direto como agendado e reagendamento a partir de qualquer outro status (inclusive revivendo um `perdido`), mas nunca refaz spam numa edição de um lead que já estava `agendado` (ex.: só corrigir telefone). Notifica: **gerente** da equipe (`profiles.gerente_id` do colaborador dono do lead) via `push_notify` direto (mesmo padrão de `notify_push_venda_vestuario_gerente`, com nome da loja no título); **sócio/supervisor** via `push_notify_hierarquia_loja(..., 'agendamento')` (mesmo padrão de `notify_push_venda_consorcio_hierarquia`). Corpo da notificação: nome do colaborador + nome do cliente + data/hora do agendamento formatada em `America/Sao_Paulo` (`DD/MM às HH:MI`).
+- **UI** (`lib/PushNotifications.js`): novo toggle "Novo agendamento marcado" (`AGENDAMENTO_OPTION`) adicionado ao lado de "Venda aguardando confirmação" pros 3 papéis, só quando a empresa é consórcio (`optionsForRole`) — painel de preferências e histórico do sino já são genéricos (iteram sobre `options`), não precisou tocar em mais nada.
+
+**Segurança:** `get_advisors` mostrou o aviso padrão de "SECURITY DEFINER executável via RPC por anon/authenticated" pra função da trigger — confirmado que é o **mesmo aviso pré-existente** em toda função de trigger de notificação do projeto (`notify_push_novo_lead`, etc.), não uma regressão nova; mantido sem revogar `EXECUTE`, consistente com o padrão já estabelecido pras outras.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
