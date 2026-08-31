@@ -1368,4 +1368,16 @@ Importante: isso é só visual, na listagem. O cálculo real de desconto continu
 
 ---
 
+## Modal de "Atividades pendentes" clicável no herocard, com check direto (2026-08-31)
+
+Felipe pediu pra poder clicar no número "Atividades pendentes" do herocard (gerente/supervisor/sócio, vestuário e consórcio) e ver a lista de verdade, com opção de já marcar como feita ali mesmo — sem precisar entrar em Colaboradores um por um pra achar quem está pendente.
+
+- **Novo componente compartilhado** `lib/PendingActivitiesModal.js`: recebe `empIds` + `employeeNameById` de fora (já resolvidos por cada tela) e busca por conta própria as tarefas ATIVAS que valem hoje (`isTaskDueOn`) ainda sem `task_completions.completed=true` — mesma regra de negócio do cálculo de `pendingToday` já existente nos heros, só que retornando a lista em vez da contagem. Cada item mostra nome do colaborador + título da tarefa; tipo `checklist` ganha botão "Marcar feito" (upsert em `task_completions`, mesmo padrão de `togglePersonalTask`); tipo `contatos` (exclusivo de consórcio, sincronizado automaticamente por `sync_contatos_completions`) aparece só como leitura com selo "Automático" — não faz sentido nem é permitido marcar essa manualmente.
+- **Sem migration nova**: RLS de `task_completions` (`completions_insert`/`completions_update`) já cobria gerente marcando tarefa da própria equipe e sócio/supervisor de qualquer loja que gerenciem (`is_gerente()+is_my_team_member()` / `can_manage_loja()`) — só foi feature de UI.
+- **Integrado em 3 pontos**: `lib/GerenteView.js` e `lib/GerenteViewConsorcio.js` (herocard próprio, escopo `teamEmps`), e `lib/HierarchyHome.js` (sócio/supervisor, dois blocos — vestuário via `storeRanking`, consórcio via `consorcioLojaEmps` — escopados à loja selecionada). O número/label do herocard virou um `<button>` clicável (`onClick={() => setPendingModalOpen(true)}`); ao fechar o modal, cada tela recarrega seu próprio hero (`loadStats`/`loadHero`/`loadHeroConsorcio`) pra já refletir o número atualizado sem precisar dar F5.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
