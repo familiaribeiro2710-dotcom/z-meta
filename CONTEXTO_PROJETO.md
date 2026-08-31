@@ -1395,6 +1395,10 @@ Felipe pediu um botão pra gerente/supervisor/sócio baixarem um PDF do mês com
 
 **Build**: `✓ Compiled successfully` (build rodado com `npm install jspdf jspdf-autotable` aplicado antes, pra validar a dependência nova de verdade).
 
+**2026-08-31 (mesmo dia, follow-up)**: adicionada seção **"Ranking de vendedores do mês"** no PDF, logo depois do hero de faturamento da loja e antes da tabela de comissão por colaborador — usa a mesma lista `data.employees` (já vem ordenada por vendido desc de `buildMonthlyReportData`), com o `#` de cada linha colorido igual às medalhas do app (`.rank-pos-1/2/3` de `app/globals.css`: ouro/prata/bronze pros 3 primeiros, cinza pros demais) via `didParseCell` do `jspdf-autotable`. Sem loja com nenhuma venda no mês, mostra uma linha "Nenhuma venda registrada no mês" em vez de tabela vazia.
+
+**Build**: `✓ Compiled successfully`.
+
 ---
 
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
