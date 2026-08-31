@@ -1380,4 +1380,21 @@ Felipe pediu pra poder clicar no número "Atividades pendentes" do herocard (ger
 
 ---
 
+## Relatório mensal em PDF — faturamento, comissão e premiações (2026-08-31)
+
+Felipe pediu um botão pra gerente/supervisor/sócio baixarem um PDF do mês com faturamento da loja, faturamento e comissão por colaborador, comissão do gerente e premiações. Pediu explicitamente um mockup real antes de implementar — aprovado (`MOCKUP_RELATORIO_MENSAL_PDF.html`, gerado com dados reais de agosto/2026 da ArmyBR Anália Franco) antes de qualquer código.
+
+- **Nova dependência**: `jspdf` + `jspdf-autotable` (import dinâmico dentro do handler, mesmo padrão já usado pra `xlsx` em `ConsorcioDashboard.js` — não pesa o bundle inicial). `package.json`/`package-lock.json` atualizados.
+- **`lib/monthlyReport.js`** (novo): duas funções.
+  - `buildMonthlyReportData({ lojaId, isConsorcio, lojaName, empresaName, month, gerenteId?, gerenteName? })` — busca e normaliza os dados. **Ponto crítico corrigido antes de fechar**: uma loja pode ter mais de um gerente/equipe (`profiles.gerente_id`), e cada gerente já vê a PRÓPRIA comissão calculada contra o total só da própria equipe (não da loja inteira) comparado aos patamares da loja — é assim que `GerenteView.js`/`GerenteViewConsorcio.js` já calculam hoje. O relatório replica exatamente essa regra:
+    - `gerenteId` informado (gerente exportando o próprio relatório, via `GerenteView.js`/`GerenteViewConsorcio.js`): escopo é só a própria equipe, um patamar só.
+    - `gerenteId` ausente (sócio/supervisor exportando via `HierarchyHome.js`): escopo é a loja inteira, mas cada equipe é julgada contra o PRÓPRIO total nos mesmos patamares — se a loja tiver 2+ gerentes, o PDF sai com uma linha de comissão por gerente (cada um no seu %) e cada colaborador comissionado pelo % que a EQUIPE DELE bateu, não um % médio/borrado da loja toda. Nota de rodapé da tabela muda de texto automaticamente quando há mais de uma equipe (`multiEquipe`).
+    - `warnings`/`employee_prizes` são tabelas compartilhadas entre vestuário/consórcio (sem coluna de categoria) — busca única reaproveitada nos dois caminhos.
+  - `downloadMonthlyReportPdf(data)` — desenha o PDF (cabeçalho Z Meta, faixa empresa/loja/gerente(s)/período, hero de faturamento da loja em navy, tabela de colaboradores com rodapé de totais, tabela de comissão do(s) gerente(s), cards de resumo, rodapé com paginação) e dispara o download (`relatorio-mensal-{loja}-{mês}.pdf`).
+- **Botão "Relatório do mês (PDF)"** adicionado na aba Início, ao lado do `MonthNav`, em `lib/GerenteView.js` (`isConsorcio: false`, `gerenteId: profile.id`), `lib/GerenteViewConsorcio.js` (`isConsorcio: true`, `gerenteId: profile.id`) e `lib/HierarchyHome.js` (sócio/supervisor — `gerenteId` ausente, escopo a loja selecionada, `isConsorcio` resolvido pela categoria da empresa já carregada). Nome da empresa é buscado on-demand dentro do próprio handler (`supabase.from("empresas")`), sem precisar guardar mais um state global só pra isso.
+
+**Build**: `✓ Compiled successfully` (build rodado com `npm install jspdf jspdf-autotable` aplicado antes, pra validar a dependência nova de verdade).
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Mockup — Relatório Mensal (PDF)</title>
+<style>
+  :root {
+    --navy: #12203a;
+    --navylight: #1c2e4d;
+    --gold: #c9a15a;
+    --goldlight: #e4c789;
+    --paper: #f5f3ee;
+    --line: #e7e3d9;
+    --muted: #7d7a6f;
+    --success: #16a34a;
+    --warn: #d97706;
+    --danger: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #ded9cc;
+    font-family: -apple-system, "Inter", "Segoe UI", sans-serif;
+    padding: 40px 16px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .note {
+    max-width: 794px;
+    font-size: 13px;
+    color: #5c584c;
+    text-align: center;
+    margin: 0 0 4px;
+  }
+  .page {
+    width: 794px;
+    max-width: 100%;
+    min-height: 1123px;
+    background: #fff;
+    box-shadow: 0 12px 40px rgba(18,32,58,0.22);
+    padding: 48px 52px 40px;
+    position: relative;
+  }
+
+  /* cabeçalho */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--navy);
+    padding-bottom: 18px;
+    margin-bottom: 26px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(160deg, var(--navylight), var(--navy));
+    display: flex; align-items: center; justify-content: center;
+    color: var(--goldlight); font-weight: 800; font-size: 15px;
+    border: 1.5px solid var(--gold);
+  }
+  .brand-name {
+    font-size: 13px; font-weight: 800; letter-spacing: 0.08em; color: var(--navy); text-transform: uppercase;
+  }
+  .brand-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .header-right { text-align: right; }
+  .report-title { font-size: 20px; font-weight: 800; color: var(--navy); margin: 0; }
+  .report-meta { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+  .loja-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+  }
+  .loja-strip .item .label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 800; margin: 0 0 2px; }
+  .loja-strip .item .val { font-size: 14px; font-weight: 800; color: var(--navy); margin: 0; }
+
+  /* seção título */
+  .section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin: 26px 0 10px;
+  }
+  .section-title .bar { width: 4px; height: 14px; border-radius: 2px; background: var(--gold); }
+
+  /* hero de faturamento */
+  .hero {
+    background: linear-gradient(160deg, var(--navylight) 0%, var(--navy) 100%);
+    border-radius: 16px;
+    padding: 22px 24px;
+    color: #fff;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: 18px;
+    align-items: end;
+  }
+  .hero .big { font-size: 30px; font-weight: 800; letter-spacing: -0.01em; }
+  .hero .big-label { font-size: 10.5px; color: rgba(255,255,255,0.55); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;}
+  .hero .stat { font-size: 18px; font-weight: 800; }
+  .hero .stat-label { font-size: 10px; color: rgba(255,255,255,0.55); font-weight: 700; margin-top: 2px; }
+  .hero .badge {
+    display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 800;
+    padding: 3px 9px; border-radius: 999px; background: rgba(220,38,38,0.18); color: #fca5a5;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 800; padding: 0 8px 6px; border-bottom: 1.5px solid var(--navy);
+  }
+  thead th.num, tbody td.num { text-align: right; }
+  tbody td { padding: 9px 8px; font-size: 12.5px; color: var(--navy); border-bottom: 1px solid var(--line); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td.name { font-weight: 700; }
+  tbody td.muted { color: var(--muted); }
+  tfoot td { padding: 10px 8px 0; font-size: 12.5px; font-weight: 800; color: var(--navy); border-top: 2px solid var(--navy); }
+  tfoot td.num { text-align: right; }
+
+  .chip-warn {
+    display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 800;
+    color: var(--warn); background: rgba(217,119,6,0.1); padding: 2px 7px; border-radius: 999px;
+  }
+  .chip-ok {
+    display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 800;
+    color: var(--success); background: rgba(22,163,74,0.1); padding: 2px 7px; border-radius: 999px;
+  }
+
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 8px;
+  }
+  .summary-card {
+    border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  }
+  .summary-card .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 800; margin: 0 0 4px; }
+  .summary-card .val { font-size: 19px; font-weight: 800; color: var(--navy); }
+  .summary-card .sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+  .summary-card.gold { border-color: var(--gold); background: rgba(201,161,90,0.06); }
+  .summary-card.gold .val { color: var(--navy); }
+
+  .footer {
+    position: absolute; bottom: 28px; left: 52px; right: 52px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--line); padding-top: 10px;
+    font-size: 9.5px; color: var(--muted);
+  }
+  .footer b { color: var(--navy); }
+</style>
+</head>
+<body>
+
+  <p class="note">Simulação em tamanho real de página A4 (o PDF exportado do app sairia exatamente assim) — role a página pra ver o documento inteiro.</p>
+
+  <div class="page">
+    <div class="header">
+      <div class="brand">
+        <div class="brand-mark">Z</div>
+        <div>
+          <p class="brand-name">Z Meta</p>
+          <p class="brand-sub">Gestão de equipes de varejo</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <p class="report-title">Relatório Mensal</p>
+        <p class="report-meta">Gerado em 31/08/2026 às 14:22 · por Felipe Ribeiro (sócio)</p>
+      </div>
+    </div>
+
+    <div class="loja-strip">
+      <div class="item">
+        <p class="label">Empresa</p>
+        <p class="val">ArmyBR</p>
+      </div>
+      <div class="item">
+        <p class="label">Loja</p>
+        <p class="val">ArmyBR Anália Franco</p>
+      </div>
+      <div class="item">
+        <p class="label">Gerente</p>
+        <p class="val">Felipe Ribeiro</p>
+      </div>
+      <div class="item">
+        <p class="label">Período</p>
+        <p class="val">Agosto de 2026</p>
+      </div>
+    </div>
+
+    <!-- Faturamento da loja -->
+    <div class="section-title"><span class="bar"></span> Faturamento da loja</div>
+    <div class="hero">
+      <div>
+        <div class="big">R$ 403.260,34</div>
+        <div class="big-label">Vendido no mês</div>
+      </div>
+      <div>
+        <div class="stat">R$ 440.000,00</div>
+        <div class="stat-label">Meta em jogo (Meta)</div>
+      </div>
+      <div>
+        <div class="stat">91,7%</div>
+        <div class="stat-label">Atingimento da meta</div>
+        <span class="badge">Nenhuma camada batida</span>
+      </div>
+    </div>
+
+    <!-- Faturamento e comissão por colaborador -->
+    <div class="section-title"><span class="bar"></span> Faturamento e comissão por colaborador</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Colaborador</th>
+          <th class="num">Vendido</th>
+          <th class="num">% comissão</th>
+          <th class="num">Comissão</th>
+          <th class="num">Premiações</th>
+          <th class="num">Advertências</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name">Gustavo Belfort</td>
+          <td class="num">R$ 121.852,34</td>
+          <td class="num muted">1,5%</td>
+          <td class="num">R$ 1.827,79</td>
+          <td class="num">R$ 15,00</td>
+          <td class="num"><span class="chip-warn">2</span></td>
+        </tr>
+        <tr>
+          <td class="name">Janailson Pereira</td>
+          <td class="num">R$ 112.517,79</td>
+          <td class="num muted">1,5%</td>
+          <td class="num">R$ 1.687,77</td>
+          <td class="num">R$ 285,00</td>
+          <td class="num"><span class="chip-ok">1</span></td>
+        </tr>
+        <tr>
+          <td class="name">Lais Reis</td>
+          <td class="num">R$ 59.272,48</td>
+          <td class="num muted">1,5%</td>
+          <td class="num">R$ 889,09</td>
+          <td class="num">R$ 95,00</td>
+          <td class="num"><span class="chip-warn">7</span></td>
+        </tr>
+        <tr>
+          <td class="name">Marianna Guerra</td>
+          <td class="num">R$ 109.617,73</td>
+          <td class="num muted">1,5%</td>
+          <td class="num">R$ 1.644,27</td>
+          <td class="num">R$ 15,00</td>
+          <td class="num"><span class="chip-warn">7</span></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>Total colaboradores</td>
+          <td class="num">R$ 403.260,34</td>
+          <td class="num"></td>
+          <td class="num">R$ 6.048,92</td>
+          <td class="num">R$ 410,00</td>
+          <td class="num">17</td>
+        </tr>
+      </tfoot>
+    </table>
+    <p style="font-size:10px; color:var(--muted); margin-top:6px;">% de comissão aplicado é o de "não atingimento" (1,5%) — a loja não bateu nenhuma camada de meta em agosto/2026.</p>
+
+    <!-- Comissão do gerente -->
+    <div class="section-title"><span class="bar"></span> Comissão do gerente</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Gerente</th>
+          <th class="num">Base de cálculo</th>
+          <th class="num">% comissão</th>
+          <th class="num">Comissão</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name">Felipe Ribeiro</td>
+          <td class="num">R$ 403.260,34 (venda da loja)</td>
+          <td class="num muted">1,0%</td>
+          <td class="num">R$ 4.032,60</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Resumo -->
+    <div class="section-title"><span class="bar"></span> Resumo do mês</div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <p class="label">Comissão colaboradores</p>
+        <p class="val">R$ 6.048,92</p>
+      </div>
+      <div class="summary-card">
+        <p class="label">Comissão gerente</p>
+        <p class="val">R$ 4.032,60</p>
+      </div>
+      <div class="summary-card">
+        <p class="label">Premiações pagas</p>
+        <p class="val">R$ 410,00</p>
+      </div>
+      <div class="summary-card gold" style="grid-column: span 3;">
+        <p class="label">Total geral a pagar (comissões + premiações)</p>
+        <p class="val">R$ 10.491,52</p>
+        <p class="sub">Referente à loja ArmyBR Anália Franco — Agosto de 2026</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Relatório gerado automaticamente pelo <b>Z Meta</b> — dados de vestuário (sales_entries/sales_goals).</span>
+      <span>Página 1 de 1</span>
+    </div>
+  </div>
+
+</body>
+</html>
