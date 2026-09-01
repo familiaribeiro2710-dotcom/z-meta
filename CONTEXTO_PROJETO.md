@@ -1424,4 +1424,17 @@ Felipe pediu pra poder lançar premiação pra alguém que ajuda a equipe mas n�
 
 ---
 
+## Validar/descartar o "prêmio do mês" (barra de atividades) + toggles separados no relatório PDF (2026-08-31)
+
+Felipe pediu pra transformar o "prêmio do mês" (gate automático da barra individual de atividades vs `app_settings.team_threshold_pct`, card "Atividades — premiação por colaborador" no Placar) de só informativo pra uma decisão manual do gestor — e confirmou o critério: "se o gestor validar a premiação aparece no relatório, se não validar, não aparece".
+
+- **Migration**: nova coluna `employee_prizes.origin` (`'manual'` default, ou `'atividades_mes'`), com `CHECK` restringindo aos dois valores. Índice único parcial `(employee_id, month) WHERE origin = 'atividades_mes'` — no máximo 1 "prêmio do mês" por colaborador/mês, evita duplicar se o gestor clicar validar duas vezes.
+- **`lib/EmpresaDashboard.js`** (`Placar`, card "Atividades — premiação por colaborador" — só existe em vestuário, gerente/master_admin): cada colaborador ganha um botão "Validar premiação" (ainda não tem linha `atividades_mes` daquele mês) ou "Descartar" (já tem). Validar **insere uma linha de verdade** em `employee_prizes` — valor congelado em `settings.monthly_prize` no momento do clique (não muda se a config mudar depois, mesmo princípio de "congelar no evento" já usado em `warnings.points`), `description: "Prêmio do mês — atividades"`, `origin: "atividades_mes"`. Descartar remove essa linha. As duas ações passam por `ConfirmModal` antes (padrão de ação monetária/exclusão do app) e `notifySaved()` depois. Sem migration de RLS: a policy `employee_prizes_write` já cobria isso (`is_my_team_member(employee_id)` pro gerente, `can_manage_loja(loja_id)` pra sócio/supervisor/master) — `origin` é só uma etiqueta, não muda quem pode escrever.
+- **Efeito colateral esperado (e desejado)**: por ser uma linha normal de `employee_prizes`, uma vez validada ela já entra sozinha em tudo que soma premiação — relatório mensal, verba do mês (`enforce_monthly_prize_budget`), a lista de premiações do próprio colaborador, e dispara a notificação push de premiação recebida (`notify_push_premiacao`) — nenhum desses pontos precisou de código novo.
+- **Relatório mensal (PDF)**: a opção "Premiações" deixou de estar embutida dentro de "Faturamento e comissão por colaborador" — agora é um toggle próprio (`opt.premiacoes`, `lib/ReportOptionsModal.js`), independente de "Premiações avulsas" (`opt.avulsos`, feature anterior). Cada um soma (ou não) no card "PREMIAÇÕES PAGAS" e no "TOTAL GERAL A PAGAR" do Resumo de forma independente; a coluna "Premiações" da tabela por colaborador só aparece se `opt.premiacoes` estiver marcado.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
