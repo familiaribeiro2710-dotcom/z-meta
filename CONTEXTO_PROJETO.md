@@ -1435,6 +1435,15 @@ Felipe pediu pra transformar o "prêmio do mês" (gate automático da barra indi
 
 **Build**: `✓ Compiled successfully`.
 
+**2026-08-31 (mesmo dia, correção de design)**: Felipe pegou um bug real antes de usar de verdade — o modal de confirmação de "Validar premiação" mostrava "R$1.000,00" pra qualquer colaborador, e isso é a VERBA TOTAL da loja (`app_settings.monthly_prize`, teto do mês), não o valor individual de ninguém. A 1ª versão validava criando uma premiação de verdade com esse valor fixo — errado. Nenhuma linha chegou a ser criada com esse comportamento (checado antes de reverter), então foi reversão limpa:
+
+- **Migration de reversão**: removida a coluna `employee_prizes.origin` (+ constraint + índice único) da versão anterior.
+- **Nova migration**: tabela `employee_prize_validations` (`employee_id, month` PK, `loja_id`/`empresa_id`, `validated_by`/`validated_at`) — mesmo padrão de "tabela de decisão por profile+mês" já usado em `monthly_closing_confirmations`. Existir linha = validado. RLS espelha `employee_prizes_write`/`_select` (gerente só a própria equipe, sócio/supervisor a loja, master tudo), sem o caso avulso (aqui é sempre colaborador cadastrado, tem barra de atividades).
+- **Redesenho** (`lib/EmpresaDashboard.js`, `Placar`): validar/descartar **não cria nem apaga premiação nenhuma** — só grava a decisão. As premiações mostradas/somadas continuam sendo as que já foram lançadas normalmente na aba Premiações (valor real, `prizes` prop). O modal de confirmação não mostra mais nenhum valor (nem teria como — é a soma do que já foi lançado, pode ser zero, um lançamento ou vários). O badge inline mostra "Validada" e, se houver algo real lançado, "— R$X registrado" (soma de verdade, nunca inventada). Botão alterna entre "Validar premiação" e "Descartar validação" — cada clique abre `ConfirmModal` próprio, incluindo o de desfazer a validação (pedido explícito do Felipe).
+- **`lib/monthlyReport.js`**: nova `fetchValidatedEmployeeIds(lojaId, month)` busca quem foi validado; ao montar `employees`, `prizes: validatedEmployeeIds.has(e.id) ? (prizesByEmp[e.id] || 0) : 0` — colaborador não validado entra no relatório normalmente (vendido, comissão, advertências), só a coluna/total de premiação dele fica zerada. Sem validação nenhuma = relatório idêntico a antes dessa feature (comportamento aditivo, não quebra nada em quem nunca usar validar/descartar).
+
+**Build**: `✓ Compiled successfully`.
+
 ---
 
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
