@@ -1444,6 +1444,10 @@ Felipe pediu pra transformar o "prêmio do mês" (gate automático da barra indi
 
 **Build**: `✓ Compiled successfully`.
 
+**2026-08-31 (mesmo dia, ajuste de UX pedido pelo Felipe)**: o botão único (que trocava de texto "Validar premiação" ↔ "Descartar validação") virou **2 botões fixos, lado a lado, só ícone** (`Check`/`X` do lucide-react, 30×30px, `rounded-full`) — sempre visíveis pra qualquer colaborador, independente do estado atual (antes, "Descartar" só aparecia depois de já ter validado). Mockup aprovado antes (`MOCKUP_BOTOES_VALIDAR_DESCARTAR.html`): o botão ✓ fica preenchido em dourado quando já validado, o botão ✕ fica sempre neutro (só realça em hover) — cada um sempre dispara sua própria ação/`ConfirmModal`, clicar em ✓ quando já validado ou em ✕ quando nunca validado simplesmente não muda nada (upsert/delete idempotentes, já era assim por baixo).
+
+**Build**: `✓ Compiled successfully`.
+
 ---
 
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
