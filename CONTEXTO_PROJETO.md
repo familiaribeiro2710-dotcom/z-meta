@@ -1399,6 +1399,14 @@ Felipe pediu um botão pra gerente/supervisor/sócio baixarem um PDF do mês com
 
 **Build**: `✓ Compiled successfully`.
 
+**2026-08-31 (mesmo dia, segundo follow-up)**: antes de gerar o PDF, o usuário agora escolhe quais seções entram no arquivo — Felipe pediu um modal de seleção "levando em consideração todas as informações que adicionamos" no relatório.
+
+- **Novo componente** `lib/ReportOptionsModal.js` — modal com 5 checkboxes (um por seção do PDF: Faturamento da loja, Ranking de vendedores, Faturamento e comissão por colaborador, Comissão do(s) gerente(s), Resumo do mês), todos marcados por padrão (mesmo resultado de sempre, só que agora opcional). Botão "Gerar PDF" fica desabilitado se nenhuma seção estiver marcada. Mesmo padrão visual de `ConfirmModal.js`/`PendingActivitiesModal.js` (portal, overlay navy, card `animate-bounce-in`).
+- **`lib/monthlyReport.js`**: `downloadMonthlyReportPdf(data, options = {})` ganhou um 2º parâmetro — cada seção do desenho do PDF (Faturamento da loja, Ranking, Faturamento/comissão por colaborador + sua nota de rodapé, Comissão do(s) gerente(s), Resumo do mês) agora está dentro de um `if (opt.<chave>) { ... }`, com todas as chaves default `true` (compatível com qualquer chamada antiga sem o 2º argumento). A faixa de identificação (empresa/loja/gerente/período) e o rodapé de paginação continuam sempre presentes, independente da escolha — não fazem sentido como "seção opcional".
+- **Wiring nos 3 pontos de entrada** (`lib/GerenteView.js`, `lib/GerenteViewConsorcio.js`, `lib/HierarchyHome.js`): o botão "Relatório do mês (PDF)"/"Relatório (PDF)" agora só abre o `ReportOptionsModal` (`setReportModalOpen(true)`) em vez de chamar `handleDownloadReport` direto; `handleDownloadReport` passou a receber `options` e repassa pra `downloadMonthlyReportPdf(reportData, options)`, fechando o modal (`setReportModalOpen(false)`) só depois do PDF ser gerado com sucesso (se der erro, o modal continua aberto pro usuário tentar de novo).
+
+**Build**: `✓ Compiled successfully`.
+
 ---
 
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
