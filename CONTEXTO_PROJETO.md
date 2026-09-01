@@ -1409,4 +1409,19 @@ Felipe pediu um botão pra gerente/supervisor/sócio baixarem um PDF do mês com
 
 ---
 
+## Premiação avulsa — pra quem não tem cadastro no Z Meta (2026-08-31)
+
+Felipe pediu pra poder lançar premiação pra alguém que ajuda a equipe mas não tem cadastro no app (ex.: estoquista). Discutimos a abordagem com ele antes de implementar — decidido manter tudo em `employee_prizes` em vez de criar um "perfil fantasma" em `profiles` (que bagunçaria hierarquia/RLS/rankings, já fechados nos 5 papéis via CHECK).
+
+- **Migration**: `employee_prizes.employee_id` virou opcional; novas colunas `recipient_name` (nome livre) e `recipient_role` (função, opcional, só descritivo). `CHECK employee_prizes_recipient_shape` garante que é sempre um dos dois preenchido — `employee_id` OU `recipient_name`, nunca os dois nem nenhum (mesmo padrão de state-machine por CHECK já usado em `crm_leads`).
+- **RLS** (`employee_prizes_write`): gerente lançava prêmio só pra quem `is_my_team_member()` — função que não acha ninguém com `employee_id NULL`. Ganhou uma cláusula extra: gerente também pode escrever quando `employee_id IS NULL AND loja_id = my_loja_id()` (prêmio avulso da própria loja). Sócio/supervisor/master não precisaram de ajuste (`can_manage_loja()`/`is_master_admin()` já não dependem de `employee_id`).
+- **Trigger** `notify_push_premiacao`: ganhou um early return quando `employee_id is null` — não tem quem notificar. `enforce_monthly_prize_budget` (trava de verba mensal) não precisou de ajuste, já soma por `loja_id + month`, incluindo avulso de graça.
+- **UI** (`lib/EmpresaDashboard.js`, componente `Premiacoes`, reaproveitado em `ConsorcioDashboard.js`): toggle "Colaborador cadastrado" / "Prêmio avulso (sem cadastro)" no formulário de lançamento — no modo avulso, troca o `<select>` de colaborador por dois campos de texto (Nome + Função opcional) e esconde o checkbox "replicar pra todos" (não faz sentido pra uma pessoa só). A listagem de premiações do mês ganhou um bloco separado, agrupando por `recipient_name` com um badge "Avulso" — colaboradores cadastrados e avulsos aparecem em blocos distintos, não misturados numa mesma lista por id.
+- **`lib/HierarchyHome.js`**: o `prizesSoFar` do herocard (vestuário, sócio/supervisor) buscava premiação `.in("employee_id", empIds)` — passou a somar por `loja_id + month` direto, senão o avulso ficaria fora do "total pago em premiações" da loja. Os rankings de "mais premiado" (`loadRankings`/`loadRankingsConsorcio`) continuam por colaborador de propósito — não faz sentido um avulso aparecer num ranking de pessoa. `GerenteView.js`/`GerenteViewConsorcio.js` também não precisaram mudar: o `prizesSoFar` deles é escopado à PRÓPRIA equipe (`empIds` = time do gerente), e um avulso não pertence a nenhuma equipe especificamente — só entra no agregado da loja inteira, que é visão de sócio/supervisor.
+- **`lib/monthlyReport.js`** (relatório mensal em PDF): nova busca `fetchAvulsoPrizes(lojaId, month)` (por loja/mês, não por `empIds`) alimenta uma seção nova **"Premiações avulsas"** no PDF (nome, função, motivo, valor) — só aparece se houver ao menos um lançamento avulso no mês. Entra no `totals.geral` e no card "PREMIAÇÕES PAGAS" do Resumo, mas fica de fora da tabela "Faturamento e comissão por colaborador" (não tem colaborador pra encaixar). Nova opção `avulsos` no `lib/ReportOptionsModal.js`, marcada por padrão.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
