@@ -1454,4 +1454,20 @@ Felipe pediu pra transformar o "prêmio do mês" (gate automático da barra indi
 
 ---
 
+## BUG REAL: comissão de colaborador no relatório PDF calculada contra o total da loja/equipe, não a própria cota (2026-08-31)
+
+Felipe reportou (dados reais da ArmyBR Anália Franco, agosto/2026): colaboradores que bateram camadas de até 4% apareciam no relatório com só 1,5% — o % de "não atingimento" da loja.
+
+**Causa raiz**: `buildMonthlyReportData` (`lib/monthlyReport.js`, criado em 2026-08-31 pro relatório em PDF) calculava a comissão de CADA colaborador comparando o total vendido da LOJA (ou da EQUIPE inteira, no caso de loja com mais de um gerente) contra `store_total` de cada meta — e aplicava esse único % pra todo mundo. Isso nunca foi a regra do app: a comissão do colaborador sempre foi INDIVIDUAL, contra a própria cota (`sales_goal_allocations`/`consorcio_goal_allocations.amount`, tipicamente o `store_total` dividido entre a equipe) — é exatamente o que `ColaboradorView.js`/`ColaboradorViewConsorcio.js` (tela do próprio colaborador) e os rankings de `HierarchyHome.js` (`loadRankings`/`loadRankingsConsorcio`) já faziam certo desde sempre.
+
+**Confirmado com dados reais** (ArmyBR Anália Franco, agosto/2026, cota individual 110k/115k/120k pra Meta/Super Meta/Hiper Meta): Gustavo Belfort vendeu R$121.852,34 (bateu Hiper Meta, 4% — relatório mostrava 1,5%), Janailson Pereira R$115.047,89 e Marianna Guerra R$115.026,63 (bateram Super Meta, 3% — relatório mostrava 1,5%); só Lais Reis (R$56.742,38) realmente não bateu nenhuma camada e ficou em 1,5% mesmo. O total da LOJA somado (R$408.669,24) não batia a Meta da loja (R$440.000) — por isso o cálculo antigo (agregado) zerava todo mundo pro % de não atingimento, mesmo com 3 dos 4 colaboradores tendo batido a própria cota individual.
+
+**Importante — escopo do bug**: só o relatório em PDF estava errado. A tela do colaborador (o que ele vê no próprio painel, incluindo o que efetivamente seria pago) e os rankings de sócio/supervisor sempre calcularam certo — ninguém recebeu comissão errada de verdade, só o PDF exportado mostrava o número errado.
+
+**Fix**: nova função `employeeTierFor(sold, allocByGoalId, goalRows, commissionRow)` — compara o vendido do PRÓPRIO colaborador contra a PRÓPRIA cota em cada meta (busca nova de `sales_goal_allocations`/`consorcio_goal_allocations` por `employee_id`, mapeada por `goal_id`). Substituiu `storeTier`/`teamTier` no cálculo de `commissionPct`/`commission` de cada colaborador, nos dois branches (relatório do gerente e do sócio/supervisor). A comissão do(s) GERENTE(S) continua correta como estava — essa sim é against o total da própria equipe/loja (`tierFor`, sem mudança). Rodapé da tabela "Faturamento e comissão por colaborador" também teve o texto explicativo corrigido (não fala mais em "patamar da equipe").
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
