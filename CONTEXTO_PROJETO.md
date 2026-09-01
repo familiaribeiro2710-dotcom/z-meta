@@ -1448,6 +1448,10 @@ Felipe pediu pra transformar o "prêmio do mês" (gate automático da barra indi
 
 **Build**: `✓ Compiled successfully`.
 
+**2026-08-31 (mesmo dia, ajuste de cor pedido pelo Felipe)**: os 2 botões passaram de dourado/neutro pra **verde quando validado** (`bg-success`) e **vermelho quando não validado** (`bg-danger`) — cada botão reflete o estado atual (✓ verde = validado, ✕ vermelho = não validado/descartado), não só o dourado de "ação" padrão do app. Label ao lado também virou `text-success`/`text-muted` (antes usava `text-gold`).
+
+**Build**: `✓ Compiled successfully`.
+
 ---
 
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
