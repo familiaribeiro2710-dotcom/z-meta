@@ -46,9 +46,25 @@ export const viewport = {
   themeColor: "#7c3aed",
 };
 
+// Aplica a classe .dark em <html> antes do primeiro paint, a partir do cache em localStorage
+// (lib/ThemeContext.js mantém esse cache em sincronia com profiles.theme_preference) — sem isso
+// a página nasceria sempre clara por uma fração de segundo antes do React reconciliar o tema
+// de quem já usa o escuro.
+const themeInitScript = `
+(function () {
+  try {
+    var t = localStorage.getItem("zmeta_theme");
+    if (t === "dark") document.documentElement.classList.add("dark");
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-screen font-sans">{children}</body>
     </html>
   );

@@ -1,13 +1,12 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Sun, Moon } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import Logo from "./Logo";
 import EditProfile from "./EditProfile";
 import NotificationBell from "./PushNotifications";
 import { SavedNoticeProvider } from "./SavedNotice";
-import { useThemeToggle } from "./ThemeContext";
 
 function initials(name) {
   if (!name) return "?";
@@ -20,7 +19,6 @@ function initials(name) {
 export default function AppShell({ userName, userId, userUsername, userAvatarUrl, onNameChange, onAvatarChange, tabs, activeTab, onTabChange, children }) {
   const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
-  const { theme, toggleTheme } = useThemeToggle(userId);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -30,18 +28,10 @@ export default function AppShell({ userName, userId, userUsername, userAvatarUrl
   return (
     <SavedNoticeProvider>
     <div className="min-h-screen">
-      <header className="relative border-b-2 border-line bg-surface/90 backdrop-blur sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
+      <header className="relative border-b-2 border-line bg-white/90 backdrop-blur sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
           <Logo size="sm" />
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-full border border-line text-muted hover:border-gold hover:text-gold transition-colors shrink-0"
-              title={theme === "dark" ? "Mudar pro tema claro" : "Mudar pro tema escuro"}
-              aria-label={theme === "dark" ? "Mudar pro tema claro" : "Mudar pro tema escuro"}
-            >
-              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
             <NotificationBell userId={userId} />
             <div className="relative shrink-0">
               <button

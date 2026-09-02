@@ -1470,4 +1470,27 @@ Felipe reportou (dados reais da ArmyBR Anália Franco, agosto/2026): colaborador
 
 ---
 
+## Tema escuro (dark mode) — toggle manual, persistido por usuário (2026-09-02)
+
+Felipe pediu um tema escuro pro app inteiro. Antes de implementar, pediu explicitamente um **mockup funcional navegável** pra aprovar a direção visual (`MOCKUP_TEMA_ESCURO.html` — 4 telas de exemplo com abas + toggle claro/escuro real, aprovado sem ajustes). Escopo confirmado antes do mockup: toggle manual (não segue o SO), preferência persistida no banco por usuário, vale pra todos os papéis (colaborador → master admin).
+
+**O problema de arquitetura**: o token `navy` (`#12203a`) sempre foi usado com dois sentidos diferentes no Tailwind — (a) texto principal em cima de card claro (`text-navy`, ~270 ocorrências) e (b) fundo deliberadamente escuro (`bg-navy`, ~65 ocorrências: headers, hero cards, chips "selecionado", overlays de modal). Um dark mode ingênuo que só flipasse `navy` pra uma cor clara quebraria toda superfície que hoje é `bg-navy` (viraria clara, com texto branco por cima — ilegível). A mesma armadilha existia nos ~10 casos de `bg-white` cru fora do `.card` e nos poucos botões com `text-navy` sobre fundo dourado fixo (`.btn`, avatares com iniciais, chips ativos) — esses também precisam continuar escuros nos dois temas, por contraste.
+
+**Solução — variáveis de CSS em vez de reescrever telas uma a uma**:
+- `app/globals.css`: novo bloco `:root` / `:root.dark` com 5 variáveis RGB (`--color-navy`, `--color-paper`, `--color-line`, `--color-muted`, `--color-surface`) — a única fonte de verdade das duas paletas. `html, body` passaram a usar `rgb(var(--color-paper))`/`rgb(var(--color-navy))` em vez de hex fixo, com uma transição suave de 0.2s no toggle.
+- `tailwind.config.js`: `darkMode: "class"` + os tokens `navy`, `paper`, `line`, `muted` viraram *variable-backed* via um helper `withOpacity()` (suporta os modificadores `/NN` de opacidade que o app já usa bastante, tipo `border-navy/40`). Isso significa que **todo uso cru já existente** de `text-navy`, `bg-paper`, `border-line`, `text-muted` em qualquer um dos ~30 arquivos do app passou a flipar sozinho — sem precisar tocar em cada tela.
+- Dois tokens novos, propositalmente NÃO variable-backed (ficam sempre com o hex fixo, nos dois temas): `navyfixed` (`#12203a`) e `surface` (branco no claro / `#141f36` no escuro — mesmo tom de superfície que o `.card-dark` já usava). Todo `bg-navy` existente virou `bg-navyfixed` (sed mecânico, ~65 ocorrências em 18 arquivos — `border-navy`/`text-white` pareados com esses `bg-navy` também viraram fixos onde faziam parte do mesmo elemento; `hover:border-navy`/`hover:text-navy` soltos continuaram flipáveis de propósito, são só realce de hover num card que já flipa junto). Todo `bg-white` cru (fora do `.card`) virou `bg-surface` (~45 ocorrências em 10 arquivos) — `lib/LandingPage.js` (página pública, sem sessão, nunca recebe a classe `.dark`) ficou de fora de propósito, não precisa e reduz o diff.
+- `.card`/`.input` (globals.css) passaram a usar `bg-surface` em vez de `bg-white` — cobre a maioria absoluta dos cards/inputs do app de uma vez, sem editar tela por tela.
+- Casos de contraste fixo identificados manualmente (texto escuro sobre fundo dourado, que não pode clarear no escuro): `.btn`/`.btn-outline:hover` (globals.css), `lib/Avatar.js` (iniciais sobre gradiente dourado), 3 chips/botões em `app/admin/page.js` e 1 em `lib/EmpresaDashboard.js` — todos trocados de `text-navy` pra `text-navyfixed`.
+
+**Persistência e infraestrutura**:
+- Migration `profiles_theme_preference`: coluna `theme_preference text not null default 'light' check in ('light','dark')`. RLS já cobria (policy `profiles_update_gerente` já permite `id = auth.uid()` atualizar a própria linha sem restrição de coluna) — não precisou de policy nova.
+- `lib/ThemeContext.js` (novo): hook `useThemeToggle(userId)` — aplica/remove a classe `.dark` em `<html>`, lê/grava `profiles.theme_preference` e cacheia em `localStorage` (`zmeta_theme`).
+- `app/layout.js`: script inline no `<head>` que aplica `.dark` a partir do cache do localStorage antes do primeiro paint (evita flash claro→escuro pra quem já usa o tema escuro).
+- `lib/AppShell.js`: botão de alternância (ícone sol/lua, `lucide-react`) no header, ao lado do sino de notificações — como todas as telas autenticadas (colaborador, gerente, sócio/supervisor e master admin em `app/admin/page.js`) já passam por `AppShell`, o toggle e a persistência valem pros 5 papéis de uma vez, sem editar cada tela.
+
+**Build**: `✓ Compiled successfully` (28/28 páginas estáticas geradas, incluindo `/admin`, `/colaborador`, `/gerente`, `/socio`, `/supervisor` — confirma que o toggle novo não quebra a renderização de nenhum papel).
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.

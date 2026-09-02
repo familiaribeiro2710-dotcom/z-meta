@@ -825,7 +825,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       )}
 
       {prizeCelebrations.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
             <div className="flex justify-center mb-3 animate-wiggle">
@@ -845,7 +845,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       )}
 
       {prizeCelebrations.length === 0 && showCongrats && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
             <div className="flex justify-center mb-3 animate-wiggle">
@@ -861,7 +861,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       )}
 
       {prizeCelebrations.length === 0 && !showCongrats && goalCelebrations.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
             <div className="flex justify-center mb-3 animate-wiggle">
@@ -879,7 +879,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       )}
 
       {prizeCelebrations.length === 0 && !showCongrats && goalCelebrations.length === 0 && onlineCelebrations.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
             <div className="flex justify-center mb-3 animate-wiggle">
@@ -898,7 +898,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       )}
 
       {prizeCelebrations.length === 0 && !showCongrats && goalCelebrations.length === 0 && onlineCelebrations.length === 0 && ativacaoCelebration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
             <div className="flex justify-center mb-3 animate-wiggle">
@@ -914,7 +914,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       )}
 
       {prizeCelebrations.length === 0 && !showCongrats && goalCelebrations.length === 0 && onlineCelebrations.length === 0 && !ativacaoCelebration && storeGoalCelebrations.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
             <div className="flex justify-center mb-3 animate-wiggle">
@@ -950,7 +950,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       )}
 
       {showFolgaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full text-center animate-bounce-in border-gold/30">
             <h2 className="text-lg font-extrabold text-navy">Foi um dia de folga?</h2>
             <p className="text-sm text-muted mt-2">
@@ -1152,7 +1152,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
                         onClick={() => editable && toggleTask(t.id)}
                         disabled={!editable}
                         className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all font-bold text-white ${
-                          done ? "border-transparent animate-bounce-in" : "border-line bg-surface hover:border-gold"
+                          done ? "border-transparent animate-bounce-in" : "border-line bg-white hover:border-gold"
                         } ${!editable ? "pointer-events-none opacity-80" : ""}`}
                         style={done ? { background: "linear-gradient(135deg, #84cc16, #0d9488)" } : undefined}
                       >
@@ -1298,7 +1298,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
                       <td className="py-2 text-white/50">{formatBRL(en.running)}</td>
                       {isCurrentMonth && (
                         <td className="py-2 text-right">
-                          <button type="button" title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/50 hover:text-danger hover:bg-surface/10 transition-colors" onClick={() => setConfirmDeleteEntry(en)}>
+                          <button type="button" title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/50 hover:text-danger hover:bg-white/10 transition-colors" onClick={() => setConfirmDeleteEntry(en)}>
                             <Trash2 size={13} />
                           </button>
                         </td>
@@ -1530,10 +1530,10 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
                       <td className="py-2 text-white/50">{s.nf}</td>
                       <td className="py-2 text-goldlight font-medium text-right">{formatBRL(s.amount)}</td>
                       <td className="py-2 text-right whitespace-nowrap">
-                        <button type="button" title="Editar" aria-label="Editar" className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-surface/10 transition-colors" onClick={() => openOnlineEdit(s)}>
+                        <button type="button" title="Editar" aria-label="Editar" className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors" onClick={() => openOnlineEdit(s)}>
                           <Pencil size={13} />
                         </button>
-                        <button type="button" title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/50 hover:text-danger hover:bg-surface/10 transition-colors" onClick={() => setOConfirmDelete(s)}>
+                        <button type="button" title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/50 hover:text-danger hover:bg-white/10 transition-colors" onClick={() => setOConfirmDelete(s)}>
                           <Trash2 size={13} />
                         </button>
                       </td>
@@ -1547,7 +1547,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       )}
 
       {oEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-lg font-extrabold text-navy">Editar venda Online</h2>
@@ -1596,7 +1596,7 @@ export default function ColaboradorView({ profile, tab, viewedByManager = false,
       />
 
       {actEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-lg font-extrabold text-navy">Editar contato</h2>

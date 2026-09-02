@@ -1,16 +1,33 @@
 /** @type {import('tailwindcss').Config} */
+
+// Tokens que precisam flipar entre claro/escuro viram CSS variables (definidas em
+// app/globals.css, :root e :root.dark) em vez de hex fixo. `navy` continua sendo o texto/
+// primário padrão do app (flipa pra claro no dark mode) — quem precisa ficar SEMPRE escuro
+// (headers, hero cards, botões sobre fundo dourado) usa o novo token fixo `navyfixed`.
+function withOpacity(variableName) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgb(var(${variableName}) / ${opacityValue})`;
+    }
+    return `rgb(var(${variableName}))`;
+  };
+}
+
 module.exports = {
+  darkMode: "class",
   content: ["./app/**/*.{js,jsx}", "./lib/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        navy: "#12203a",
+        navy: withOpacity("--color-navy"),
+        navyfixed: "#12203a",
         navylight: "#1c2e4d",
         gold: "#c9a15a",
         goldlight: "#e4c789",
-        paper: "#f5f3ee",
-        line: "#e7e3d9",
-        muted: "#7d7a6f",
+        paper: withOpacity("--color-paper"),
+        line: withOpacity("--color-line"),
+        muted: withOpacity("--color-muted"),
+        surface: withOpacity("--color-surface"),
         success: "#16a34a",
         warn: "#d97706",
         danger: "#dc2626",

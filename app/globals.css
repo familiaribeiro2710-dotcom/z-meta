@@ -2,13 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tema claro/escuro (2026-09) — variáveis de cor consumidas pelos tokens Tailwind `navy`/
+   `paper`/`line`/`muted`/`surface` (ver tailwind.config.js, withOpacity()). A classe `.dark`
+   é aplicada em <html> (lib/ThemeContext.js) com base na preferência salva em
+   profiles.theme_preference. Nada aqui muda o visual padrão claro — só define o que muda
+   quando `.dark` está presente. */
+:root {
+  --color-navy: 18 32 58;       /* #12203a — texto principal em fundo claro */
+  --color-paper: 245 243 238;   /* #f5f3ee — fundo da página */
+  --color-line: 231 227 217;    /* #e7e3d9 — bordas em cartões claros */
+  --color-muted: 125 122 111;   /* #7d7a6f — texto secundário */
+  --color-surface: 255 255 255; /* #ffffff — fundo de cards/inputs/modais */
+}
+:root.dark {
+  --color-navy: 242 241 236;    /* texto principal claro sobre fundo escuro */
+  --color-paper: 11 18 32;      /* #0b1220 — fundo da página no escuro */
+  --color-line: 38 49 74;       /* divisórias sutis sobre navy escuro */
+  --color-muted: 154 163 184;   /* texto secundário com contraste sobre navy escuro */
+  --color-surface: 20 31 54;    /* #141f36 — fundo de cards/inputs/modais no escuro */
+}
+
 html, body {
   /* Fundo sólido em todas as telas — antes tinha um gradiente radial roxo/rosa/teal sutil aqui,
      removido porque ficava com cara de "tela rosada" (mais visível ainda em telas com bastante
      espaço vazio, como a landing). Roxo→rosa continua existindo só nos lugares de comemoração
      (.btn-hype, modais de "Parabéns!") — nunca mais como pano de fundo da página. */
-  background: #f5f3ee;
-  color: #12203a;
+  background: rgb(var(--color-paper));
+  color: rgb(var(--color-navy));
+  transition: background-color 0.2s ease, color 0.2s ease;
   min-height: 100vh;
   /* trava qualquer overflow horizontal residual — em telas estreitas nunca deve
      surgir uma barra de rolagem lateral na página inteira */
@@ -38,7 +59,7 @@ html, body {
 
 @layer components {
   .input {
-    @apply w-full border-2 border-line bg-white rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-4 focus:ring-gold/15 transition-all;
+    @apply w-full border-2 border-line bg-surface rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-4 focus:ring-gold/15 transition-all;
   }
 
   /* Nova identidade (2026-07): dourado vira a cor de ação padrão do app — o gradiente
@@ -46,7 +67,10 @@ html, body {
      (ver .btn-hype, usado nos 3 modais de "Parabéns!"). Isso muda TODO botão .btn do app de
      uma vez só, sem precisar tocar em cada tela — é o efeito pretendido. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 text-navy rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 disabled:hover:translate-y-0 disabled:hover:shadow-popgold shadow-popgold;
+    /* text-navyfixed (não text-navy) de propósito: o fundo dourado deste botão nunca muda entre
+       os temas, então o texto também precisa ficar sempre escuro pra manter contraste — se
+       fosse text-navy, viraria quase branco no tema escuro e sumiria em cima do dourado. */
+    @apply inline-flex items-center justify-center gap-2 text-navyfixed rounded-full px-5 py-2.5 text-sm font-bold tracking-wide active:scale-95 transition-all disabled:opacity-40 disabled:active:scale-100 disabled:hover:translate-y-0 disabled:hover:shadow-popgold shadow-popgold;
     background: linear-gradient(135deg, #e4c789, #c9a15a);
   }
   /* 2026-08-09 (pedido do Felipe, aprovado por mockup): leve "levante" no hover, além do
@@ -77,7 +101,9 @@ html, body {
      sobra da identidade antiga de antes da virada pra navy+dourado em julho). Roxo/rosa continua
      reservado só pra comemoração (.btn-hype). */
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 border-2 border-gold text-gold rounded-full px-5 py-2.5 text-sm font-bold tracking-wide hover:bg-gold hover:text-navy active:scale-95 transition-all disabled:opacity-40;
+    /* hover:text-navyfixed pelo mesmo motivo do .btn: no hover o fundo vira dourado sólido,
+       então o texto tem que continuar escuro nos dois temas. */
+    @apply inline-flex items-center justify-center gap-2 border-2 border-gold text-gold rounded-full px-5 py-2.5 text-sm font-bold tracking-wide hover:bg-gold hover:text-navyfixed active:scale-95 transition-all disabled:opacity-40;
   }
   @media (hover: hover) {
     .btn-outline:hover:not(:disabled) {
@@ -99,7 +125,7 @@ html, body {
   }
 
   .card {
-    @apply border-2 border-line bg-white rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
+    @apply border-2 border-line bg-surface rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
   }
 
   /* Superfície escura opt-in — usada nas telas de gestão que antes eram tabela crua sobre
@@ -183,6 +209,9 @@ input[type="date"].date-input {
   font-size: 0.875rem;
   line-height: 1.25rem;
   color-scheme: light;
+}
+:root.dark input[type="date"].date-input {
+  color-scheme: dark;
 }
 
 .gradient-text {

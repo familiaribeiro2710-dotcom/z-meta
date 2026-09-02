@@ -124,11 +124,11 @@ export default function EditProfile({ userId, currentName, currentUsername, curr
                 {initials(name)}
               </div>
             )}
-            <div className="absolute inset-0 flex items-center justify-center bg-navyfixed/0 group-hover:bg-navyfixed/50 opacity-0 group-hover:opacity-100 transition-all">
+            <div className="absolute inset-0 flex items-center justify-center bg-navy/0 group-hover:bg-navy/50 opacity-0 group-hover:opacity-100 transition-all">
               <Camera size={16} className="text-white" />
             </div>
             {uploadingAvatar && (
-              <div className="absolute inset-0 bg-navyfixed/60 flex items-center justify-center">
+              <div className="absolute inset-0 bg-navy/60 flex items-center justify-center">
                 <Loader2 size={16} className="text-white animate-spin" />
               </div>
             )}

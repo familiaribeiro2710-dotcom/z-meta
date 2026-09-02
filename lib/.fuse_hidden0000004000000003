@@ -1933,7 +1933,7 @@ function SupervisoresTab({ empresaId, lojas, isConsorcio = false }) {
                         key={opt.key}
                         onClick={() => switchRoleType(opt.key)}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
-                          roleType === opt.key ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy"
+                          roleType === opt.key ? "bg-navyfixed text-white border-navy" : "border-line text-muted hover:border-navy"
                         }`}
                       >
                         {opt.label}
@@ -1974,7 +1974,7 @@ function SupervisoresTab({ empresaId, lojas, isConsorcio = false }) {
                                 key={opt}
                                 onClick={() => setPickedPermission(l.loja_id, opt)}
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-colors ${
-                                  perm === opt ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy"
+                                  perm === opt ? "bg-navyfixed text-white border-navy" : "border-line text-muted hover:border-navy"
                                 }`}
                               >
                                 {opt}

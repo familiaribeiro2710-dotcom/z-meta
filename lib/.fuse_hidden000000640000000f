@@ -654,7 +654,7 @@ function Placar({ scoreboard, settings, month, viewerRole = "master_admin", goal
 
       {calendarOpen && (
         <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-navyfixed/70 p-4 pt-[calc(env(safe-area-inset-top)+1rem)]"
+          className="fixed inset-0 z-50 overflow-y-auto bg-navy/70 p-4 pt-[calc(env(safe-area-inset-top)+1rem)]"
           onClick={() => setCalendarOpen(false)}
         >
           <div className="min-h-full flex items-start sm:items-center justify-center">
@@ -720,7 +720,7 @@ function Placar({ scoreboard, settings, month, viewerRole = "master_admin", goal
                       disabled={isFuture}
                       onClick={() => selectCalendarDay(dateStr)}
                       className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                        isSelected ? "bg-navyfixed border-navyfixed" : isToday ? "border-gold bg-surface" : "border-line bg-surface"
+                        isSelected ? "bg-navy border-navy" : isToday ? "border-gold bg-white" : "border-line bg-white"
                       } ${isFuture ? "opacity-30 cursor-not-allowed" : "hover:border-gold/60"}`}
                     >
                       <span className={`text-xs font-bold ${isSelected ? "text-white" : "text-navy"}`}>{dayNum}</span>
@@ -734,7 +734,7 @@ function Placar({ scoreboard, settings, month, viewerRole = "master_admin", goal
 
               <div className="flex items-center justify-center gap-4 mt-4 text-[10px] text-muted font-semibold">
                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px] border-2 border-gold inline-block" /> hoje</span>
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px] bg-navyfixed inline-block" /> selecionado</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px] bg-navy inline-block" /> selecionado</span>
               </div>
             </div>
           </div>
@@ -976,7 +976,7 @@ function NovoSupervisor({ empresaId, onChanged }) {
                               key={opt}
                               onClick={() => setPickedPermission(l.loja_id, opt)}
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-colors ${
-                                perm === opt ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy"
+                                perm === opt ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy"
                               }`}
                             >
                               {opt}
@@ -1342,7 +1342,7 @@ export function Colaboradores({ employees, gerentes = [], viewerRole = "master_a
                     <button onClick={() => saveEditGerente(g)} disabled={savingGerenteEdit} title="Salvar" aria-label="Salvar" className="p-1.5 rounded-lg text-success hover:bg-success/15 transition-colors disabled:opacity-40">
                       <Check size={16} strokeWidth={2.5} />
                     </button>
-                    <button onClick={() => { setEditingGerenteId(null); setEditGerenteMsg(""); }} title="Cancelar" aria-label="Cancelar" className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-surface/10 transition-colors">
+                    <button onClick={() => { setEditingGerenteId(null); setEditGerenteMsg(""); }} title="Cancelar" aria-label="Cancelar" className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors">
                       <X size={16} />
                     </button>
                     {editGerenteMsg && <p className="text-[11px] text-danger w-full">{editGerenteMsg}</p>}
@@ -1366,14 +1366,14 @@ export function Colaboradores({ employees, gerentes = [], viewerRole = "master_a
                 )}
                 {editingGerenteId !== g.id && (
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => startEditGerente(g)} title="Editar" aria-label="Editar" className="p-1.5 rounded-lg text-white/60 hover:text-goldlight hover:bg-surface/10 transition-colors">
+                    <button onClick={() => startEditGerente(g)} title="Editar" aria-label="Editar" className="p-1.5 rounded-lg text-white/60 hover:text-goldlight hover:bg-white/10 transition-colors">
                       <Pencil size={14} />
                     </button>
                     <button
                       onClick={() => setConfirmAction({ type: "reset", target: g })}
                       title="Redefinir senha para 123456789"
                       aria-label="Redefinir senha"
-                      className="p-1.5 rounded-lg text-white/60 hover:text-warn hover:bg-surface/10 transition-colors"
+                      className="p-1.5 rounded-lg text-white/60 hover:text-warn hover:bg-white/10 transition-colors"
                     >
                       <KeyRound size={14} />
                     </button>
@@ -1381,11 +1381,11 @@ export function Colaboradores({ employees, gerentes = [], viewerRole = "master_a
                       onClick={() => setConfirmAction({ type: "toggle", target: g })}
                       title={g.active ? "Desativar" : "Ativar"}
                       aria-label={g.active ? "Desativar" : "Ativar"}
-                      className={`p-1.5 rounded-lg hover:bg-surface/10 transition-colors ${g.active ? "text-white/60 hover:text-white" : "text-danger"}`}
+                      className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${g.active ? "text-white/60 hover:text-white" : "text-danger"}`}
                     >
                       <Power size={14} />
                     </button>
-                    <button onClick={() => requestDelete(g)} title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-surface/10 transition-colors">
+                    <button onClick={() => requestDelete(g)} title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-white/10 transition-colors">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -1460,7 +1460,7 @@ export function Colaboradores({ employees, gerentes = [], viewerRole = "master_a
                   <button onClick={() => saveEdit(emp)} disabled={savingEdit} title="Salvar" aria-label="Salvar" className="p-1.5 rounded-lg text-success hover:bg-success/15 transition-colors disabled:opacity-40">
                     <Check size={16} strokeWidth={2.5} />
                   </button>
-                  <button onClick={() => { setEditingId(null); setEditMsg(""); }} title="Cancelar" aria-label="Cancelar" className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-surface/10 transition-colors">
+                  <button onClick={() => { setEditingId(null); setEditMsg(""); }} title="Cancelar" aria-label="Cancelar" className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors">
                     <X size={16} />
                   </button>
                   {editMsg && <p className="text-[11px] text-danger w-full">{editMsg}</p>}
@@ -1484,14 +1484,14 @@ export function Colaboradores({ employees, gerentes = [], viewerRole = "master_a
               )}
               {editingId !== emp.id && canEdit && (
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => startEdit(emp)} title="Editar" aria-label="Editar" className="p-1.5 rounded-lg text-white/60 hover:text-goldlight hover:bg-surface/10 transition-colors">
+                  <button onClick={() => startEdit(emp)} title="Editar" aria-label="Editar" className="p-1.5 rounded-lg text-white/60 hover:text-goldlight hover:bg-white/10 transition-colors">
                     <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => setConfirmAction({ type: "reset", target: emp })}
                     title="Redefinir senha para 123456789"
                     aria-label="Redefinir senha"
-                    className="p-1.5 rounded-lg text-white/60 hover:text-warn hover:bg-surface/10 transition-colors"
+                    className="p-1.5 rounded-lg text-white/60 hover:text-warn hover:bg-white/10 transition-colors"
                   >
                     <KeyRound size={14} />
                   </button>
@@ -1499,11 +1499,11 @@ export function Colaboradores({ employees, gerentes = [], viewerRole = "master_a
                     onClick={() => setConfirmAction({ type: "toggle", target: emp })}
                     title={emp.active ? "Desativar" : "Ativar"}
                     aria-label={emp.active ? "Desativar" : "Ativar"}
-                    className={`p-1.5 rounded-lg hover:bg-surface/10 transition-colors ${emp.active ? "text-white/60 hover:text-white" : "text-danger"}`}
+                    className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${emp.active ? "text-white/60 hover:text-white" : "text-danger"}`}
                   >
                     <Power size={14} />
                   </button>
-                  <button onClick={() => requestDelete(emp)} title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-surface/10 transition-colors">
+                  <button onClick={() => requestDelete(emp)} title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-white/10 transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -1546,7 +1546,7 @@ export function Colaboradores({ employees, gerentes = [], viewerRole = "master_a
       />
 
       {supportBlockOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6" onClick={() => setSupportBlockOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6" onClick={() => setSupportBlockOpen(false)}>
           <div className="card max-w-sm w-full animate-bounce-in" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2">
               <ShieldCheck className="text-gold shrink-0" size={20} /> Exclusão só pelo Master Admin
@@ -2336,7 +2336,7 @@ export function Premiacoes({ employees, gerentes = [], viewerRole = "master_admi
                   key={opt.key}
                   type="button"
                   onClick={() => setRecipientMode(opt.key)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${recipientMode === opt.key ? "bg-navyfixed text-white border-navyfixed" : "bg-surface text-muted border-line hover:border-navy/40"}`}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${recipientMode === opt.key ? "bg-navy text-white border-navy" : "bg-white text-muted border-line hover:border-navy/40"}`}
                 >
                   {opt.label}
                 </button>
@@ -2426,7 +2426,7 @@ export function Premiacoes({ employees, gerentes = [], viewerRole = "master_admi
                     key={pt}
                     type="button"
                     onClick={() => selectExtraPeriodType(pt)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${extraPeriodType === pt ? "bg-navyfixed text-white border-navyfixed" : "bg-surface text-muted border-line hover:border-navy/40"}`}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${extraPeriodType === pt ? "bg-navy text-white border-navy" : "bg-white text-muted border-line hover:border-navy/40"}`}
                   >
                     {pt === "mes" ? "Mês inteiro" : PACING_LABELS[pt]}
                   </button>
@@ -2442,7 +2442,7 @@ export function Premiacoes({ employees, gerentes = [], viewerRole = "master_admi
                       key={p.start}
                       type="button"
                       onClick={() => setExtraPeriodIdx(idx)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${extraPeriodIdx === idx ? "bg-gold text-navyfixed border-gold" : "bg-surface text-muted border-line hover:border-navy/40"}`}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${extraPeriodIdx === idx ? "bg-gold text-navy border-gold" : "bg-white text-muted border-line hover:border-navy/40"}`}
                     >
                       {PACING_LABELS[extraPeriodType]} {idx + 1} ({p.start.slice(8, 10)}–{p.end.slice(8, 10)}/{p.end.slice(5, 7)})
                     </button>
@@ -3752,7 +3752,7 @@ function Lancamentos({ employees, entries, month, empresaId, lojaId, onChanged, 
       )}
 
       {showFolgaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full text-center animate-bounce-in border-gold/30">
             <h2 className="text-lg font-extrabold text-navy">Foi um dia de folga?</h2>
             <p className="text-sm text-muted mt-2">
@@ -3797,10 +3797,10 @@ function Lancamentos({ employees, entries, month, empresaId, lojaId, onChanged, 
                     <span className="font-bold text-goldlight text-xs sm:text-sm whitespace-nowrap">{formatBRL(en.daily_amount)}</span>
                     {canEdit && (
                       <>
-                        <button type="button" title="Editar" aria-label="Editar" className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-surface/10 transition-colors" onClick={() => startEdit(en)}>
+                        <button type="button" title="Editar" aria-label="Editar" className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors" onClick={() => startEdit(en)}>
                           <Pencil size={13} />
                         </button>
-                        <button type="button" title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/50 hover:text-danger hover:bg-surface/10 transition-colors" onClick={() => setConfirmDeleteEntry(en)}>
+                        <button type="button" title="Excluir" aria-label="Excluir" className="p-1.5 rounded-lg text-white/50 hover:text-danger hover:bg-white/10 transition-colors" onClick={() => setConfirmDeleteEntry(en)}>
                           <Trash2 size={13} />
                         </button>
                       </>

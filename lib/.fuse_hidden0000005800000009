@@ -36,7 +36,7 @@ export default function MonthClosingAskModal({ open, role, monthLabel, onConfirm
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-navyfixed/70 p-4 sm:p-6 pt-[calc(env(safe-area-inset-top)+1rem)]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-navy/70 p-4 sm:p-6 pt-[calc(env(safe-area-inset-top)+1rem)]">
       <div className="min-h-full flex items-start sm:items-center justify-center">
         <div className="card max-w-sm w-full my-8 sm:my-0 animate-bounce-in border-gold/30">
           <div className="w-11 h-11 rounded-2xl bg-gold/10 text-gold flex items-center justify-center mb-3">

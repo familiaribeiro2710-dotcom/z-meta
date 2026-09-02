@@ -594,7 +594,7 @@ export default function AdminPage() {
               <button
                 onClick={() => setFilterOpen((v) => !v)}
                 className={`p-2 rounded-full border transition-all ${
-                  filterOpen ? "bg-goldlight text-navyfixed border-goldlight" : "border-white/15 text-white/60 hover:border-goldlight hover:text-goldlight"
+                  filterOpen ? "bg-goldlight text-navy border-goldlight" : "border-white/15 text-white/60 hover:border-goldlight hover:text-goldlight"
                 }`}
                 title="Ordenar empresas"
               >
@@ -675,7 +675,7 @@ export default function AdminPage() {
                         {row.empresa_name}
                         <ChevronRight size={14} className="text-white/40" />
                         {row.categoria_nome && (
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-surface/10 text-goldlight shrink-0">{row.categoria_nome}</span>
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/10 text-goldlight shrink-0">{row.categoria_nome}</span>
                         )}
                         {atRisk && <span className="chip-danger">há {neverActive ? "muito tempo" : `${stale} dia(s)`} parada</span>}
                         {!row.active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
@@ -693,14 +693,14 @@ export default function AdminPage() {
                     <button
                       title={row.active ? "Desativar empresa" : "Ativar empresa"}
                       onClick={() => setEmpresaConfirm({ type: "toggle", row })}
-                      className={`p-1.5 rounded-lg hover:bg-surface/10 transition-colors ${row.active ? "text-white/60 hover:text-warn" : "text-success"}`}
+                      className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${row.active ? "text-white/60 hover:text-warn" : "text-success"}`}
                     >
                       <Power size={13} />
                     </button>
                     <button
                       title="Excluir empresa"
                       onClick={() => setEmpresaConfirm({ type: "delete", row })}
-                      className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-surface/10 transition-colors"
+                      className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-white/10 transition-colors"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -774,7 +774,7 @@ function EmpresaAvatar({ empresaId, logoUrl, name, onChanged }) {
         <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
       ) : (
         <div
-          className="w-full h-full flex items-center justify-center text-navyfixed font-bold text-sm"
+          className="w-full h-full flex items-center justify-center text-navy font-bold text-sm"
           style={{ background: "linear-gradient(135deg, #e4c789, #c9a15a)" }}
         >
           {initials}
@@ -1124,7 +1124,7 @@ function FinanceiroRow({ row, onSave }) {
             disabled={!hasLink}
             title={hasLink ? "Copiar link de pagamento" : "Salve um valor por usuário maior que zero pra gerar o link"}
             aria-label="Copiar link de pagamento"
-            className={`p-1.5 rounded-lg transition-colors ${hasLink ? "text-goldlight hover:bg-surface/10" : "text-white/20 cursor-not-allowed"}`}
+            className={`p-1.5 rounded-lg transition-colors ${hasLink ? "text-goldlight hover:bg-white/10" : "text-white/20 cursor-not-allowed"}`}
           >
             <LinkIcon size={15} />
           </button>
@@ -1155,14 +1155,14 @@ function FinanceiroRow({ row, onSave }) {
         </div>
         <div>
           <label className="label-dark">Quanto cobrar</label>
-          <p className="!py-1.5 !text-xs font-bold text-goldlight flex items-center bg-surface/5 border border-white/10 rounded-2xl px-3.5">
+          <p className="!py-1.5 !text-xs font-bold text-goldlight flex items-center bg-white/5 border border-white/10 rounded-2xl px-3.5">
             <AutoFitText as="span">{formatBRL(cobrar)}</AutoFitText>
           </p>
         </div>
       </div>
       {dirty && (
         <div className="mt-3">
-          <button className="btn-outline !py-1.5 !text-xs !border-goldlight !text-goldlight hover:!bg-goldlight hover:!text-navyfixed" onClick={save} disabled={saving}>
+          <button className="btn-outline !py-1.5 !text-xs !border-goldlight !text-goldlight hover:!bg-goldlight hover:!text-navy" onClick={save} disabled={saving}>
             {saving ? "Salvando…" : "Salvar"}
           </button>
         </div>
@@ -1286,7 +1286,7 @@ function DadosTab() {
             type="button"
             onClick={() => setViewMode(m.key)}
             className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
-              viewMode === m.key ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy hover:text-navy"
+              viewMode === m.key ? "bg-navyfixed text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
             }`}
           >
             {m.label}
@@ -1458,7 +1458,7 @@ function FaturamentoHistorico({ empresa, onBack }) {
                 key={p.key}
                 onClick={() => applyPreset(p)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
-                  activePreset === p.key ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy hover:text-navy"
+                  activePreset === p.key ? "bg-navyfixed text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
                 }`}
               >
                 {p.label}
@@ -1833,7 +1833,7 @@ function AddUserCard({ empresaId, lojas, onChanged }) {
                 key={r.key}
                 onClick={() => setRole(r.key)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
-                  role === r.key ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy hover:text-navy"
+                  role === r.key ? "bg-navyfixed text-white border-navy" : "border-line text-muted hover:border-navy hover:text-navy"
                 }`}
               >
                 {r.label}
@@ -2374,7 +2374,7 @@ function AddHierarchyForm({ role, empresaId, lojas, onDone, onCancel }) {
                         key={opt}
                         onClick={() => setPermission(l.loja_id, opt)}
                         className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-colors ${
-                          perm === opt ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy"
+                          perm === opt ? "bg-navyfixed text-white border-navy" : "border-line text-muted hover:border-navy"
                         }`}
                       >
                         {opt}

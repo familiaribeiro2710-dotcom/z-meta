@@ -67,7 +67,7 @@ const STATUS_CHIP = {
   perdido: "bg-danger/15 text-danger",
   vendido_pendente: "bg-orange/15 text-orange",
   vendido: "bg-success/15 text-success",
-  cancelado: "bg-navyfixed/10 text-muted line-through",
+  cancelado: "bg-navy/10 text-muted line-through",
   em_negociacao: "bg-teal/15 text-teal",
   sem_contato: "bg-[rgba(100,116,139,0.14)] text-[#475569]",
 };
@@ -630,7 +630,7 @@ export default function AdministrativoView({ profile, tab }) {
 
       {/* editar venda (valor/categoria/observações) */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full max-h-[85vh] overflow-y-auto animate-bounce-in border-blue/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><Edit3 className="text-blue" size={20} /> Editar venda</h2>
             <p className="text-xs text-muted mt-1">{editModal.nome_completo}</p>
@@ -675,7 +675,7 @@ export default function AdministrativoView({ profile, tab }) {
       {/* recusar precisa de motivo — ConfirmModal não tem campo de texto livre, por isso um modal
           próprio aqui, mesmo espírito do resolveModal de perdido/follow-up do colaborador. */}
       {recusarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in border-danger/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><XCircle className="text-danger" size={20} /> Recusar venda</h2>
             <p className="text-xs text-muted mt-1">{recusarModal.nome_completo} — {formatBRL(recusarModal.valor)}</p>
@@ -694,7 +694,7 @@ export default function AdministrativoView({ profile, tab }) {
 
       {/* cancelar (excluir) — soft-delete, exige motivo, mesmo espírito do recusarModal acima */}
       {cancelarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in border-danger/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><Trash2 className="text-danger" size={20} /> Cancelar lead/venda</h2>
             <p className="text-xs text-muted mt-1">{cancelarModal.nome_completo}{cancelarModal.status === "vendido" ? ` — ${formatBRL(cancelarModal.valor)}` : ""}</p>

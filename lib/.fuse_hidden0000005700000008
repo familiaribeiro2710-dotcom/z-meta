@@ -369,7 +369,7 @@ const STATUS_LABEL = { novo: "Novo", agendado: "Agendado", follow_up: "Follow-up
 // já usada em .chip-ok/warn/danger, com duas variantes extra (novo/agendado) que não têm chip
 // pronto porque não são "bons nem ruins", só estados neutros do funil.
 const STATUS_CHIP_DARK = {
-  novo: "bg-surface/10 text-white/65",
+  novo: "bg-white/10 text-white/65",
   agendado: "bg-blue/25 text-bluelight",
   follow_up: "chip-warn",
   perdido: "chip-danger",
@@ -379,7 +379,7 @@ const STATUS_CHIP_DARK = {
   vendido_pendente: "bg-orange/25 text-orange",
   // 2026-07-23: soft-delete — só administrativo cancela, qualquer status. Some das somas de
   // faturamento/comissão (que só contam 'vendido'), mas fica no banco.
-  cancelado: "bg-surface/10 text-white/40 line-through",
+  cancelado: "bg-white/10 text-white/40 line-through",
   // 2026-07-25: etapa entre agendamento/follow-up e a venda de fato, com valor opcional.
   em_negociacao: "bg-teal/25 text-teal",
   // 2026-08-10: lead que estava "Novo" (nunca teve nenhuma movimentação) e foi marcado como
@@ -414,15 +414,6 @@ const EXPORT_STATUS_OPTIONS = [
   { key: "vendido", label: "Vendido" },
   { key: "cancelado", label: "Cancelado" },
 ];
-
-// Todos os status marcados — usado como default do filtro de status na aba Leads (LeadsTab),
-// diferente do default do Funil (só "em_negociacao"): a aba Leads sempre mostrou todo mundo, então
-// o filtro novo não pode mudar o que já aparecia antes de existir.
-function allLeadStatusesOn() {
-  const all = {};
-  EXPORT_STATUS_OPTIONS.forEach((s) => { all[s.key] = true; });
-  return all;
-}
 
 function Funil({ leads, leadsThisMonth, funilBoard, employees, viewerRole, month, produtoCategorias, empresaId, canManageCategorias, onChanged }) {
   const notifySaved = useSavedNotice();
@@ -971,7 +962,7 @@ function Funil({ leads, leadsThisMonth, funilBoard, employees, viewerRole, month
       </div>
 
       {agendarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in border-blue/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><CalendarPlus className="text-blue" size={20} /> Agendar</h2>
             <p className="text-xs text-muted mt-1">{agendarModal.nome_completo}</p>
@@ -995,7 +986,7 @@ function Funil({ leads, leadsThisMonth, funilBoard, employees, viewerRole, month
       )}
 
       {resolveModal && resolveModal.type !== "vendido" && resolveModal.type !== "em_negociacao" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in border-gold/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2">
               {resolveModal.type === "perdido" ? <XCircle className="text-danger" size={20} />
@@ -1033,7 +1024,7 @@ function Funil({ leads, leadsThisMonth, funilBoard, employees, viewerRole, month
       )}
 
       {resolveModal && resolveModal.type === "em_negociacao" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in border-teal/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><Handshake className="text-teal" size={20} /> Marcar como em negociação</h2>
             <p className="text-xs text-muted mt-1">{resolveModal.lead.nome_completo}</p>
@@ -1057,7 +1048,7 @@ function Funil({ leads, leadsThisMonth, funilBoard, employees, viewerRole, month
       )}
 
       {resolveModal && resolveModal.type === "vendido" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full max-h-[85vh] overflow-y-auto animate-bounce-in border-success/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><CheckCircle2 className="text-success" size={20} /> Marcar como vendido</h2>
             <p className="text-xs text-muted mt-1">{resolveModal.lead.nome_completo}</p>
@@ -1205,7 +1196,7 @@ function ManagerLeadRow({ lead, employeeName, catNameById, canManage, onAgendar,
         </p>
         <p className="text-[10px] text-goldlight mt-0.5">Responsável: {employeeName}</p>
         {expanded && (
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 bg-surface/5 border border-dashed border-white/15 rounded-xl p-3" onClick={(e) => e.stopPropagation()}>
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 bg-white/5 border border-dashed border-white/15 rounded-xl p-3" onClick={(e) => e.stopPropagation()}>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-white/35">Data da ligação</p>
               <p className="text-xs text-white mt-0.5">{fmtDataLigacao(lead.data_ligacao)}</p>
@@ -1253,22 +1244,22 @@ function ManagerLeadRow({ lead, employeeName, catNameById, canManage, onAgendar,
           {canManage && (canAgendar || canResolve) && (
             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
               {canAgendar && (
-                <button type="button" onClick={() => onAgendar(lead)} title="Agendar / reagendar" aria-label="Agendar" className="p-1.5 rounded-lg text-white/60 hover:text-bluelight hover:bg-surface/10 transition-colors">
+                <button type="button" onClick={() => onAgendar(lead)} title="Agendar / reagendar" aria-label="Agendar" className="p-1.5 rounded-lg text-white/60 hover:text-bluelight hover:bg-white/10 transition-colors">
                   <CalendarPlus size={14} />
                 </button>
               )}
               {canResolve && (
                 <>
-                  <button type="button" onClick={() => onResolve(lead, "em_negociacao")} title="Em negociação" aria-label="Em negociação" className="p-1.5 rounded-lg text-white/60 hover:text-teal hover:bg-surface/10 transition-colors">
+                  <button type="button" onClick={() => onResolve(lead, "em_negociacao")} title="Em negociação" aria-label="Em negociação" className="p-1.5 rounded-lg text-white/60 hover:text-teal hover:bg-white/10 transition-colors">
                     <Handshake size={14} />
                   </button>
-                  <button type="button" onClick={() => onResolve(lead, "perdido")} title="Perdido" aria-label="Perdido" className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-surface/10 transition-colors">
+                  <button type="button" onClick={() => onResolve(lead, "perdido")} title="Perdido" aria-label="Perdido" className="p-1.5 rounded-lg text-white/60 hover:text-danger hover:bg-white/10 transition-colors">
                     <XCircle size={14} />
                   </button>
-                  <button type="button" onClick={() => onResolve(lead, "follow_up")} title="Follow-up" aria-label="Follow-up" className="p-1.5 rounded-lg text-white/60 hover:text-warn hover:bg-surface/10 transition-colors">
+                  <button type="button" onClick={() => onResolve(lead, "follow_up")} title="Follow-up" aria-label="Follow-up" className="p-1.5 rounded-lg text-white/60 hover:text-warn hover:bg-white/10 transition-colors">
                     <Clock size={14} />
                   </button>
-                  <button type="button" onClick={() => onResolve(lead, "vendido")} title="Vendido" aria-label="Vendido" className="p-1.5 rounded-lg text-white/60 hover:text-success hover:bg-surface/10 transition-colors">
+                  <button type="button" onClick={() => onResolve(lead, "vendido")} title="Vendido" aria-label="Vendido" className="p-1.5 rounded-lg text-white/60 hover:text-success hover:bg-white/10 transition-colors">
                     <CheckCircle2 size={14} />
                   </button>
                 </>
@@ -1924,15 +1915,10 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
   // (ColaboradorViewConsorcio.js), filtrando por data_ligacao.
   const [draftDataIni, setDraftDataIni] = useState("");
   const [draftDataFim, setDraftDataFim] = useState("");
-  // 2026-09-01 (pedido do Felipe): filtro por status — mesmo padrão de checkboxes já usado no
-  // Funil (EXPORT_STATUS_OPTIONS), só que aqui todos vêm marcados por padrão (a aba Leads sempre
-  // mostrou todo mundo; o Funil por padrão só mostra "em_negociacao").
-  const [draftStatuses, setDraftStatuses] = useState(allLeadStatusesOn);
   const [filterEmp, setFilterEmp] = useState("todos");
   const [search, setSearch] = useState("");
   const [dataIni, setDataIni] = useState("");
   const [dataFim, setDataFim] = useState("");
-  const [filterStatuses, setFilterStatuses] = useState(allLeadStatusesOn);
   const [selectedIds, setSelectedIds] = useState({});
   const [targetEmployee, setTargetEmployee] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -2126,7 +2112,6 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
     if (filterEmp !== "todos" && l.employee_id !== filterEmp) return false;
     if (dataIni && (!l.data_ligacao || l.data_ligacao < dataIni)) return false;
     if (dataFim && (!l.data_ligacao || l.data_ligacao > dataFim)) return false;
-    if (!filterStatuses[l.status]) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       if (!l.nome_completo?.toLowerCase().includes(q) && !l.telefone?.includes(q)) return false;
@@ -2137,14 +2122,8 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
   const pageClamped = Math.min(page, totalPages - 1);
   const pageItems = filtered.slice(pageClamped * LEADS_PAGE_SIZE, pageClamped * LEADS_PAGE_SIZE + LEADS_PAGE_SIZE);
   const selectedCount = Object.values(selectedIds).filter(Boolean).length;
-  const filtroAtivo = filterEmp !== "todos" || !!search.trim() || !!dataIni || !!dataFim
-    || EXPORT_STATUS_OPTIONS.some((s) => !filterStatuses[s.key]);
-  const filtrosPendentes = draftFilterEmp !== filterEmp || draftSearch !== search || draftDataIni !== dataIni || draftDataFim !== dataFim
-    || EXPORT_STATUS_OPTIONS.some((s) => !!draftStatuses[s.key] !== !!filterStatuses[s.key]);
-
-  function toggleFiltroStatus(key) {
-    setDraftStatuses((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
+  const filtroAtivo = filterEmp !== "todos" || !!search.trim() || !!dataIni || !!dataFim;
+  const filtrosPendentes = draftFilterEmp !== filterEmp || draftSearch !== search || draftDataIni !== dataIni || draftDataFim !== dataFim;
 
   function aplicarFiltros(e) {
     if (e) e.preventDefault();
@@ -2152,22 +2131,18 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
     setSearch(draftSearch);
     setDataIni(draftDataIni);
     setDataFim(draftDataFim);
-    setFilterStatuses(draftStatuses);
     setPage(0);
   }
 
   function limparFiltros() {
-    const all = allLeadStatusesOn();
     setDraftFilterEmp("todos");
     setDraftSearch("");
     setDraftDataIni("");
     setDraftDataFim("");
-    setDraftStatuses(all);
     setFilterEmp("todos");
     setSearch("");
     setDataIni("");
     setDataFim("");
-    setFilterStatuses(all);
     setPage(0);
   }
 
@@ -2298,11 +2273,11 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
                 <label className="label">E-mail</label>
                 <input type="email" className="input" value={fEmail} onChange={(e) => setFEmail(e.target.value)} />
               </div>
-              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="label">Data da ligação</label>
-                  <input type="date" className="input date-input" value={fDataLigacao} max={todayStr()} onChange={(e) => setFDataLigacao(e.target.value)} required />
-                </div>
+              <div>
+                <label className="label">Data da ligação</label>
+                <input type="date" className="input date-input" value={fDataLigacao} max={todayStr()} onChange={(e) => setFDataLigacao(e.target.value)} required />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="label">Agendar — data</label>
                   <input type="date" className="input date-input" value={fAgendaData} onChange={(e) => setFAgendaData(e.target.value)} />
@@ -2373,17 +2348,6 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
           <div>
             <label className="label">Até</label>
             <input type="date" className="input date-input" value={draftDataFim} onChange={(e) => setDraftDataFim(e.target.value)} min={draftDataIni || undefined} />
-          </div>
-          <div className="sm:col-span-2 lg:col-span-4">
-            <p className="label mb-2">Status</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {EXPORT_STATUS_OPTIONS.map((s) => (
-                <label key={s.key} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={!!draftStatuses[s.key]} onChange={() => toggleFiltroStatus(s.key)} />
-                  {s.label}
-                </label>
-              ))}
-            </div>
           </div>
           <div className="flex items-end gap-3 sm:col-span-2 lg:col-span-4">
             <button type="submit" className="btn !py-1.5 !text-xs whitespace-nowrap">Aplicar filtros</button>
@@ -2488,11 +2452,6 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
                                   <CalendarPlus size={14} />
                                 </button>
                               )}
-                              {canResolveRow && l.status === "novo" && (
-                                <button type="button" onClick={() => openResolve(l, "sem_contato")} title="Não atendido" aria-label="Não atendido" className="p-1.5 rounded-lg text-muted hover:text-[#475569] hover:bg-paper transition-colors">
-                                  <PhoneOff size={14} />
-                                </button>
-                              )}
                               {canResolveRow && (
                                 <>
                                   <button type="button" onClick={() => openResolve(l, "em_negociacao")} title="Em negociação" aria-label="Em negociação" className="p-1.5 rounded-lg text-muted hover:text-teal hover:bg-paper transition-colors">
@@ -2556,7 +2515,7 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
       />
 
       {agendarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in border-blue/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><CalendarPlus className="text-blue" size={20} /> Agendar</h2>
             <p className="text-xs text-muted mt-1">{agendarModal.nome_completo}</p>
@@ -2580,7 +2539,7 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
       )}
 
       {resolveModal && resolveModal.type !== "vendido" && resolveModal.type !== "em_negociacao" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in border-gold/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2">
               {resolveModal.type === "perdido" ? <XCircle className="text-danger" size={20} />
@@ -2618,7 +2577,7 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
       )}
 
       {resolveModal && resolveModal.type === "em_negociacao" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full animate-bounce-in border-teal/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><Handshake className="text-teal" size={20} /> Marcar como em negociação</h2>
             <p className="text-xs text-muted mt-1">{resolveModal.lead.nome_completo}</p>
@@ -2642,7 +2601,7 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
       )}
 
       {resolveModal && resolveModal.type === "vendido" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full max-h-[85vh] overflow-y-auto animate-bounce-in border-success/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><CheckCircle2 className="text-success" size={20} /> Marcar como vendido</h2>
             <p className="text-xs text-muted mt-1">{resolveModal.lead.nome_completo}</p>
@@ -2675,7 +2634,7 @@ export function LeadsTab({ employees, lojaId, empresaId, viewerId, canManage = t
       )}
 
       {detailLead && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-lg w-full max-h-[85vh] overflow-y-auto animate-bounce-in">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">

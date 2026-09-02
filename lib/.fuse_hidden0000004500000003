@@ -616,7 +616,7 @@ export default function GerenteViewConsorcio({ profile, tab, viewedBySupervisor 
   return (
     <div className="space-y-6">
       {storeGoalCelebrations.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
             <div className="flex justify-center mb-3 animate-wiggle">
@@ -1352,7 +1352,7 @@ function VendasTab({ teamEmps, profile }) {
       </div>
 
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full max-h-[85vh] overflow-y-auto animate-bounce-in border-blue/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><Edit3 className="text-blue" size={20} /> Editar venda</h2>
             <p className="text-[11px] text-muted mt-1">Venda já confirmada — a edição fica registrada com seu nome e horário.</p>

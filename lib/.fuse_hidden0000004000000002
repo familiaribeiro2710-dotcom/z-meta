@@ -1722,7 +1722,7 @@ function VendasTabHierarquia({ lojas, profile }) {
       </div>
 
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <div className="card max-w-sm w-full max-h-[85vh] overflow-y-auto animate-bounce-in border-blue/30">
             <h2 className="text-lg font-extrabold text-navy flex items-center gap-2"><Edit3 className="text-blue" size={20} /> Editar venda</h2>
             <p className="text-[11px] text-muted mt-1">Venda já confirmada — a edição fica registrada com seu nome e horário.</p>
@@ -1933,7 +1933,7 @@ function SupervisoresTab({ empresaId, lojas, isConsorcio = false }) {
                         key={opt.key}
                         onClick={() => switchRoleType(opt.key)}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
-                          roleType === opt.key ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy"
+                          roleType === opt.key ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy"
                         }`}
                       >
                         {opt.label}
@@ -1974,7 +1974,7 @@ function SupervisoresTab({ empresaId, lojas, isConsorcio = false }) {
                                 key={opt}
                                 onClick={() => setPickedPermission(l.loja_id, opt)}
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-colors ${
-                                  perm === opt ? "bg-navyfixed text-white border-navyfixed" : "border-line text-muted hover:border-navy"
+                                  perm === opt ? "bg-navy text-white border-navy" : "border-line text-muted hover:border-navy"
                                 }`}
                               >
                                 {opt}

@@ -423,7 +423,7 @@ export default function GerenteView({ profile, tab, viewedBySupervisor = false, 
   return (
     <div className="space-y-6">
       {storeGoalCelebrations.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navyfixed/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/70 p-6">
           <Confetti />
           <div className="card max-w-sm w-full text-center animate-bounce-in border-purple/30">
             <div className="flex justify-center mb-3 animate-wiggle">

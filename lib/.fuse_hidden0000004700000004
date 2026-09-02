@@ -25,7 +25,7 @@ export default function MonthNav({ month, onChange, maxMonth }) {
   }
 
   return (
-    <div className="flex items-center gap-1 bg-surface/70 rounded-full border-2 border-line pl-1 pr-2 py-1 shrink-0">
+    <div className="flex items-center gap-1 bg-white/70 rounded-full border-2 border-line pl-1 pr-2 py-1 shrink-0">
       <button
         type="button"
         onClick={() => shift(-1)}

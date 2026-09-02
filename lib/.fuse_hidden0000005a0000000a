@@ -48,7 +48,7 @@ export default function ReportOptionsModal({ open, onClose, onConfirm, loading }
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-navyfixed/70 p-4 sm:p-6 pt-[calc(env(safe-area-inset-top)+1rem)]"
+      className="fixed inset-0 z-50 overflow-y-auto bg-navy/70 p-4 sm:p-6 pt-[calc(env(safe-area-inset-top)+1rem)]"
       onClick={() => !loading && onClose()}
     >
       <div className="min-h-full flex items-start sm:items-center justify-center">

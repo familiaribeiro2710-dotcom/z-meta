@@ -15,7 +15,7 @@ import { ChevronDown } from "lucide-react";
 export default function SelectField({ value, onChange, children, icon: Icon, className = "", selectClassName = "", disabled, ...rest }) {
   return (
     <label
-      className={`flex items-center gap-1.5 bg-surface border-2 border-line rounded-2xl px-3.5 py-2.5 transition-colors min-w-0 ${
+      className={`flex items-center gap-1.5 bg-white border-2 border-line rounded-2xl px-3.5 py-2.5 transition-colors min-w-0 ${
         disabled ? "opacity-60 cursor-not-allowed" : "hover:border-gold/60 cursor-pointer"
       } ${className}`}
     >

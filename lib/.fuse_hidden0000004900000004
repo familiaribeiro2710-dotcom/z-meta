@@ -45,7 +45,7 @@ export function SavedNoticeProvider({ children }) {
           <div
             role="status"
             onClick={dismiss}
-            className={`pointer-events-auto flex items-center gap-2.5 bg-navyfixed text-white rounded-full pl-3 pr-4 py-2.5 shadow-navycard cursor-pointer transition-all duration-300 ease-out ${
+            className={`pointer-events-auto flex items-center gap-2.5 bg-navy text-white rounded-full pl-3 pr-4 py-2.5 shadow-navycard cursor-pointer transition-all duration-300 ease-out ${
               visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
             }`}
           >
