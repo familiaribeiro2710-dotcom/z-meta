@@ -140,6 +140,54 @@ export async function POST(req) {
       return NextResponse.json({ error: profileErr.message }, { status: 400 });
     }
 
+    // 2026-09-03, pedido do Felipe: colaborador novo já nasce com as tarefas que são IGUAIS pra
+    // todo mundo na loja (mesmo título/recorrência/tipo pros demais colaboradores ativos) — só
+    // essas, nunca uma tarefa que só alguns têm (aí não seria "igual pra todos", seria coincidência
+    // de título). Comparação por assinatura completa (título+recorrência+dia da semana+data
+    // única+tipo+meta de contatos) pra não confundir 2 tarefas homônimas com config diferente.
+    const { data: existingEmps } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("loja_id", targetLojaId)
+      .eq("role", "colaborador")
+      .eq("active", true)
+      .neq("id", created.user.id);
+    const existingEmpIds = (existingEmps || []).map((e) => e.id);
+    if (existingEmpIds.length) {
+      const { data: existingTasks } = await admin
+        .from("tasks")
+        .select("employee_id, title, recurrence_type, weekday, once_date, task_type, contacts_target")
+        .in("employee_id", existingEmpIds)
+        .eq("active", true);
+      const bySignature = {};
+      (existingTasks || []).forEach((t) => {
+        const key = JSON.stringify([t.title, t.recurrence_type, t.weekday, t.once_date, t.task_type, t.contacts_target]);
+        if (!bySignature[key]) bySignature[key] = { sample: t, empIds: new Set() };
+        bySignature[key].empIds.add(t.employee_id);
+      });
+      const commonTasks = Object.values(bySignature)
+        .filter((g) => g.empIds.size === existingEmpIds.length)
+        .map((g) => g.sample);
+      if (commonTasks.length) {
+        // start_date sempre HOJE (dia em que o colaborador passou a existir) — nunca a start_date
+        // original, que copiada faria isTaskDueOn contar dias em que ele nem tinha sido contratado.
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const rows = commonTasks.map((t) => ({
+          employee_id: created.user.id,
+          title: t.title,
+          empresa_id: targetEmpresaId,
+          loja_id: targetLojaId,
+          recurrence_type: t.recurrence_type,
+          weekday: t.weekday,
+          once_date: t.once_date,
+          start_date: todayStr,
+          task_type: t.task_type,
+          contacts_target: t.contacts_target,
+        }));
+        await admin.from("tasks").insert(rows);
+      }
+    }
+
     return NextResponse.json({ ok: true, id: created.user.id, username, defaultPassword: DEFAULT_PASSWORD, pending: pendingApproval });
   } catch (e) {
     return NextResponse.json({ error: e.message || "Erro inesperado." }, { status: 500 });
