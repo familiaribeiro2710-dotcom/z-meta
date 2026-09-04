@@ -7,6 +7,7 @@ import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
 import ColaboradorView from "../../lib/ColaboradorView";
 import ColaboradorViewConsorcio from "../../lib/ColaboradorViewConsorcio";
+import { isCrmCategoria } from "../../lib/categoria";
 
 const TABS_VESTUARIO = [
   { key: "atividades", label: "Início", Icon: Home },
@@ -80,7 +81,7 @@ export default function ColaboradorPage() {
     return () => { active = false; };
   }, [router]);
 
-  const isConsorcio = categoriaSlug === "consorcio";
+  const isConsorcio = isCrmCategoria(categoriaSlug);
   const TABS = isConsorcio ? TABS_CONSORCIO : TABS_VESTUARIO;
 
   if (loading) {
