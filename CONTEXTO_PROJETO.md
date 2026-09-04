@@ -1587,4 +1587,24 @@ Felipe reportou: ao escolher uma data de agendamento por engano em "Cadastrar li
 
 ---
 
+## "Cadastrar lead" (renomeado) + histórico/observações do lead no Pipeline (2026-09-04)
+
+Dois pedidos do Felipe. Antes de implementar, confirmei entendimento e trouxe 2 pontos: (1) parte do "histórico e rastreabilidade" já existia — a aba Leads já tinha um painel de linha do tempo (`crm_lead_events`), só que só leitura e só lá, não no Pipeline; (2) "implementar só em comercial" não é possível de forma limpa porque consórcio e comercial usam o mesmo motor/componentes de propósito (decisão de hoje mesmo) — combinamos que a feature vai pras duas categorias juntas (já que é o mesmo código), e o Felipe testa via a empresa comercial de teste.
+
+**Rename**: "Cadastrar ligação" (`ColaboradorViewConsorcio.js`) e "Cadastrar cliente" (`ConsorcioDashboard.js`, `LeadsTab` — mesmo formulário duplicado, usado por gerente/sócio/supervisor/master) viraram **"Cadastrar lead"** nos dois lugares (título da seção + texto do botão). Fluxo não mudou, só o nome. `Registrar ligação` (texto do botão de submit do form do colaborador) não foi tocado — o pedido foi especificamente sobre "Cadastrar ligação", não uma varredura geral da palavra "ligação" no sistema.
+
+**Histórico + observações — decisão de arquitetura** (Felipe delegou "faça o que for melhor pro app"): em vez de criar uma tabela nova pra notas, uma observação nova vira só mais uma linha em `crm_lead_events` com `event_type='nota'` — reaproveita 100% da infra que já existia (tabela, RLS de SELECT, UI de timeline), sem duplicar conceito. Cada observação é um evento próprio, nunca sobrescreve as anteriores (diferente do campo único `crm_leads.observacoes`, que continua existindo pra outros fins).
+
+- **Migration**: `event_type` da `crm_lead_events` ganhou o valor `'nota'` no `CHECK`. Nova policy `crm_lead_events_insert_nota` — só esse tipo de evento pode ser inserido DIRETO pelo client (todos os outros só nascem via trigger `log_crm_lead_event`, `SECURITY DEFINER`, que ignora RLS) — `with_check` exige `event_type='nota'` (não dá pra forjar outro tipo) e `actor_id = auth.uid()` (não dá pra assinar como outra pessoa), com a mesma visibilidade de `crm_lead_events_select` (dono do lead, gerente da equipe, sócio/supervisor com acesso, master admin).
+- **`lib/LeadHistoryPanel.js`** (novo, componente compartilhado): painel com a linha do tempo completa (ícone/título por tipo de evento, incluindo o novo "Observação adicionada") + um form pra adicionar observação nova no topo. Fica fora de `LeadsTab`/`Pipeline` de propósito (função-componente redefinida a cada render do pai perde identidade pro React — mesmo motivo de `DistributionFields`/`PeriodoFilterField`, ver entradas anteriores).
+- **`lib/ConsorcioDashboard.js`** (`LeadsTab`): a implementação antiga (`openDetail`/`detailEvents`/`detailNames`/`leadEventIcon`/`leadEventTitle`, só leitura) foi removida e substituída pelo `LeadHistoryPanel` compartilhado. Query de leads ganhou `empresa_id, loja_id` no `select` (precisa pra gravar a nota certa).
+- **`lib/Pipeline.js`**: cada card ganhou um ícone de histórico (`History`, canto do cabeçalho) que abre o mesmo painel. `onClick`/`onTouchStart`/`onMouseDown` do botão levam `stopPropagation()` — sem isso o toque no ícone seria capturado pelo drag-and-drop do card (touch dnd customizado, WebKit não suporta HTML5 DnD nativo, ver comentário no topo do arquivo).
+- Novo prop `viewerId` no `<Pipeline>` (antes não existia — os call-sites nunca tinham precisado saber quem estava logado) — roteado nos 4 pontos de montagem: `ColaboradorViewConsorcio.js` (`profile.id`), `ConsorcioDashboard.js` (prop `viewerId` que já recebia, agora repassada), `AdministrativoView.js` (`profile.id`). Gerente (via `GerenteViewConsorcio.js`) e sócio/supervisor (via `HierarchyHome.js`) já passavam `viewerId` pro `<ConsorcioDashboard>` por outro motivo — herdam de graça.
+
+**Pipeline pro colaborador**: Felipe pediu explicitamente pra garantir que o colaborador visse o Pipeline com todas as funções, restrito a desktop/iPad paisagem. Conferido: **já existia** (`app/colaborador/page.js` TABS_CONSORCIO já tinha `pipeline` com `hideOnMobile: true`, e `ColaboradorViewConsorcio.js` já renderizava `<Pipeline canManage .../>` escopado só aos próprios leads) — não precisou de nenhuma mudança, só validação de que já estava certo.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
