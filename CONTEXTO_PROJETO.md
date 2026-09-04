@@ -1565,4 +1565,26 @@ Felipe mandou print do form "Cadastrar ligação" (`ColaboradorViewConsorcio.js`
 
 ---
 
+## BUG REAL (2ª rodada, mesmo dia): altura de input[type=date/time] ainda inconsistente quando vazio (2026-09-04)
+
+Segundo print do Felipe no mesmo form: mesmo depois do fix acima (font-size/line-height), "Agendar — data" e "Hora" continuavam mais finos que "Data da ligação" ao lado. Causa: no Safari/iOS um campo `type=date`/`type=time` **vazio** (sem valor ainda) tem os segmentos internos do picker nativo (dia/mês/ano ou hora/minuto) com altura própria que não segue o `line-height` do CSS quando não há texto real neles — só um campo já preenchido "força" a altura certa via conteúdo real.
+
+- `app/globals.css`: `.date-input` ganhou `height: 2.75rem` explícito (mesma conta de `.input`: padding 0.625rem×2 + line-height 1.25rem + borda 2px×2). Com `box-sizing: border-box` (padrão do Tailwind), isso trava a altura de fora sempre igual, tenha valor ou não — não depende mais de como o WebKit desenha os segmentos vazios por dentro.
+- Varredura no sistema inteiro: 30 inputs `type="date"`/`type="time"` em `app`+`lib`, todos já com a classe `date-input` (nenhum ficou de fora) — o fix cobriu os 30 de uma vez por ser CSS compartilhado.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
+## Botão de limpar data no campo "Agendar — data" (2026-09-04)
+
+Felipe reportou: ao escolher uma data de agendamento por engano em "Cadastrar ligação", não tinha como voltar a deixar o campo vazio — `input[type=date]` nativo não tem um "x" de limpar fácil no Safari/iOS (existe no Chrome desktop, não no mobile).
+
+- `lib/MaskedInputs.js`: novo `ClearableDateInput({ value, onChange, ...props })` — mesmo `input[type=date] date-input` de sempre, com um botão "x" (ícone `X`, só aparece quando tem valor) que limpa o campo. Fica ao lado de `CurrencyInput`/`PhoneInput`/`CnpjInput`, mesmo padrão de input reutilizável.
+- Aplicado nos 6 campos "Agendar — data" do sistema (todos opcionais, diferente de "Data da ligação" que é obrigatório e não precisa disso): `lib/ConsorcioDashboard.js` (Funil, LeadsTab "Cadastrar cliente", LeadsTab "Agendar" modal), `lib/ColaboradorViewConsorcio.js` (modal "Agendar", "Cadastrar ligação"), `lib/Pipeline.js` (modal "Agendar"). Em todos, limpar a data também limpa a "Hora" junto (`onChange={(v) => { setXData(v); if (!v) setXHora(""); }}`) — evita cair no estado "só um dos dois preenchido", que a validação de envio já rejeitava com uma mensagem de erro.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
