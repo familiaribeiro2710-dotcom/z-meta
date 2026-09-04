@@ -1607,4 +1607,17 @@ Dois pedidos do Felipe. Antes de implementar, confirmei entendimento e trouxe 2 
 
 ---
 
+## Mudar etapa do lead direto do painel de histórico (2026-09-04)
+
+Pedido do Felipe logo depois da feature anterior: "ao clicar no ícone pra ver o histórico do lead no Pipeline, tem que ter a opção também de mudar a etapa desse lead" — confirmei entendimento e perguntei se seguia a mesma regra de validação dos fluxos já existentes (agendar pede data/hora, vendido pede valor+categoria, perdido a partir de "novo" pergunta se teve contato); Felipe confirmou "Sim! Mesma regra".
+
+**`lib/LeadHistoryPanel.js`**: ganhou 3 novos props (`canManage`, `produtoCategorias`, `onChanged`) e um bloco "Mudar etapa" logo abaixo do badge de status, com botões Agendar/Em negociação/Follow-up/Vendido/Perdido — só aparece se `canManage` for true e o lead ainda aceitar a ação (mesma trava de `ManagerLeadRow`/`Pipeline.js`: `vendido`/`vendido_pendente`/`cancelado` não têm mais nenhuma ação; `perdido` só aceita "Agendar" de novo, não tem "resolver"). Lógica (`openAgendar`/`confirmAgendar`/`openResolve`/`confirmResolve`) e os 4 modais (agendar; resolver perdido/follow_up com a pergunta "conseguiu contato" quando o lead vem de "novo"; resolver em_negociacao; resolver vendido com valor+categoria+observações) são **cópia deliberada** da lógica que já existia em `Pipeline.js` — mesmo padrão de duplicação intencional já usado no resto do app (isolar risco entre componentes que precisam continuar funcionando de forma independente), em vez de levantar esse estado pro componente pai. Um `currentLead` local (sincronizado do prop `lead` via `useEffect`) deixa o badge/botões refletirem a mudança na hora, sem esperar o recarregamento do pai. Modais renderizados como overlay `z-[60]` (acima do próprio painel, que é `z-50`), pra empilhar visualmente por cima.
+
+- **`lib/Pipeline.js`**: `<LeadHistoryPanel>` passou a receber `canManage={canManage}`, `produtoCategorias={produtoCategorias}` (Pipeline já buscava isso pra seu próprio modal de "vendido") e `onChanged={loadLeads}` (recarrega o board depois de qualquer mudança feita pelo painel).
+- **`lib/ConsorcioDashboard.js`** (`LeadsTab`): mesma coisa — `<LeadHistoryPanel>` ganhou `canManage`, `produtoCategorias` e `onChanged={load}`.
+
+**Build**: `✓ Compiled successfully` (verificado num ambiente Linux separado — precisou instalar manualmente o binário `@next/swc-linux-x64-gnu@14.2.33`, já que o `node_modules` do Felipe só tem o binário `darwin-x64`; isso é só uma particularidade do ambiente de verificação, não afeta o Mac do Felipe).
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
