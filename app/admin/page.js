@@ -30,6 +30,7 @@ import {
   Search,
   Filter,
   Calendar,
+  Edit3,
   Home,
   Wallet,
   BarChart3,
