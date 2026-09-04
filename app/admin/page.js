@@ -48,6 +48,7 @@ import GerenteView from "../../lib/GerenteView";
 import ConsorcioDashboard, { CONSORCIO_TABS } from "../../lib/ConsorcioDashboard";
 import ColaboradorViewConsorcio from "../../lib/ColaboradorViewConsorcio";
 import GerenteViewConsorcio, { GERENTE_TABS as GERENTE_TABS_CONSORCIO } from "../../lib/GerenteViewConsorcio";
+import { isCrmCategoria } from "../../lib/categoria";
 import AdministrativoView, { ADMINISTRATIVO_TABS } from "../../lib/AdministrativoView";
 import HierarchyHome from "../../lib/HierarchyHome";
 import MonthNav from "../../lib/MonthNav";
@@ -334,7 +335,7 @@ export default function AdminPage() {
     // "ver como" só é disparado de dentro de EmpresaDetail (onViewAs), então selectedEmpresaDetail
     // (e por consequência empresaDetail, com sua categoria_slug) continua setado por baixo — não
     // precisa recarregar categoria aqui.
-    const isConsorcioView = empresaDetail?.categoria_slug === "consorcio";
+    const isConsorcioView = isCrmCategoria(empresaDetail?.categoria_slug);
     // colaborador de consórcio tem abas diferentes de gerente/vestuário (sem Metas, com Calendário),
     // e administrativo (exclusivo de consórcio) tem seu próprio conjunto (Início/Vendas) — precisa
     // validar viewTab (estado solto, reaproveitado entre "ver comos" de pessoas/categorias
@@ -414,7 +415,7 @@ export default function AdminPage() {
   }
 
   if (selectedLoja) {
-    const isConsorcioLoja = empresaDetail?.categoria_slug === "consorcio";
+    const isConsorcioLoja = isCrmCategoria(empresaDetail?.categoria_slug);
     return (
       <AppShell
         userName={profile.full_name}

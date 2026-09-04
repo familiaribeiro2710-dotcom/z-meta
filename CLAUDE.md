@@ -18,7 +18,8 @@
 master_admin  → dono do Z Meta. Cadastra empresas-cliente, vê/opera tudo.
    └── socio         → dono de uma empresa-cliente. Vê TODAS as lojas da empresa automaticamente.
          └── supervisor  → escopo definido por acesso explícito a lojas (tabela loja_access).
-         └── administrativo → EXCLUSIVO de empresas categoria consórcio. Mesmo mecanismo de
+         └── administrativo → EXCLUSIVO de empresas categoria consórcio/comercial (as duas usam a
+               mesma engine de funil, ver seção 4). Mesmo mecanismo de
                acesso multi-loja do supervisor (loja_access, sempre permission='ver'), mas
                escopo bem mais estreito: só confirma/recusa/edita vendas dos colaboradores das
                lojas atribuídas e vê metas/vendas/ranking/agendamentos — não gerencia tarefas,
@@ -71,6 +72,7 @@ Sem framework de testes automatizados configurado (não há `test` no `package.j
 | `lib/AppShell.js` | Casca visual (header, "Meu perfil", trocar senha) usada em toda tela autenticada — monta `<SavedNoticeProvider>` (ver `lib/SavedNotice.js`) envolvendo toda a tela, então qualquer componente descendente tem acesso a `useSavedNotice()` |
 | `lib/SavedNotice.js` | Context + hook globais (`SavedNoticeProvider`/`useSavedNotice()`) pro modal de confirmação "Alterações salvas com sucesso." — chamado de um lado a outro do app depois de qualquer ação de "Salvar" que não já mostre dado crítico inline (senha temporária) nem seja um toggle instantâneo de 1 clique |
 | `lib/scoring.js` | Lógica pura de cálculo: % individual (`calcIndividualPct`), meta em camadas (`currentGoalTarget`) |
+| `lib/categoria.js` | 2026-09 — `isCrmCategoria(slug)`: true pra categorias que reaproveitam a engine de funil de vendas (`consorcio`/`comercial`, ver seção 4). Único ponto de verdade pra essa checagem — não comparar `categoriaSlug === "consorcio"` direto em código novo |
 | `lib/date.js` | Utilitários de data e recorrência de tarefas (`isTaskDueOn`) |
 | `lib/serverPermissions.js` | Helper server-side `hierarquiaCanManageLoja` — única fonte de verdade pra "sócio vs supervisor pode gerenciar essa loja?" nas rotas de API |
 | `lib/supabaseClient.js` | Cliente Supabase **client-side** (anon key, sessão persistida) |
@@ -89,7 +91,7 @@ Todas as tabelas têm RLS habilitado. Multi-tenant por `empresa_id` (e a maioria
 |---|---|---|
 | `profiles` | `id` (= `auth.users.id`), `role`, `username`, `empresa_id`, `loja_id`, `gerente_id`, `active`, `must_change_password`, `avatar_url`, `theme_preference` | `role` é um `CHECK` (`master_admin`/`socio`/`supervisor`/`gerente`/`colaborador`). `gerente_id` aponta pra outro profile (o gerente da equipe do colaborador). `theme_preference` (2026-09, `CHECK` `light`/`dark`, default `light`) — preferência de tema, ver seção 7 |
 | `empresas` | `id`, `name`, `active`, `plano` (`trial`/`pago`/`cancelado`), `valor_por_usuario`, `desconto`, `cnpj`, `logo_url`, `categoria_id` | empresa-cliente (tenant raiz). `categoria_id` é **imutável depois que a empresa tem loja ou usuário** (trigger `prevent_categoria_change_after_setup`, ver seção 5) |
-| `categorias_empresa` | `id`, `nome`, `slug`, `active` | segmento de negócio da empresa-cliente (vestuário, consórcio, ...) — tabela lookup em vez de enum fixo, porque a FORGE GROUP planeja vender pra outros segmentos além dos dois atuais. Cada categoria pode ter uma experiência de dashboard totalmente diferente (roteada pelo `slug`) |
+| `categorias_empresa` | `id`, `nome`, `slug`, `active` | segmento de negócio da empresa-cliente (vestuário, consórcio, comercial, ...) — tabela lookup em vez de enum fixo, porque a FORGE GROUP planeja vender pra outros segmentos além dos atuais. Cada categoria pode ter uma experiência de dashboard totalmente diferente (roteada pelo `slug`), mas **nem toda categoria nova precisa de uma engine nova**: `comercial` (2026-09) é uma cópia comercial de `consorcio` — reaproveita 100% das mesmas tabelas/componentes (`crm_leads`, `consorcio_goals`, `ConsorcioDashboard.js` etc.), só muda o nome exibido. `lib/categoria.js` (`isCrmCategoria(slug)`, hoje `["consorcio", "comercial"]`) é o único lugar que decide quais slugs usam essa engine — todo código que precisar diferenciar "funil de CRM" vs. "vestuário" deve checar por ali, nunca comparar `slug === "consorcio"` direto |
 | `lojas` | `id`, `empresa_id`, `name`, `active` | uma empresa pode ter várias lojas |
 | `loja_access` | `profile_id`, `loja_id`, `permission` (`ver`/`gerenciar`) | **só usada por supervisor** — sócio nunca depende disso (vê a empresa inteira implicitamente) |
 | `app_settings` | PK `loja_id`, `empresa_id`, `warning_penalty_points`, `team_threshold_pct`, `monthly_prize` | config por loja: desconto % por advertência, meta da barra geral, premiação mensal |
