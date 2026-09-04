@@ -2454,6 +2454,16 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
     notifySaved("Loja excluída com sucesso.");
   }
 
+  // Renomear é um update direto (RLS de `lojas` já libera ALL pra is_master_admin()), sem rota de
+  // API própria — mesmo padrão de toggleLojaActive logo acima. Vale pra loja de qualquer categoria
+  // (vestuário/consórcio/comercial): a tabela `lojas` não tem coluna de categoria nenhuma.
+  async function renameLoja(loja, newName) {
+    const { error } = await supabase.from("lojas").update({ name: newName }).eq("id", loja.loja_id);
+    if (error) throw new Error(error.message);
+    onChanged();
+    notifySaved("Nome da loja atualizado com sucesso.");
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -2494,6 +2504,7 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
             onViewAs={onViewAs}
             onToggleActive={toggleLojaActive}
             onDelete={deleteLoja}
+            onRename={renameLoja}
             isOpen={openLojaId === l.loja_id}
             onToggle={() => setOpenLojaId(openLojaId === l.loja_id ? null : l.loja_id)}
           />
@@ -2503,9 +2514,29 @@ function LojasList({ empresaId, lojas, allProfiles, onChanged, onOpenDados, onVi
   );
 }
 
-function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggleActive, onDelete, empresaId, isOpen, onToggle }) {
+function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggleActive, onDelete, onRename, empresaId, isOpen, onToggle }) {
   const [openUserId, setOpenUserId] = useState(null);
   const [confirmType, setConfirmType] = useState(null); // "toggle" | "delete" | null
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(loja.loja_name);
+  const [savingName, setSavingName] = useState(false);
+
+  async function saveName(e) {
+    e.preventDefault();
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === loja.loja_name) {
+      setNameInput(loja.loja_name);
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      await onRename(loja, trimmed);
+      setEditingName(false);
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   const colaboradores = allProfiles.filter((p) => p.loja_id === loja.loja_id && p.role === "colaborador");
   const gerenteProfile = allProfiles.find((p) => p.id === loja.gerente_id);
@@ -2521,22 +2552,55 @@ function LojaCard({ loja, allProfiles, onChanged, onOpenDados, onViewAs, onToggl
   return (
     <div className="border border-line rounded-xl p-3">
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <button type="button" onClick={onToggle} className="text-left flex-1 min-w-0 hover:opacity-75 transition-opacity">
-          <p className="text-sm font-semibold text-navy flex items-center gap-1.5">
-            <Store size={13} className="text-teal" /> {loja.loja_name}
-            {!loja.loja_active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
-          </p>
-          <p className="text-[11px] text-muted mt-0.5">
-            {loja.gerente_name ? `gerente: ${loja.gerente_name} (${loja.gerente_username})` : "sem gerente"} · {loja.colaboradores_count} colaborador(es)
-          </p>
-          <p className="text-[11px] text-muted mt-0.5">
-            {neverActive ? "nunca teve atividade" : `última atividade há ${stale} dia(s)`}
-          </p>
-          {alerts.length > 0 && (
-            <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
-          )}
-        </button>
+        {editingName ? (
+          <form onSubmit={saveName} className="flex-1 min-w-0 flex items-center gap-2">
+            <Store size={13} className="text-teal shrink-0" />
+            <input
+              className="input !py-1 !text-xs flex-1 min-w-0"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              autoFocus
+              disabled={savingName}
+            />
+            <button type="submit" className="btn-outline !px-2.5 !py-1 !text-[11px] whitespace-nowrap shrink-0" disabled={savingName}>
+              {savingName ? "Salvando…" : "Salvar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setNameInput(loja.loja_name); setEditingName(false); }}
+              className="p-1 text-muted hover:text-danger transition-colors shrink-0"
+              disabled={savingName}
+            >
+              <X size={13} />
+            </button>
+          </form>
+        ) : (
+          <button type="button" onClick={onToggle} className="text-left flex-1 min-w-0 hover:opacity-75 transition-opacity">
+            <p className="text-sm font-semibold text-navy flex items-center gap-1.5">
+              <Store size={13} className="text-teal" /> {loja.loja_name}
+              {!loja.loja_active && <span className="text-[10px] uppercase text-danger font-bold">inativa</span>}
+            </p>
+            <p className="text-[11px] text-muted mt-0.5">
+              {loja.gerente_name ? `gerente: ${loja.gerente_name} (${loja.gerente_username})` : "sem gerente"} · {loja.colaboradores_count} colaborador(es)
+            </p>
+            <p className="text-[11px] text-muted mt-0.5">
+              {neverActive ? "nunca teve atividade" : `última atividade há ${stale} dia(s)`}
+            </p>
+            {alerts.length > 0 && (
+              <p className="text-[11px] text-warn mt-1 flex items-center gap-1"><AlertTriangle size={12} /> {alerts.join(" · ")}</p>
+            )}
+          </button>
+        )}
         <div className="flex items-center gap-2 shrink-0">
+          {!editingName && (
+            <button
+              title="Editar nome da loja"
+              onClick={() => { setNameInput(loja.loja_name); setEditingName(true); }}
+              className="p-1.5 rounded-lg border border-line text-muted hover:border-gold hover:text-gold transition-colors"
+            >
+              <Edit3 size={13} />
+            </button>
+          )}
           <button
             className="btn !px-3 !py-1.5 !text-xs whitespace-nowrap"
             onClick={() => onOpenDados({ lojaId: loja.loja_id, lojaName: loja.loja_name, empresaId })}
