@@ -1521,4 +1521,48 @@ Felipe reportou: ao criar/editar uma meta e escolher "Valor manual" (distribuiç
 
 ---
 
+## Renomear loja (Master Admin) + filtro de período por calendário na aba Leads (2026-09-04)
+
+Dois pedidos pequenos do Felipe, mesma sessão:
+
+- **`app/admin/page.js`**: faltava opção de renomear uma loja depois de criada (só existia criar/ativar-desativar/excluir). Botão de lápis no card da loja abre um form inline (mesmo padrão de `EditUser`), update direto via client — RLS de `lojas` já libera `ALL` pra `is_master_admin()`. Vale pra loja de qualquer categoria (a tabela `lojas` não distingue categoria).
+- **`lib/ConsorcioDashboard.js`** (`LeadsTab`, compartilhada por todos os papéis com essa aba): os campos "De"/"Até" sempre visíveis viraram um botão com ícone de calendário — clicar abre um painel com os mesmos dois inputs de data nativos. Novo componente `PeriodoFilterField`, **top-level** (fora de `LeadsTab`) de propósito, mesmo motivo do bug abaixo.
+
+---
+
+## BUG REAL: crash em produção (ícone sem import) + meta não salvava (índice único faltando) (2026-09-04)
+
+Dois incidentes reais em produção, na sequência, reportados pelo Felipe:
+
+**1. Crash "Application error" ao abrir qualquer empresa com loja, pro Master Admin.** Causa: `LojaCard` (feature de renomear loja, acima) usa `<Edit3 />` (lucide-react) mas o ícone nunca foi importado em `app/admin/page.js`. Como o build roda com `eslint: { ignoreDuringBuilds: true }` (risco já documentado na seção 5 deste arquivo, que eu mesmo não segui), isso não trava o deploy — só um `ReferenceError` em runtime, quebrando a tela pra qualquer empresa com pelo menos 1 loja (ou seja, praticamente todas). Fix: import faltando adicionado + varredura sistemática (script) em todos os arquivos tocados na sessão pra confirmar que não sobrou outro ícone/componente JSX sem import.
+
+**2. Distribuição de meta ("valor manual"/"igual"/"percentual") nunca salvava em empresa consórcio/comercial**, mesmo depois do fix do teclado (ver entrada anterior). Causa raiz de verdade: `consorcio_goal_allocations` nunca teve o índice único `(goal_id, employee_id)` que `supabase.upsert(rows, { onConflict: "goal_id,employee_id" })` exige — diferente de `sales_goal_allocations` (vestuário), que tem esse índice desde a criação. Toda tentativa de salvar retornava erro `42P10` do Postgres ("no unique or exclusion constraint matching ON CONFLICT"), mas nenhum dos ~6 call-sites (`addGoal`/`saveGoalValues`/`saveDistribution`, nos dois arquivos de dashboard) checava o erro desse upsert específico — a tela chamava `notifySaved()` mesmo sem gravar nada. As poucas empresas consórcio de teste que tinham dado (Canaã Consórcios, Teste Consórcio) só tinham porque foram semeadas direto via migration/versão anterior do código, nunca passaram pelo upsert quebrado.
+   - Migration: `unique constraint (goal_id, employee_id)` em `consorcio_goal_allocations` (sem duplicatas existentes, aditiva e segura — testado o upsert de verdade antes/depois).
+   - `lib/ConsorcioDashboard.js` e `lib/EmpresaDashboard.js`: os ~6 call-sites de upsert de alocação passaram a checar o erro e mostrar mensagem real em vez de mentir "salvo" (o de vestuário não estava quebrado — é blindagem defensiva pra essa classe de bug nunca mais passar em silêncio, em nenhum dos dois).
+
+**Build**: `✓ Compiled successfully` nos dois. Ambos os fixes foram direto pra `main` (incidente em produção, não passou por PR/branch).
+
+---
+
+## Herocard do colaborador (consórcio/comercial): "vendido no mês" mais visível (2026-09-04)
+
+Felipe perguntou se o número grande do herocard (colaborador, consórcio/comercial) devia ser o vendido em vez de "falta pra bater a meta". Argumento pra manter "falta" como número principal: é gatilho de urgência (efeito goal-gradient — a pessoa empurra mais forte conforme o gap visível fecha), foi decisão deliberada de quando o herocard foi construído. Felipe concordou em manter, mas pediu mais destaque pro vendido, que estava em texto minúsculo cinza.
+
+- **`lib/ColaboradorViewConsorcio.js`**: "Vendido no mês" saiu de `text-xs text-white/60` pra `text-lg sm:text-xl font-extrabold` na cor de destaque do card (`#a78bfa`), ao lado do rótulo — continua secundário ao número principal, só parou de ser quase invisível.
+- `GerenteViewConsorcio.js`/`HierarchyHome.js` (gerente/sócio/supervisor) **não precisaram de ajuste** — os herocards deles já mostram o vendido como número principal (`hero.soldLoja`/`heroConsorcio.soldLoja`), só o do colaborador tinha a prioridade invertida.
+
+---
+
+## BUG REAL: `input[type="time"]` sem a classe `date-input` — campo "Hora" desalinhado (2026-09-04)
+
+Felipe mandou print do form "Cadastrar ligação" (`ColaboradorViewConsorcio.js`, iPad) mostrando o campo "Hora" visivelmente diferente dos vizinhos "Data da ligação"/"Agendar — data". Causa: a regra "todo `input[type=date]` precisa da classe `date-input`" (seção 5 do CLAUDE.md, já documentada por um bug anterior) nunca foi estendida pra `input[type="time"]` — o CSS de `app/globals.css` era `input[type="date"].date-input { ... }`, seletor específico de `type="date"`, então os 6 campos `type="time"` do app (todos em telas de agendamento de consórcio/comercial: `ConsorcioDashboard.js` ×3, `ColaboradorViewConsorcio.js` ×2, `Pipeline.js` ×1) continuavam renderizando o picker nativo de hora em tamanho maior que o resto do form.
+
+- `app/globals.css`: seletor da regra virou `input[type="date"].date-input, input[type="time"].date-input` — mesma classe cobre os dois tipos agora (não criada uma segunda classe quase idêntica só pra hora).
+- Os 6 `<input type="time">` ganharam a classe `date-input` (`sed` mecânico, string exata `type="time" className="input"` → `type="time" className="input date-input"`, único padrão usado nos 6).
+- CLAUDE.md seção 5 atualizada: a regra passa a valer pra `type="date"` **e** `type="time"`.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.

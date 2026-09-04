@@ -200,17 +200,24 @@ html, body {
   }
 }
 
-/* input[type=date] nativo (calendário do sistema ao tocar) — sem isso, alguns Android/iOS
-   renderizam o valor bem maior que o resto do formulário quando o campo não está focado.
-   Isso força o tamanho de fonte a ficar igual aos outros inputs (.input usa text-sm). */
-input[type="date"].date-input {
+/* input[type=date]/[type=time] nativo (calendário/relógio do sistema ao tocar) — sem isso,
+   alguns Android/iOS renderizam o valor bem maior que o resto do formulário quando o campo não
+   está focado. Isso força o tamanho de fonte a ficar igual aos outros inputs (.input usa text-sm).
+   2026-09-04: bug real reportado pelo Felipe (print do form "Cadastrar ligação" no iPad) — o campo
+   "Hora" (type="time") nunca tinha recebido essa classe, só os de data, então ficava maior/
+   desalinhado ao lado deles. A classe continua se chamando "date-input" de propósito (não criar
+   uma segunda classe quase idêntica só pra time) — regra agora é "todo input nativo de
+   data OU hora precisa dessa classe", não só data. */
+input[type="date"].date-input,
+input[type="time"].date-input {
   -webkit-appearance: none;
   appearance: none;
   font-size: 0.875rem;
   line-height: 1.25rem;
   color-scheme: light;
 }
-:root.dark input[type="date"].date-input {
+:root.dark input[type="date"].date-input,
+:root.dark input[type="time"].date-input {
   color-scheme: dark;
 }
 
