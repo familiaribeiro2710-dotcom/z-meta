@@ -207,13 +207,23 @@ html, body {
    "Hora" (type="time") nunca tinha recebido essa classe, só os de data, então ficava maior/
    desalinhado ao lado deles. A classe continua se chamando "date-input" de propósito (não criar
    uma segunda classe quase idêntica só pra time) — regra agora é "todo input nativo de
-   data OU hora precisa dessa classe", não só data. */
+   data OU hora precisa dessa classe", não só data.
+   2026-09-04 (mesmo dia, 2ª rodada — outro print do Felipe): font-size/line-height sozinhos não
+   bastavam — no Safari/iOS um campo de data/hora VAZIO (sem valor escolhido ainda, ex: "Agendar —
+   data"/"Hora" antes de preencher) renderizava mais fino que um campo já preenchido (ex: "Data da
+   ligação", com valor default), porque os segmentos internos do picker nativo (dia/mês/ano ou
+   hora/minuto) têm altura própria que não segue o line-height do CSS quando não há texto real
+   neles. Fix: travar a altura explicitamente (mesma conta de .input: padding 0.625rem*2 +
+   line-height 1.25rem + borda 2px*2 = 2.75rem) — com box-sizing:border-box (padrão do Tailwind
+   preflight), isso garante a MESMA altura de fora, tenha valor ou não, sem depender de como o
+   WebKit desenha os segmentos internos vazios. */
 input[type="date"].date-input,
 input[type="time"].date-input {
   -webkit-appearance: none;
   appearance: none;
   font-size: 0.875rem;
   line-height: 1.25rem;
+  height: 2.75rem;
   color-scheme: light;
 }
 :root.dark input[type="date"].date-input,
