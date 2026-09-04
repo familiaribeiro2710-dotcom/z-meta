@@ -1507,4 +1507,18 @@ Felipe pediu uma "cópia da categoria consórcio" renomeada pra "comercial". Ant
 
 ---
 
+## BUG REAL: teclado do iPad/mobile fechava a cada dígito digitado no "valor manual" de meta (2026-09-04)
+
+Felipe reportou: ao criar/editar uma meta e escolher "Valor manual" (distribuição custom por colaborador), o teclado do iPad fechava a cada número digitado — tornando praticamente impossível digitar um valor de vários dígitos (ex: R$10.000,00 exige 7 toques seguidos no `CurrencyInput`, que preenche centavos da direita pra esquerda). No mesmo fio, reportou que uma meta de R$10.000 pra loja com 1 colaborador só "não salvava" quando tentava atribuir esse valor manualmente a ele — sintoma consistente do mesmo bug: sem conseguir completar a digitação (foco caindo a cada toque), o valor que efetivamente chegava no campo ficava incompleto/errado, e `buildAllocRows` só monta a linha de alocação se o campo não estiver vazio — um valor nunca terminado de digitar não gera linha nenhuma pra salvar.
+
+**Causa raiz**: `DistributionFields` (pills "Igual pra todos / Valor manual / Por percentual" + inputs por colaborador) e `PacingFields` (ritmo da meta) estavam definidos como **funções aninhadas dentro do corpo de `Metas`** (`lib/EmpresaDashboard.js` e `lib/ConsorcioDashboard.js`, motor de metas de vestuário e consórcio/comercial respectivamente) em vez de componentes de nível de módulo. Toda vez que `Metas` re-renderiza — o que acontece a cada tecla digitada, já que `vals`/`setVals` é estado do próprio `Metas` — `DistributionFields` é **recriada como uma função nova**, uma identidade de componente diferente pro React a cada render. React não consegue mais casar a árvore antiga com a nova: desmonta o `<input>` de verdade e monta um `<input>` novo do zero. Em navegadores mobile (Safari/iPadOS, Chrome Android) perder o nó DOM do campo focado fecha o teclado virtual imediatamente — cada tecla vira "digitar → perder foco → teclado fecha".
+
+**Escopo confirmado**: varredura no repo inteiro por esse padrão (função com nome de componente — maiúscula — declarada dentro do corpo de outro componente) achou exatamente esses 2 casos, um em cada arquivo (`DistributionFields`/`PacingFields`), nada mais. Não é um problema sistêmico do app — os outros ~30 arquivos já seguem o padrão correto (componente auxiliar como função irmã, top-level, mesmo padrão de `LojaCard`/`EditUser` em `app/admin/page.js`).
+
+**Fix**: as duas funções viraram componentes de nível de módulo em cada arquivo (fora de `Metas`, duplicadas entre os dois arquivos de propósito — mesma decisão de isolar vestuário de consórcio já adotada no resto do projeto). `PacingFields` não dependia de nada local de `Metas` (só de `PACING_LABELS`, import de `./date`) — moveu sem mudança nenhuma. `DistributionFields` dependia de `activeEmps` (`employees.filter(e => e.active)`, calculado em `Metas`) — passou a receber como prop explícita nos 4 pontos de uso (criação e edição de distribuição, nos dois arquivos), em vez de fechar sobre a variável do componente pai. `pctSum` (helper puro, não-componente, usado também fora de `DistributionFields` pra validar soma de percentual antes de salvar) continuou local a `Metas` — só componentes que retornam JSX e são usados como tag (`<Xxx />`) sofrem esse bug, uma função helper comum redefinida a cada render não causa remount de nada.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
