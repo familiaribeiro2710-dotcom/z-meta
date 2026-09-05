@@ -1644,4 +1644,18 @@ Reportado pelo Felipe: na empresa ArmyBR, a colaboradora Lais foi desligada e o 
 
 ---
 
+## Pipeline (Kanban): "Sem contato" vira destino de arraste + reordenado pra perto de "Follow-up" (2026-09-05)
+
+Dois pedidos do Felipe juntos: (1) não dava pra arrastar um lead direto pra coluna "Sem contato" no Pipeline; (2) essa coluna precisava ficar ao lado de "Follow-up", não lá no fim junto com "Perdido".
+
+**Causa do bug de arraste**: `validDropTargets(lead)` (`lib/Pipeline.js`) nunca incluía `"sem_contato"` na lista de colunas aceitas — por decisão de propósito da versão anterior, "Sem contato" só era alcançável pela rota automática (marcar "Perdido" a partir de "Novo" e responder "não" na pergunta de contato). Soltar o card na coluna simplesmente não fazia nada (`moveLeadTo` descarta silenciosamente qualquer `colKey` fora de `validDropTargets`).
+
+**Correção**: `"sem_contato"` agora entra na lista de alvos válidos, mas só quando `lead.status === "novo"` — mesma régua que já existia pro botão "Não atendido" em `ConsorcioDashboard.js`/`LeadsTab` (`canResolveRow && l.status === "novo"`, linha ~2515), que também abre `openResolve(lead, "sem_contato")`. De agendado/follow-up/em negociação em diante continua não sendo um alvo (já houve contato/movimentação, não faz sentido). O modal que abre ao soltar já tinha suporte completo pro tipo `"sem_contato"` (ícone `PhoneOff`, título, sem a pergunta "conseguiu contato" — essa pergunta só aparece pro tipo `"perdido"`) — não precisou mexer em `confirmResolve`/`openResolve`, só liberar o destino.
+
+**Reorder de coluna**: `baseColumns()` moveu `"sem_contato"` de depois de "Vendido" (perto de "Perdido") pra logo depois de "Follow-up". Não muda nada de lógica, só a ordem visual do quadro.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
