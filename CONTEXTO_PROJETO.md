@@ -1658,4 +1658,16 @@ Dois pedidos do Felipe juntos: (1) não dava pra arrastar um lead direto pra col
 
 ---
 
+## Colaborador desativado escondido do seletor de "Lançamentos" (vestuário) — decisão explícita do Felipe (2026-09-05)
+
+Felipe reportou de novo o mesmo tipo de coisa da ArmyBR: a colaboradora Lais (desativada) ainda aparecia no seletor "Colaborador" da aba Metas → Lançamentos (`lib/EmpresaDashboard.js`, função `Lancamentos`). Diferença desse caso pro da ArmyBR: aqui **não era bug** — o comentário no código já explicava o motivo (`selectedIsInactive`): colaborador desativado ficava na lista de propósito, só pra dar acesso a ver/editar o histórico de vendas dele; lançar venda NOVA pra ele já vinha bloqueado (campos desabilitados + aviso). Expliquei o trade-off pro Felipe antes de mexer (perguntei via 3 opções: deixar como tá / esconder com toggle "mostrar desligados" / esconder completamente) — ele escolheu **esconder completamente**, mesmo sabendo que passa a exigir reativar a conta pra corrigir um lançamento antigo de alguém que já saiu.
+
+**Mudança**: `activeEmployees = employees.filter((e) => e.active)` — usado tanto no `<option>` do select quanto no valor inicial de `selected` (antes pegava `employees[0]`, que podia ser alguém inativo se a lista viesse nessa ordem). `selectedIsInactive`/os campos desabilitados continuam existindo como defesa (ex.: alguém é desativado em outra aba enquanto essa tela já estava aberta com ela selecionada) — só o SELECT em si que parou de listar inativos.
+
+**Ainda não mudado (mesmo padrão, perguntar antes)**: o mesmo `selectedIsInactive` existe em `Tarefas` (linha ~1608) e `Advertencias` (linha ~2043) do mesmo arquivo — colaborador/gerente desativado também continua nesses dois seletores por motivo idêntico (histórico). Felipe só decidiu sobre Lançamentos; se ele pedir a mesma coisa nessas duas telas, é o mesmo padrão de correção.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
