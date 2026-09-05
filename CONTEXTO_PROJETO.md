@@ -1611,12 +1611,36 @@ Dois pedidos do Felipe. Antes de implementar, confirmei entendimento e trouxe 2 
 
 Pedido do Felipe logo depois da feature anterior: "ao clicar no ícone pra ver o histórico do lead no Pipeline, tem que ter a opção também de mudar a etapa desse lead" — confirmei entendimento e perguntei se seguia a mesma regra de validação dos fluxos já existentes (agendar pede data/hora, vendido pede valor+categoria, perdido a partir de "novo" pergunta se teve contato); Felipe confirmou "Sim! Mesma regra".
 
-**`lib/LeadHistoryPanel.js`**: ganhou 3 novos props (`canManage`, `produtoCategorias`, `onChanged`) e um bloco "Mudar etapa" logo abaixo do badge de status, com botões Agendar/Em negociação/Follow-up/Vendido/Perdido — só aparece se `canManage` for true e o lead ainda aceitar a ação (mesma trava de `ManagerLeadRow`/`Pipeline.js`: `vendido`/`vendido_pendente`/`cancelado` não têm mais nenhuma ação; `perdido` só aceita "Agendar" de novo, não tem "resolver"). Lógica (`openAgendar`/`confirmAgendar`/`openResolve`/`confirmResolve`) e os 4 modais (agendar; resolver perdido/follow_up com a pergunta "conseguiu contato" quando o lead vem de "novo"; resolver em_negociacao; resolver vendido com valor+categoria+observações) são **cópia deliberada** da lógica que já existia em `Pipeline.js` — mesmo padrão de duplicação intencional já usado no resto do app (isolar risco entre componentes que precisam continuar funcionando de forma independente), em vez de levantar esse estado pro componente pai. Um `currentLead` local (sincronizado do prop `lead` via `useEffect`) deixa o badge/botões refletirem a mudança na hora, sem esperar o recarregamento do pai. Modais renderizados como overlay `z-[60]` (acima do próprio painel, que é `z-50`), pra empilhar visualmente por cima.
+**`lib/LeadHistoryPanel.js`**: ganhou 3 novos props (`canManage`, `produtoCategorias`, `onChanged`) e um bloco "Mudar etapa" logo abaixo do badge de status, com botões Agendar/Em negociação/Follow-up/Vendido/Perdido — só aparece se `canManage` for true e o lead ainda aceitar a ação (mesma trava de `ManagerLeadRow`/`Pipeline.js`: `vendido`/`vendido_pendente`/`cancelado` não têm mais nenhuma ação; `perdido` só aceita "Agendar" de novo, não tem "resolver"). Lógica (`openAgendar`/`confirmAgendar`/`openResolve`/`confirmResolve`) e os 4 modais (agendar; resolver perdido/follow_up com a pergunta "conseguiu contato" quando o lead vem de "novo"; resolver em_negociacao; resolver vendido com valor+categoria+observações) são **cópia deliberada** da lógica que já existia em `Pipeline.js` — mesmo padrão de duplicação intencional já usado no resto do app (isolar risco entre componentes que precisam continuar funcionando de forma independente), em vez de levantar esse estado pro componente pai. Um `currentLead` local deixa o badge/botões refletirem a mudança na hora, sem esperar o recarregamento do pai (patch otimista depois de agendar/resolver). Modais renderizados como overlay `z-[60]` (acima do próprio painel, que é `z-50`), pra empilhar visualmente por cima. **Ver entrada seguinte** — a sincronização inicial desse `currentLead` via `useEffect` tinha um bug real, corrigido na sessão seguinte.
 
 - **`lib/Pipeline.js`**: `<LeadHistoryPanel>` passou a receber `canManage={canManage}`, `produtoCategorias={produtoCategorias}` (Pipeline já buscava isso pra seu próprio modal de "vendido") e `onChanged={loadLeads}` (recarrega o board depois de qualquer mudança feita pelo painel).
 - **`lib/ConsorcioDashboard.js`** (`LeadsTab`): mesma coisa — `<LeadHistoryPanel>` ganhou `canManage`, `produtoCategorias` e `onChanged={load}`.
 
 **Build**: `✓ Compiled successfully` (verificado num ambiente Linux separado — precisou instalar manualmente o binário `@next/swc-linux-x64-gnu@14.2.33`, já que o `node_modules` do Felipe só tem o binário `darwin-x64`; isso é só uma particularidade do ambiente de verificação, não afeta o Mac do Felipe).
+
+---
+
+## BUG REAL: crash "Cannot read properties of null (reading 'status')" ao abrir o histórico de um lead (2026-09-04)
+
+Reportado pelo Felipe logo após o deploy da feature anterior, com print do console (`TypeError: Cannot read properties of null`) — reproduzido no `/admin`, mas o bug era do componente compartilhado (`LeadHistoryPanel.js`), então valia pros outros papéis também.
+
+**Causa raiz**: `currentLead` (o lead local, usado pra patch otimista depois de agendar/resolver) era sincronizado a partir da prop `lead` dentro de um `useEffect`. Um efeito só roda **depois** do commit — então no primeiro render logo depois de abrir um lead (`lead` passa de `null` pra um objeto), `currentLead` ainda estava com o valor antigo (`null`, se o painel tinha acabado de montar) no exato momento em que o código já lia `currentLead.status` pra decidir quais botões de "Mudar etapa" mostrar. Primeira tentativa de correção trocou o `useEffect` por um `setState` chamado direto durante o render (padrão que o próprio React recomenda pra "ajustar estado quando uma prop muda") — mas isso **não bastou sozinho**: o `setState` só agenda um novo render; o resto da execução ATUAL da função continua lendo a variável antiga, então o crash persistia no mesmo lugar, só que num commit novo (confirmado pelo Felipe, mesmo erro reapareceu depois do primeiro deploy da correção).
+
+**Correção final**: em vez de depender de `currentLead` diretamente em qualquer leitura dentro do render, criei uma constante calculada a cada render (`safeLead = lead && (!currentLead || currentLead.id !== lead.id) ? lead : currentLead`) — sempre coerente com a prop `lead` atual nesse exato instante, nunca depende de um render futuro. Toda leitura de status/nome/telefone/etc. no corpo do componente e nas funções `openAgendar`/`confirmAgendar`/`openResolve`/`confirmResolve` passou a usar `safeLead`; `currentLead`/`setCurrentLead` continuam existindo só como o state que guarda o patch otimista depois de salvar.
+
+**Build**: `✓ Compiled successfully` (mesmo ambiente Linux separado, binário `@next/swc-linux-x64-gnu@14.2.33`).
+
+---
+
+## BUG REAL: colaborador desativado ainda aparecia no select "Transferir para" da aba Leads (2026-09-04)
+
+Reportado pelo Felipe: na empresa ArmyBR, a colaboradora Lais foi desligada e o usuário desativado (`profiles.active = false`), mas ela continuava aparecendo no seletor de "Transferir para" (transferência em lote de leads pra outro colaborador) na aba Leads.
+
+**Causa**: `LeadsTab` (`lib/ConsorcioDashboard.js`) busca `employees` sem filtrar `active` de propósito (nomes de colaboradores desligados continuam precisando aparecer em telas históricas — filtro de leads por colaborador, resolução de nome no histórico, etc.). Todo consumidor desse mesmo array que é uma ação **nova/prospectiva** (atribuir lead, lançar prêmio, criar tarefa, etc.) já refiltrava localmente com `.filter((e) => e.active)` antes de popular o `<select>` — só o select de "Transferir para" (linha ~2430) tinha ficado de fora desse padrão, deixado passar quando a aba Leads ganhou a transferência em lote.
+
+**Correção**: `employees.map(...)` → `employees.filter((e) => e.active).map(...)`, mesmo padrão já usado no select "Atribuir a" (novo lead) alguns componentes acima, no mesmo arquivo.
+
+**Build**: `✓ Compiled successfully`.
 
 ---
 
