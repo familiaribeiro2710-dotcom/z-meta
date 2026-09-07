@@ -1670,4 +1670,16 @@ Felipe reportou de novo o mesmo tipo de coisa da ArmyBR: a colaboradora Lais (de
 
 ---
 
+## BUG REAL: barra de status do celular (Android/PWA) roxa, colada no header navy escuro (2026-09-05)
+
+Felipe mandou print do mobile: o cabeçalho parecia "meio ofuscado" — a área da barra de status do sistema (relógio/sinal/bateria, fora do DOM da página) aparecia roxa, colando mal com o header navy escuro logo abaixo.
+
+**Causa**: `theme-color` (`app/layout.js`, export `viewport`) e `theme_color` (`public/manifest.json`) ainda estavam em `#7c3aed` — a cor roxa da identidade ANTIGA. Esses dois valores controlam a cor que o navegador/PWA pinta na barra de status nativa do sistema (Android principalmente; no iOS quem manda é `appleWebApp.statusBarStyle`, que já estava certo). Nenhum dos dois foi atualizado quando o app virou "navy + gold" em 2026-07-19 (ver entrada "Nova identidade visual" nesta mesma seção) — passou despercebido porque não é visual da página em si, é pintado pelo SO/navegador a partir desses metadados.
+
+**Correção**: os dois valores viraram `#12203a` (`navyfixed`, o mesmo tom fixo e sempre escuro usado em headers/hero cards da identidade atual).
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.

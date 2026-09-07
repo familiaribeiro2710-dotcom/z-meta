@@ -43,7 +43,13 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#7c3aed",
+  // 2026-09-05 (bug real reportado pelo Felipe, print do Android): estava #7c3aed, a cor roxa da
+  // identidade ANTIGA — nunca foi atualizada quando o app virou "navy + gold" em 2026-07-19 (ver
+  // CONTEXTO_PROJETO.md, "Nova identidade visual"). Resultado: a barra de status do sistema (área
+  // fora do DOM da página, pintada pelo navegador/PWA a partir desse meta) ficava roxa colada
+  // direto no header navy escuro logo abaixo — mal-ajambrado, "ofuscado". `navyfixed` (#12203a) é
+  // o mesmo tom fixo usado em headers/hero cards da nova identidade, sempre escuro nos dois temas.
+  themeColor: "#12203a",
 };
 
 // Aplica a classe .dark em <html> antes do primeiro paint, a partir do cache em localStorage
