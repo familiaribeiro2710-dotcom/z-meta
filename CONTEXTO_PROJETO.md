@@ -1696,4 +1696,16 @@ Não pedi nem mudei permissão nenhuma pra isso — igual o "Adicionar observaç
 
 ---
 
+## Pipeline: reorder final das colunas — negativos agrupados no fim (2026-09-05)
+
+Felipe perguntou de forma aberta "a ordem do Pipeline está correta? Não acha que precisamos melhorar?" — puxei o fio: a mudança da entrada anterior (mover "Sem contato" pra perto de "Follow-up") tinha criado uma inconsistência real, não notada na hora: "Sem contato" é um desfecho terminal negativo igual "Perdido" (nenhum dos dois avança pra mais nada além de "Agendado"), mas ficava emparedado no meio da sequência ativa do funil (Follow-up → Em negociação → Vendido) enquanto "Perdido" continuava isolado lá no fim — quebra a leitura natural de esquerda→direita = progresso.
+
+Levantei 3 opções (mockup visual antes de mexer no código, cada uma mostrando a fileira de colunas coloridas): manter como estava, agrupar os 2 negativos no fim, ou colocar "Sem contato" logo depois de "Novo" (único status de onde ele de fato sai). Felipe escolheu **agrupar no fim**.
+
+**`lib/Pipeline.js`** (`baseColumns()`): ordem final — Novo, Agendado, Follow-up, Em negociação, Aguardando confirmação, Vendido, **Sem contato, Perdido**. Não mudou nenhuma regra de negócio (`validDropTargets`, `isDraggable` continuam iguais) — só a ordem de renderização do array, então nenhum outro arquivo precisou de ajuste.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
