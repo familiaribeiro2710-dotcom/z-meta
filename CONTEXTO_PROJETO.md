@@ -1682,4 +1682,18 @@ Felipe mandou print do mobile: o cabeçalho parecia "meio ofuscado" — a área 
 
 ---
 
+## Pipeline (Kanban): observação em massa por etapa (2026-09-05)
+
+Pedido do Felipe: em vez de abrir lead por lead no histórico pra escrever a mesma observação em cada um, um jeito de escrever uma vez e aplicar em todos os leads de uma etapa (coluna) do Pipeline. Confirmei entendimento antes de implementar e perguntei 2 pontos: (1) se o Pipeline está filtrado por colaborador, a observação vale só pros leads visíveis com esse filtro ou pra etapa inteira ignorando o filtro — Felipe escolheu **só os visíveis** (mais previsível, evita vazar nota pra lead de colaborador fora do filtro atual); (2) onde fica o botão — **ícone sempre visível no cabeçalho de cada coluna** (não escondido quando a coluna está vazia, só desabilitado).
+
+**`lib/Pipeline.js`**: ícone `MessageSquarePlus` no cabeçalho de cada coluna (ao lado do nome da etapa, antes do contador), desabilitado quando `cards.length === 0` (nada pra receber a observação). Ao clicar, abre modal com contagem de quantos leads vão receber + textarea + confirmar. `bulkNoteLeads` guarda a lista de leads (id/empresa_id/loja_id) capturada no momento de ABRIR o modal — se o auto-refresh do quadro (25s) recarregar os leads enquanto o modal ainda está aberto, a observação continua valendo pro grupo que o usuário efetivamente viu e confirmou, não por uma lista diferente que possa ter mudado por baixo.
+
+Grava em `crm_lead_events` com `event_type: 'nota'` — mesma tabela/evento do "Adicionar observação" de um lead só (`LeadHistoryPanel.js`), só que um `insert` em lote (um array de linhas, uma por lead) em vez de um insert por vez. `actor_id` sempre resolvido via `supabase.auth.getSession()` (nunca de uma prop), mesmo padrão de sempre pra não quebrar em "ver como". A observação de cada lead aparece no histórico dele normalmente (mesmo painel, mesmo evento "Observação adicionada") — não tem UI nova nenhuma pra "ver quem recebeu a nota em massa" separada disso, é só uma forma mais rápida de criar N eventos idênticos.
+
+Não pedi nem mudei permissão nenhuma pra isso — igual o "Adicionar observação" de um lead só, que hoje não é restrito por `canManage`, o ícone de observação em massa também não é (é sobre registrar histórico, não mudar status de venda).
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
