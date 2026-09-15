@@ -1720,4 +1720,18 @@ Felipe reportou de novo o mesmo erro ("Nenhum colaborador ativo pra atribuir ess
 
 ---
 
+## Aba Leads (gerente/supervisor/sócio/master/colaborador): total cadastrado + exportar Excel (2026-09-15)
+
+Pedido do Felipe: na visão do gerente, na aba Leads, precisa mostrar a quantidade total de leads cadastrados e ter opção de exportar em Excel — hoje a aba Leads (`LeadsTab`, `lib/ConsorcioDashboard.js`, compartilhado por todos os papéis com acesso a essa aba) já mostrava o contador de leads (`filtered.length`) no cabeçalho da lista, mas esse número reflete o filtro aplicado, não necessariamente o total; e não tinha exportação nenhuma — só o Funil (`ConsorcioDashboard`, `tab === "atividades"`) já tinha "Exportar Excel".
+
+**`lib/ConsorcioDashboard.js` (`LeadsTab`)**: quando algum filtro está ativo (`filtroAtivo`), uma linha extra abaixo do contador mostra "Total cadastrado (sem filtro): {leads.length}" — sem filtro nenhum (estado padrão da aba), o contador já mostrado é o total, então essa linha só aparece quando ela de fato agregaria informação nova. Novo botão "Exportar Excel" (mesmo padrão visual/ícone `Download` do Funil) ao lado do contador, habilitado sempre que `filtered.length > 0` — exporta exatamente o que está filtrado na tela (mesma regra já usada no Funil: exportação e visualização nunca ficam inconsistentes), numa planilha só ("Leads") com Colaborador/Nome do cliente/Telefone/Data da ligação/Agendamento/Status/Feedback/Valor da venda/Categoria do produto/Observações. Nome do arquivo usa o período filtrado (`De`/`Até`) quando houver, senão a data de hoje.
+
+A query de carregamento (`load()`) ganhou `categoria_produto_id` no `select` — não vinha sendo buscado antes (a aba nunca precisou dele pra exibir a lista), mas a exportação precisa pra resolver o nome da categoria de produto de cada venda.
+
+Botão de exportar não foi restrito por `canManage`/papel (diferente do botão do Funil, que só aparece pra gerente/supervisor/sócio/leitor) — é uma ação de leitura, disponível pra qualquer um que já vê a aba Leads, inclusive colaborador vendo os próprios leads (`ColaboradorViewConsorcio.js`).
+
+**Build**: `✓ Compiled successfully` (prerender de `/admin`/`/socio`/`/supervisor`/etc. falha neste ambiente por falta de env vars do Supabase — pré-existente, não relacionado a esta mudança).
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
