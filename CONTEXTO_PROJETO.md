@@ -1720,6 +1720,20 @@ Felipe reportou de novo o mesmo erro ("Nenhum colaborador ativo pra atribuir ess
 
 ---
 
+## Aba Leads: total cadastrado + exportar Excel (2026-09-15)
+
+Pedido do Felipe: na visão do gerente, na aba Leads, precisa mostrar a quantidade total de leads cadastrados e ter opção de exportar em Excel.
+
+**Primeira tentativa (errada) — `lib/ConsorcioDashboard.js` (`LeadsTab`, export nomeado)**: implementei achando que essa era a aba Leads usada pelo gerente em qualquer categoria. Felipe testou na **ArmyBR** (categoria **vestuário**) e não viu a mudança — motivo: `LeadsTab` de `ConsorcioDashboard.js` só é montada dentro de `ConsorcioDashboard`/`GerenteViewConsorcio.js` (`tab === "leads"`), exclusiva de empresas **consórcio/comercial**. Vestuário tem sua **própria** aba "Leads", componente totalmente diferente (`OnlineLeadsTab`, dentro de `lib/EmpresaDashboard.js`) — fonte de dados é `online_activations` (contatos cadastrados via "Ativação Online"), não `crm_leads`. As duas mudanças foram mantidas (não fazia sentido reverter a de consórcio, é uma aba real que também precisava disso), mas a que o Felipe efetivamente testou e cobrava era a segunda:
+
+**`lib/EmpresaDashboard.js` (`OnlineLeadsTab`, usada por gerente/supervisor/sócio/master em empresas **vestuário**, montada dentro da aba "Online")**: mesmo padrão da correção em consórcio — quando algum filtro está ativo, linha extra "Total cadastrado (sem filtro): {scoped.length}" abaixo do contador (`scoped` = leads já escopados por `employees`, antes de busca/data/colaborador); sem filtro, o contador já é o total. Novo botão "Exportar Excel" (ícone `Download`, precisou importar — não existia nesse arquivo) ao lado do contador, habilitado com `filtered.length > 0`, exportando exatamente o filtrado: planilha "Leads" com Colaborador/Cliente/Telefone/Código/Data. Nome do arquivo usa o período filtrado (`De`/`Até`) quando houver, senão a data de hoje. Sem restrição de papel (mesma decisão da aba de consórcio) — é leitura, não gerenciamento.
+
+**`lib/ConsorcioDashboard.js` (`LeadsTab`)**: mesma coisa pra quem usa consórcio/comercial (gerente/supervisor/sócio/master/colaborador) — linha "Total cadastrado (sem filtro): {leads.length}" quando filtro ativo, botão "Exportar Excel" exportando o filtrado numa planilha "Leads" com Colaborador/Nome do cliente/Telefone/Data da ligação/Agendamento/Status/Feedback/Valor da venda/Categoria do produto/Observações. A query de carregamento (`load()`) ganhou `categoria_produto_id` no `select`, que faltava (a aba nunca tinha precisado dele até a exportação).
+
+**Lição**: duas abas com o mesmo nome de usuário ("Leads") e o mesmo padrão visual/de filtro, mas são árvores de componente e fontes de dado completamente diferentes por categoria de empresa (mesmo princípio de "isolar risco entre categorias" já documentado no resto do projeto) — antes de mexer numa aba por nome, checar a categoria da empresa de teste e o componente real por trás, não assumir pelo nome do tab.
+
+**Build**: `✓ Compiled successfully` (prerender de `/admin`/`/socio`/`/supervisor`/etc. falha neste ambiente por falta de env vars do Supabase — pré-existente, não relacionado a esta mudança).
+
 ## Importação manual de lista fria — RBI - Tuná Parque (2026-09-17)
 
 Felipe pediu pra inserir 145 contatos ("lista fria") direto no Pipeline da empresa **RBI - Tuná Parque** (categoria `comercial`, loja "Tuná Parque - Capitólio-MG"). Antes de gravar qualquer coisa, revisei a lista colada por ele e reportei 5 pontos (confirmados por ele antes de agir): (1) o 1º registro estava fora do padrão Nome/Telefone/Cidade dos outros 144 — só telefone + "Medeiros", sem nome completo nem cidade; (2) 1 duplicata real (mesmo telefone em "Rafaela Sant's"/"Rafaela Santos Junqueira"); (3) alguns nomes são só apelido/usuário (`cesar`, `emilly`, `MARIA`, etc.); (4) a loja só tem 1 colaborador ativo, então todos os leads cairiam nele; (5) `crm_leads` não tem coluna de cidade — perguntei se ela deveria ir no campo Endereço.
