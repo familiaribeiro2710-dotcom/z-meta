@@ -1720,4 +1720,24 @@ Felipe reportou de novo o mesmo erro ("Nenhum colaborador ativo pra atribuir ess
 
 ---
 
+## Importação manual de lista fria — RBI - Tuná Parque (2026-09-17)
+
+Felipe pediu pra inserir 145 contatos ("lista fria") direto no Pipeline da empresa **RBI - Tuná Parque** (categoria `comercial`, loja "Tuná Parque - Capitólio-MG"). Antes de gravar qualquer coisa, revisei a lista colada por ele e reportei 5 pontos (confirmados por ele antes de agir): (1) o 1º registro estava fora do padrão Nome/Telefone/Cidade dos outros 144 — só telefone + "Medeiros", sem nome completo nem cidade; (2) 1 duplicata real (mesmo telefone em "Rafaela Sant's"/"Rafaela Santos Junqueira"); (3) alguns nomes são só apelido/usuário (`cesar`, `emilly`, `MARIA`, etc.); (4) a loja só tem 1 colaborador ativo, então todos os leads cairiam nele; (5) `crm_leads` não tem coluna de cidade — perguntei se ela deveria ir no campo Endereço.
+
+Felipe respondeu simplificando o escopo: **telefone sem o "+55"** (só DDD+número, mesma convenção que `PhoneInput`/`maskPhone` já usam em todo o resto do app — ver `lib/MaskedInputs.js`); **sem nome completo nem cidade**, só Nome e Telefone mesmo; **descartar a duplicata**; **atribuir tudo ao único colaborador da loja**; **não preencher endereço/observação nenhuma**; e acrescentar **" (Lista fria)"** no final de todo nome, pra identificar a origem desses leads na tela.
+
+Parseei a listagem com um script (não na mão, pra não errar contagem/duplicata em 145 linhas) — confirmou 145 registros, 1 duplicata por telefone, 144 únicos — e inseri via SQL direto (`crm_leads`, `status='novo'`, `empresa_id`/`loja_id`/`employee_id` fixos, telefone só dígitos sem DDI). Confirmado no banco: 144 linhas gravadas. Não precisou de migração nem mudança de código — é só dado, usando os campos que já existem.
+
+## Painel de histórico do lead: botão de WhatsApp (2026-09-17)
+
+Pedido do Felipe: ao abrir o painel de histórico de um lead no Pipeline (ou na aba Leads), precisa ter um botão que abre a conversa no WhatsApp do cliente — pra todas as categorias de empresa que usam o funil de CRM (`consorcio`/`comercial`, ver `isCrmCategoria` em `lib/categoria.js`).
+
+**`lib/LeadHistoryPanel.js`**: nova função `whatsappLink(telefone)` — limpa tudo que não é dígito e prefixa `"55"` (a menos que o valor já venha com o DDI embutido), porque a convenção do app inteiro é gravar `crm_leads.telefone` **sem** código do país (`PhoneInput`/`maskPhone` em `lib/MaskedInputs.js` só pedem DDD+número; a importação em massa da "Lista fria", registrada na entrada anterior, também gravou sem DDI de propósito, pra ficar consistente). Botão renderizado ao lado do telefone no cabeçalho do painel (ícone `MessageCircle`, cor verde do WhatsApp `#25D366`), como link `<a target="_blank">` pra `https://wa.me/<DDI+DDD+número>` — só aparece se o telefone salvo resultar em algum dígito.
+
+Como `LeadHistoryPanel` é o componente único compartilhado entre o Pipeline (`lib/Pipeline.js`) e a aba Leads (`LeadsTab` em `lib/ConsorcioDashboard.js`), e é usado por todos os papéis que têm acesso a leads (colaborador, gerente, supervisor/sócio, administrativo), o botão já cobre todos eles e as duas categorias de empresa que compartilham essa engine — não precisou tocar em mais nenhum arquivo. Vestuário não tem Pipeline/funil de leads, então não há nada equivalente a fazer lá.
+
+**Build**: `✓ Compiled successfully`.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
