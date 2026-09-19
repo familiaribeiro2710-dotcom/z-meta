@@ -1754,4 +1754,22 @@ Como `LeadHistoryPanel` é o componente único compartilhado entre o Pipeline (`
 
 ---
 
+## BUG REAL: faturamento geral da loja sumia venda de colaborador desativado — ArmyBR/Lais Reis (2026-09-19)
+
+Felipe reportou: na ArmyBR (vestuário), a colaboradora **Lais Reis** foi desativada, e o valor que ela tinha vendido no mês **saiu do faturamento geral da loja** — que aparece pra todo colaborador da loja, não só pra ela.
+
+Achei a causa raiz na RPC `get_store_sales_ranking(p_month, p_loja)`: o `where` da função exigia `p.active = true`, então ao desativar alguém o Postgres simplesmente parava de devolver a linha dela — mesmo com os `sales_entries` dela 100% intactos no banco (confirmado por SQL: R$9.111,89 vendidos em setembro, dado nunca foi apagado). O problema é que essa RPC alimenta **duas coisas** em `lib/ColaboradorView.js`: a lista "Ranking de vendas" e, mais grave, `storeSoldLoja` (linha ~516) — a soma usada pra calcular a **meta geral da loja** e a barra de progresso que aparece pra QUALQUER colaborador de vestuário, não só o dono da venda. Sumir a linha da RPC sumia o valor dela dessa soma pra todo mundo.
+
+Esse é exatamente o mesmo bug de classe que já tinha sido corrigido em 2026-09-03 em `HierarchyHome.js`/`GerenteView.js`/`EmpresaDashboard.js` (soldLoja/ranking não podem filtrar por `active` porque isso reescreve retroativamente o histórico de meses já fechados) — só que aqueles arquivos fazem a query direto no client, e ninguém tinha revisado a RPC equivalente usada pelo colaborador (`get_store_sales_ranking`), que tem o mesmo filtro só que hardcoded em SQL.
+
+**Migração** (`fix_get_store_sales_ranking_keep_inactive_history`): a função agora inclui um colaborador se ele está **ativo hoje OU vendeu > 0 no mês consultado** — mesmo padrão já usado nos outros arquivos (`.filter((emp) => emp.active || sold > 0)`), trocando o `where p.active = true` fixo por um `left join lateral` que calcula o vendido primeiro e só filtra depois. Preserva o faturamento histórico sem deixar todo ex-colaborador zerado aparecendo pra sempre no ranking.
+
+**Verificação**: rodei a RPC antes e depois da migração pra loja da ArmyBR/mês 2026-09 — antes, só 3 colaboradoras apareciam (Lais ausente); depois, ela aparece com R$9.111,89, batendo exatamente com a soma dos `sales_entries` dela no mês. `get_advisors` (security) não acusou nada novo além dos avisos pré-existentes já documentados (funções `SECURITY DEFINER` que checam a role internamente).
+
+**Nota**: `ColaboradorViewConsorcio.js` (consórcio/comercial) **não** tem esse bug — a versão dele de `storeSoldLoja` consulta `crm_leads` direto por `loja_id`, sem RPC e sem filtro de `employee.active` nenhum. O problema era exclusivo do caminho de vestuário via `get_store_sales_ranking`.
+
+Só migração de banco — nenhum arquivo de código mudou, não precisou de build/deploy.
+
+---
+
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
