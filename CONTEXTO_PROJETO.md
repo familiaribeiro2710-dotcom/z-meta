@@ -1770,6 +1770,29 @@ Esse é exatamente o mesmo bug de classe que já tinha sido corrigido em 2026-09
 
 Só migração de banco — nenhum arquivo de código mudou, não precisou de build/deploy.
 
+## Listas de leads (origem do lead) — tabela própria + filtro no Pipeline/aba Leads (2026-09-24)
+
+**Pedido do Felipe**: filtrar leads por lista ("Lista 2026", "Lista fria", "Anúncios - Instagram") e poder criar listas. Até aqui a lista só existia como texto entre parênteses no fim do `nome_completo` (improviso das importações manuais de 2026-09-17 e 2026-09-24) — frágil (digitação), poluía o nome do cliente e não permitia medir conversão por origem.
+
+**Banco** (migração `crm_lead_listas`, só aditiva):
+- Tabela nova `crm_lead_listas` (`id`, `empresa_id`, `nome`, `active`, `created_by`, `created_at`). Índice único `(empresa_id, lower(btrim(nome)))` — impede "Lista fria" e "lista Fria " duplicadas. Sem policy de DELETE: lista sai de uso via `active=false` (arquivar), pra não perder a origem dos leads.
+- RLS: SELECT = master ou mesma empresa; INSERT/UPDATE = master ou (mesma empresa e sócio/supervisor/gerente). Colaborador só escolhe, não cria.
+- `crm_leads.lista_id` (nullable) com FK **composta** `(lista_id, empresa_id) → crm_lead_listas(id, empresa_id)` — o banco garante que um lead nunca aponta pra lista de outra empresa.
+- `log_crm_lead_event` passou a registrar `lista` em `changed_fields` quando `lista_id` muda (evento `edicao`).
+- Testado com `set role authenticated` + claims simulados (em transação com rollback): gerente da Canaã vê 0 listas e não consegue criar lista na RBI; colaborador da RBI vê as 3 e não consegue criar; gerente da RBI cria.
+
+**Dados**: RBI - Tuná Parque ganhou 3 listas e os 682 leads foram vinculados pelo sufixo do nome (498 Lista 2026, 144 Lista fria, 40 Anúncios - Instagram). Nenhuma outra empresa foi tocada. A remoção do sufixo "(...)" do `nome_completo` é feita junto com o deploy, pra não sumir a informação antes da UI nova estar no ar.
+
+**Código**:
+- `lib/leadListas.js` (novo, ponto único): `useLeadListas(empresaId)`, `createLeadLista`, `ListaFilterSelect` (Todas / cada lista / Sem lista), `matchesListaFilter`, `ListaPicker` (seletor no cadastro, com "+ Nova" inline só pra gestor), `LeadListasManager` (card criar/renomear/arquivar, com contagem de leads) e `ListaChip`.
+- `lib/Pipeline.js`: filtro "Lista" ao lado do filtro de colaborador + chip da lista em cada card. Observação em massa respeita os dois filtros.
+- `lib/ConsorcioDashboard.js`: `LeadsTab` ganhou filtro Lista (rascunho/aplicar, mesmo padrão dos outros), campo Lista no "Cadastrar lead", nome da lista ao lado do telefone na linha e coluna "Lista" no Excel. Card `LeadListasManager` no Funil, logo depois de "Categorias de produto" (visível pra quem não é "leitor").
+- `lib/ColaboradorViewConsorcio.js`: campo Lista no "Registrar lead" (só aparece se a empresa tiver lista ativa; colaborador não cria).
+
+**Pendente (próximas etapas combinadas com o Felipe)**: trava de telefone duplicado no cadastro, importação de planilha dentro do app (com lista + dedupe) e relatório de conversão por lista. Limpeza dos 228 duplicados da Canaã aguarda aprovação dele.
+
+Verificação: `npm run build` limpo + eslint `react/jsx-no-undef` sem erro nos 4 arquivos.
+
 ---
 
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
