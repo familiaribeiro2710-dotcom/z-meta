@@ -59,8 +59,11 @@ export const viewport = {
 const themeInitScript = `
 (function () {
   try {
-    var t = localStorage.getItem("zmeta_theme");
-    if (t === "dark") document.documentElement.classList.add("dark");
+    // 2026-09-26: "system" (ou nada salvo ainda) segue o tema do aparelho — ver lib/ThemeContext.js.
+    var t = null;
+    try { t = localStorage.getItem("zmeta_theme"); } catch (e) {}
+    var dark = t === "dark" || ((t !== "light") && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    if (dark) document.documentElement.classList.add("dark");
   } catch (e) {}
 })();
 `;

@@ -1793,6 +1793,22 @@ Só migração de banco — nenhum arquivo de código mudou, não precisou de bu
 
 Verificação: `npm run build` limpo + eslint `react/jsx-no-undef` sem erro nos 4 arquivos.
 
+## Tema automático (segue o tema do aparelho) — Claro / Escuro / Automático (2026-09-26)
+
+**Pedido do Felipe**: com o PWA instalado, o app seguir o modo claro/escuro do celular. Mockup aprovado: `MOCKUP_TEMA_AUTOMATICO.html`, opção A (popover no ícone de tema do topo).
+
+**Banco** (migração `profiles_theme_preference_system`): CHECK de `profiles.theme_preference` passou a aceitar `system`; default da coluna virou `system`; os 33 perfis que estavam `light` viraram `system` (nenhum perfil tinha `dark` salvo — como `light` era o default, não dava pra distinguir quem escolheu claro de propósito). É ajuste de preferência visual, sem efeito em dado de negócio. Cliente antigo continua funcionando com `system` (trata como claro).
+
+**Código**:
+- `lib/ThemeContext.js`: `useThemeToggle` agora devolve `{ theme, preference, setPreference }`. `preference` ∈ light/dark/system; com `system`, aplica `prefers-color-scheme` e escuta `change` (troca ao vivo, sem recarregar). Preferência lida do cache só depois de montar (evita divergência de hidratação e flash).
+- `app/layout.js`: script anti-flash considera `system` (ou nada salvo) → segue o aparelho antes do primeiro paint.
+- `lib/AppShell.js`: ícone de tema abre popover com 3 opções (Claro/Escuro/Automático) + legenda do estado. Popover ancorado na borda direita do container do header, largura `min(17rem, 100vw - 1.5rem)` — nunca vaza da tela no celular. Fecha em toque fora e Esc.
+- `theme-color` (barra de status) **mantido** em `#12203a` nos dois temas, de propósito — ver bug real de 2026-09-05.
+
+**Verificação**: build limpo; teste com Playwright numa rota temporária (não commitada) em 320px/claro, 375px/escuro e 1280px — popover dentro da tela nos 3 (x≥0 e x+largura≤viewport), Automático segue o `colorScheme` emulado, troca ao vivo funciona, escolher "Claro" fixa e grava `zmeta_theme=light`.
+
+**Limitação conhecida**: a splash do PWA (`manifest.json background_color`) aceita uma cor só — continua clara.
+
 ---
 
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
