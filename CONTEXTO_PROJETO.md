@@ -1821,3 +1821,9 @@ Verificação: `npm run build` limpo + eslint `react/jsx-no-undef` sem erro nos 
 - **Implementação:** `closedMonthStoreGoalCelebrations` em `lib/goalCelebrations.js` — avalia sempre `previousMonth(todayStr())` com fetch próprio (nunca estado de tela), dedup continua em `goal_celebration_seen`. Cada view passa seus loaders (mesma definição de "vendido" do herocard): `GerenteView`, `GerenteViewConsorcio`, `ColaboradorView`, `ColaboradorViewConsorcio`. Effect roda 1x no mount (deps `profile.id`), não reage ao mês selecionado. Label do modal usa o mês da comemoração.
 - **Dados:** apagadas as 3 linhas `kind='loja', month='2026-09-01'` gravadas indevidamente (pra comemoração real de setembro disparar em 01/10 se a loja bater).
 - **Pendente (mesmo padrão de race):** modais de meta individual/online do colaborador (`goalCelebrations`/`onlineCelebrations` em `ColaboradorView.js`) ainda leem estado de tela misturado (`goals` setado antes de `entries`).
+
+## Relatório PDF: etiqueta vermelha "DESLIGADO" no colaborador desativado (2026-09-30)
+
+- Felipe reportou o desligado aparecendo no PDF. Decisão: **manter** a linha (vendas/comissão do mês são reais e precisam bater com o faturamento da loja — mesma regra de 2026-09-03/09-19) e só sinalizar.
+- `lib/monthlyReport.js`: `employees[]` ganhou `desligado: !e.active`; helper `drawDesligadoTag` desenha uma pílula vermelha "DESLIGADO" logo após o nome, via `didDrawCell`, nas 3 tabelas que listam colaborador (Ranking, Faturamento e comissão por colaborador, Premiações por colaborador). Gerente desativado não ganhou etiqueta (não foi pedido).
+- Validado gerando o PDF com dados fictícios em Node (jsPDF real) e conferindo posição via `pdftotext -bbox`: etiqueta logo após o nome e centralizada na linha, nas duas tabelas.
