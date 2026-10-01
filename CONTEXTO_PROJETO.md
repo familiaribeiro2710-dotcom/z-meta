@@ -1812,3 +1812,12 @@ Verificação: `npm run build` limpo + eslint `react/jsx-no-undef` sem erro nos 
 ---
 
 **Instrução pro Claude que abrir este documento em um novo chat:** leia este arquivo por completo antes de qualquer alteração no projeto. Ao final de qualquer sessão de trabalho relevante, atualize a seção 11 (histórico) e, se necessário, as seções 8 (padrões mobile), 9 (schema) ou 12/13 (pendências), pra manter este documento como fonte de verdade viva do projeto.
+
+## BUG REAL: modal "a loja bateu a HIPER META" disparando antes do mês fechar (2026-09-30)
+
+- **Sintoma:** gerente (ArmyBR Anália Franco) trocava de mês e voltava pra setembro e aparecia "A loja bateu a HIPER META de setembro" — com R$269k vendidos e META de R$310k (nem a primeira camada batida).
+- **Causa raiz:** o effect do modal comparava `goalsList` com `hero.soldLoja` do estado da tela. Em `loadStats`, `setGoalsList` acontece vários `await` antes de `setHero` → por alguns renders a tela tinha metas de SETEMBRO (310/330/350k) + vendido de AGOSTO → as 3 camadas "batidas" e gravadas como vistas em `goal_celebration_seen`. Mesmo padrão nas 4 views.
+- **Regra nova (decisão do Felipe):** esse modal só dispara DEPOIS que o mês fecha no calendário, 1x por pessoa/mês/nível, no primeiro acesso após a virada.
+- **Implementação:** `closedMonthStoreGoalCelebrations` em `lib/goalCelebrations.js` — avalia sempre `previousMonth(todayStr())` com fetch próprio (nunca estado de tela), dedup continua em `goal_celebration_seen`. Cada view passa seus loaders (mesma definição de "vendido" do herocard): `GerenteView`, `GerenteViewConsorcio`, `ColaboradorView`, `ColaboradorViewConsorcio`. Effect roda 1x no mount (deps `profile.id`), não reage ao mês selecionado. Label do modal usa o mês da comemoração.
+- **Dados:** apagadas as 3 linhas `kind='loja', month='2026-09-01'` gravadas indevidamente (pra comemoração real de setembro disparar em 01/10 se a loja bater).
+- **Pendente (mesmo padrão de race):** modais de meta individual/online do colaborador (`goalCelebrations`/`onlineCelebrations` em `ColaboradorView.js`) ainda leem estado de tela misturado (`goals` setado antes de `entries`).
