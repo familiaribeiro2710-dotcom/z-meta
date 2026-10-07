@@ -1827,3 +1827,42 @@ Verificação: `npm run build` limpo + eslint `react/jsx-no-undef` sem erro nos 
 - Felipe reportou o desligado aparecendo no PDF. Decisão: **manter** a linha (vendas/comissão do mês são reais e precisam bater com o faturamento da loja — mesma regra de 2026-09-03/09-19) e só sinalizar.
 - `lib/monthlyReport.js`: `employees[]` ganhou `desligado: !e.active`; helper `drawDesligadoTag` desenha uma pílula vermelha "DESLIGADO" logo após o nome, via `didDrawCell`, nas 3 tabelas que listam colaborador (Ranking, Faturamento e comissão por colaborador, Premiações por colaborador). Gerente desativado não ganhou etiqueta (não foi pedido).
 - Validado gerando o PDF com dados fictícios em Node (jsPDF real) e conferindo posição via `pdftotext -bbox`: etiqueta logo após o nome e centralizada na linha, nas duas tabelas.
+
+## Seletor de Tarefas/Advertências só lista quem estava ativo no período — `profiles.deactivated_at` (2026-10-06)
+
+- **Pedido do Felipe:** na ArmyBR Anália Franco, a Lais Reis (desativada) ainda aparecia no seletor "Colaborador" da aba Tarefas. Regra definida por ele: **até o dia em que o cadastro foi desativado a pessoa pode aparecer; depois disso, só colaboradores ativos.** Fecha a pendência anotada em 2026-09-05 ("Ainda não mudado: Tarefas e Advertencias").
+- **Não era bug de query:** era o comportamento deliberado (`selectedIsInactive` — desativado continuava selecionável pra dar acesso ao histórico). O que faltava era o banco saber QUANDO a pessoa foi desativada — `profiles` só tinha o booleano `active`.
+- **Helper novo `wasActiveOn(person, dateStr)`** (`lib/date.js`): ativo hoje → `true`; desativado → `true` só até o dia da desativação inclusive (`deactivated_at` convertido pro fuso de SP via `todayStr`); desativado sem data → `false`.
+- **`Tarefas`** (`lib/EmpresaDashboard.js`, usada também pelo `ConsorcioDashboard`): `visibleEmployees`/`visibleGerentes` filtrados por `wasActiveOn(…, viewDate)` — o dia do DateNav do checklist. `viewDate` subiu pro topo do componente (precisa existir antes do `selected`). Effect novo troca o `selected` pro primeiro visível se a pessoa selecionada sair da lista ao mudar o dia.
+- **`Advertencias`**: mesma lógica, mas a tela é por mês — ganhou a prop `month` (passada pelos dois dashboards). `refDate` = hoje no mês atual; dia 1º do mês quando é mês passado. Ou seja: no mês corrente, desligado some na hora; em mês passado aparece se ainda estava ativo no dia 1º (histórico), sem poder receber advertência nova.
+- **Não mexido (decisões anteriores continuam valendo):** Lançamentos (só ativos, 2026-09-05), Premiações/Metas (`activeEmps`), Placar (só ativos), ranking de vendas (mantém inativo com venda no mês, 2026-09-19), PDF (etiqueta DESLIGADO, 2026-09-30), "atividades pendentes" do herocard (já filtrava ativos). Tarefas da Lais continuam `active = true` no banco (histórico) — não contam em nada porque todo cálculo filtra o colaborador por `active`.
+- **PENDENTE — migração `profiles_deactivated_at` NÃO aplicada pela sessão do Cowork** (toda escrita via MCP do Supabase deu timeout em 2026-10-06; leitura funcionou). O código é seguro sem ela: sem a coluna, `deactivated_at` vem `undefined` e todo desativado some de qualquer período. SQL pra rodar no SQL Editor (projeto `z-meta`):
+
+```sql
+alter table public.profiles add column if not exists deactivated_at timestamptz;
+
+create or replace function public.set_profile_deactivated_at()
+returns trigger
+language plpgsql
+set search_path to 'public'
+as $$
+begin
+  if new.active is distinct from old.active then
+    if new.active = false then
+      new.deactivated_at := coalesce(new.deactivated_at, now());
+    else
+      new.deactivated_at := null;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_set_profile_deactivated_at on public.profiles;
+create trigger trg_set_profile_deactivated_at
+  before update on public.profiles
+  for each row execute function public.set_profile_deactivated_at();
+```
+
+- **Data da Lais em aberto:** única pessoa inativa no banco hoje. Data real da desativação desconhecida (última venda 02/09, já estava inativa em 19/09). Enquanto `deactivated_at` dela ficar `NULL`, ela não aparece em nenhum dia/mês nesses dois seletores. Depois de aplicar a migração, atualizar a linha `profiles` da seção 4 do `CLAUDE.md` com a coluna nova.
+- **Verificação:** `next build` numa cópia limpa (`npm ci` + envs fictícias) → `✓ Compiled successfully`, exit 0. Regra testada em Node: ativo, inativo sem data, inativo sem coluna, dia da desativação com virada de fuso (01:30 UTC = dia anterior em SP), dia seguinte, mês seguinte — 7/7.
