@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Meta da loja por dia da semana</title>
+<style>
+  :root{--navy:#12203a;--gold:#c9a45c;--goldlight:#e3c98f;--bg:#f5f3ee;--surface:#fff;--line:#e4e0d6;--muted:#7d7a6f;--green:#16a34a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;background:#e9e6df;color:var(--navy);padding:32px 16px 48px}
+  h1{font-size:22px;font-weight:800;text-align:center}
+  .sub{text-align:center;color:#6b6a63;font-size:13px;margin:6px auto 8px;max-width:680px;line-height:1.5}
+  .sysbar{display:flex;justify-content:center;gap:8px;margin:16px 0 28px;flex-wrap:wrap}
+  .sysbar button{border:2px solid #d8d4c9;background:#fff;border-radius:999px;padding:7px 13px;font-weight:700;font-size:12px;cursor:pointer;color:var(--navy)}
+  .sysbar button.on{border-color:var(--gold);background:#fbf5e8}
+  .grid{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:340px}
+  .col h2{font-size:15px;font-weight:800;text-align:center}
+  .col p.note{font-size:12px;color:#6b6a63;text-align:center;line-height:1.5}
+
+  .phone{width:330px;height:680px;border-radius:44px;background:#0b0b0c;padding:12px;box-shadow:0 20px 50px #0003}
+  .screen{width:100%;height:100%;border-radius:34px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+  .status{height:30px;background:var(--navy);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex-shrink:0}
+  .header{background:var(--navy);color:#fff;padding:8px 16px 12px;font-weight:800;font-size:16px;flex-shrink:0}
+  .header span{color:var(--gold)}
+  .content{padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1}
+  .content::-webkit-scrollbar{display:none}
+
+  .tabs{display:flex;gap:6px;overflow:hidden}
+  .tab{font-size:11px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);white-space:nowrap}
+  .tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .subtabs{display:flex;gap:14px;font-size:11px;font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:6px}
+  .subtabs .on{color:var(--gold);border-bottom:2px solid var(--gold);padding-bottom:5px;margin-bottom:-7px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .label{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .tier{display:flex;justify-content:space-between;font-size:12px;padding:7px 0;border-top:1px solid var(--line)}
+  .tier:first-of-type{border-top:0}
+  .tier b{font-weight:800}
+
+  .toggle-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-top:8px}
+  .toggle-row .tt{font-size:13px;font-weight:800;line-height:1.3}
+  .toggle-row .td{font-size:11px;color:var(--muted);line-height:1.45;margin-top:3px}
+  .switch{width:44px;height:26px;border-radius:99px;background:#d8d4c9;position:relative;flex-shrink:0;cursor:pointer;transition:background .2s;border:0}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:left .2s}
+  .switch.on{background:var(--gold)}
+  .switch.on::after{left:21px}
+
+  .chart{margin-top:14px;transition:opacity .2s}
+  .chart.off{opacity:.45}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:16px;position:relative}
+  .avgline{position:absolute;left:0;right:0;border-top:1.5px dashed #c9c4b6}
+  .avgline span{position:absolute;right:0;top:-14px;font-size:9px;color:var(--muted);font-weight:700}
+  .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;z-index:1}
+  .bar i{display:block;width:100%;border-radius:6px 6px 2px 2px;background:var(--navy)}
+  .bar.top i{background:var(--gold)}
+  .bar em{font-style:normal;font-size:9.5px;font-weight:800;margin-bottom:3px}
+  .days{display:flex;gap:6px;margin-top:5px}
+  .days span{flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--muted)}
+  .chart .foot{font-size:10.5px;color:var(--muted);margin-top:10px;line-height:1.45}
+
+  .locked{display:flex;gap:10px;align-items:flex-start;margin-top:8px;background:#f5f3ee;border-radius:12px;padding:10px}
+  .locked svg{flex-shrink:0;margin-top:1px}
+  .locked .tt{font-size:12.5px;font-weight:800}
+  .locked .td{font-size:11px;color:var(--muted);line-height:1.45;margin-top:2px}
+  .prog{height:6px;border-radius:99px;background:#e4e0d6;margin-top:8px;overflow:hidden}
+  .prog i{display:block;height:100%;width:70%;background:var(--gold)}
+
+  .hero{background:var(--navy);border-radius:18px;padding:16px;color:#fff;border:2px solid #16a34a}
+  .hero small{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#4ade80;font-weight:800}
+  .hero b{display:block;font-size:28px;margin-top:4px;letter-spacing:-.01em}
+  .hero p{font-size:11px;color:#ffffffb3;margin-top:4px;line-height:1.45}
+  .hero .chip{display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-size:10px;font-weight:700;background:#ffffff14;border:1px solid #ffffff26;border-radius:99px;padding:4px 9px;color:var(--goldlight)}
+  .daypick{display:flex;gap:6px;justify-content:center}
+  .daypick button{font-size:11px;font-weight:700;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 10px;cursor:pointer;color:var(--navy)}
+  .daypick button.on{border-color:var(--gold);color:var(--gold)}
+  .indiv{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+  .indiv b{font-size:15px}
+  .muted{color:var(--muted);font-size:11px}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<h1>Meta da loja por dia da semana</h1>
+<p class="sub">Onde fica a chave, o gráfico de pesos e o efeito no herocard. Pesos com dados reais da <b>ArmyBR Anália Franco</b> (01/07 a 11/10). Valores de meta no herocard são <b>exemplo</b>.</p>
+
+<div class="sysbar" id="who">
+  <button class="on" data-v="gestor">Gerente (loja com 60+ dias)</button>
+  <button data-v="nova">Gerente (loja com menos de 60 dias)</button>
+  <button data-v="colab">Colaborador</button>
+</div>
+
+<div class="grid">
+  <!-- TELA 1: aba Metas -->
+  <div class="col" id="col1">
+    <h2>1. Aba Metas → Metas do mês</h2>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>11:49</span><span>●●● 40%</span></div>
+      <div class="header">Z <span>Meta</span></div>
+      <div class="content">
+        <div class="tabs"><span class="tab">Início</span><span class="tab on">Metas</span><span class="tab">Online</span></div>
+        <div class="subtabs"><span class="on">Metas do mês</span><span>Lançamentos</span></div>
+
+        <div class="card">
+          <p class="label">Camadas de outubro</p>
+          <div style="margin-top:6px">
+            <div class="tier"><span>Meta</span><b>R$ 290.000</b></div>
+            <div class="tier"><span>Super Meta</span><b>R$ 310.000</b></div>
+            <div class="tier"><span>Hiper Meta</span><b>R$ 330.000</b></div>
+          </div>
+        </div>
+
+        <!-- card novo -->
+        <div class="card" id="pesoCard">
+          <p class="label">Ritmo da meta da loja</p>
+
+          <div id="unlocked">
+            <div class="toggle-row">
+              <div>
+                <p class="tt">Distribuir pelo peso do dia da semana</p>
+                <p class="td">Dias que vendem mais pedem mais. Vale só pra meta da loja — a meta individual continua igual.</p>
+              </div>
+              <button class="switch" id="sw" aria-label="Ativar distribuição por dia da semana"></button>
+            </div>
+
+            <div class="chart off" id="chart">
+              <div class="bars" id="bars"></div>
+              <div class="days"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
+              <p class="foot">Quanto cada dia representa numa semana típica da loja. Tracejado = dia médio (14,3%). Base: últimos 90 dias de venda, recalculado todo dia.</p>
+            </div>
+          </div>
+
+          <div id="lockedBox" class="hide">
+            <div class="locked">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7d7a6f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <div style="flex:1">
+                <p class="tt">Disponível em 18 dias</p>
+                <p class="td">Precisamos de 60 dias de vendas da loja pra calcular o peso de cada dia com segurança. Hoje: 42 dias.</p>
+                <div class="prog"><i></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <p class="note" id="note1">Card novo logo abaixo das camadas. Gerente, supervisor, sócio e master veem e mexem na chave. O gráfico aparece sempre (apagado quando desligado), pra ajudar na decisão.</p>
+  </div>
+
+  <!-- TELA 2: herocard -->
+  <div class="col">
+    <h2>2. Efeito no herocard (Início)</h2>
+    <div class="daypick" id="daypick">
+      <button data-d="ter">Terça</button>
+      <button class="on" data-d="sab">Sábado</button>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>11:49</span><span>●●● 40%</span></div>
+      <div class="header">Z <span>Meta</span></div>
+      <div class="content">
+        <div class="hero">
+          <small>Meta de hoje · ArmyBR Anália Franco</small>
+          <b id="heroVal">R$ 16.900</b>
+          <p id="heroTxt">pra bater a meta da loja · sábado vende 1,69× um dia médio</p>
+          <p>Vendido até hoje: R$ 90.000</p>
+          <span class="chip" id="heroChip">◆ Ajustado pelo dia da semana</span>
+        </div>
+        <div class="card">
+          <p class="label">Sua meta de hoje (individual)</p>
+          <div class="indiv" style="margin-top:6px"><span class="muted">Colaborador · igual todo dia</span><b>R$ 2.500</b></div>
+        </div>
+        <p class="muted" style="text-align:center;line-height:1.5;padding:0 6px">Exemplo: faltam R$ 200 mil em 20 dias.<br>Sem peso = R$ 10.000 todo dia.</p>
+      </div>
+    </div></div>
+    <p class="note">Com a chave ligada, o herocard da loja muda pra todo mundo da loja, inclusive o colaborador. A meta individual não muda.</p>
+  </div>
+</div>
+
+<script>
+  const W = [{p:10.8,x:.76},{p:9.5,x:.66},{p:10.7,x:.74},{p:13.7,x:.95},{p:16.7,x:1.16},{p:24.3,x:1.69},{p:14.3,x:1.00}];
+  const max = 24.3, H = 104;
+  const bars = document.getElementById('bars');
+  const avg = 100/7;
+  bars.innerHTML = `<div class="avgline" style="bottom:${avg/max*H}px"></div>` +
+    W.map((w,i)=>`<div class="bar ${i===5?'top':''}"><em>${w.p.toLocaleString('pt-BR')}%</em><i style="height:${w.p/max*H}px"></i></div>`).join('');
+
+  let on = true, day = 'sab';
+  const sw = document.getElementById('sw'), chart = document.getElementById('chart');
+  function render(){
+    sw.classList.toggle('on', on); chart.classList.toggle('off', !on);
+    const v = document.getElementById('heroVal'), t = document.getElementById('heroTxt'), c = document.getElementById('heroChip');
+    if(!on){ v.textContent='R$ 10.000'; t.textContent='pra bater a meta da loja em 20 dias restantes'; c.classList.add('hide'); return; }
+    c.classList.remove('hide');
+    if(day==='sab'){ v.textContent='R$ 16.900'; t.textContent='pra bater a meta da loja · sábado vende 1,69× um dia médio'; }
+    else { v.textContent='R$ 6.600'; t.textContent='pra bater a meta da loja · terça vende 0,66× um dia médio'; }
+  }
+  sw.onclick = ()=>{ on=!on; render(); };
+  document.querySelectorAll('#daypick button').forEach(b=>b.onclick=()=>{
+    day=b.dataset.d; document.querySelectorAll('#daypick button').forEach(x=>x.classList.toggle('on',x===b)); render();
+  });
+  document.querySelectorAll('#who button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#who button').forEach(x=>x.classList.toggle('on',x===b));
+    const v=b.dataset.v;
+    document.getElementById('col1').classList.toggle('hide', v==='colab');
+    document.getElementById('unlocked').classList.toggle('hide', v==='nova');
+    document.getElementById('lockedBox').classList.toggle('hide', v!=='nova');
+    if(v==='nova'){ on=false; } else if(v==='gestor'){ on=true; }
+    render();
+  });
+  render();
+</script>
+</body>
+</html>
