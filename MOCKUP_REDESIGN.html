@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Z Meta — Redesign (mockup)</title>
+<style>
+/* ============ moldura do mockup (fora do app) ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;background:#dcd8cf;color:#12203a;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.mk-bar{height:60px;display:flex;align-items:center;gap:14px;padding:0 18px;background:#12203a;color:#fff;flex-wrap:nowrap;overflow-x:auto}
+.mk-bar h1{font-size:14px;font-weight:800;white-space:nowrap;margin-right:6px}
+.mk-bar h1 span{color:#e4c789}
+.mk-group{display:flex;gap:3px;background:#ffffff14;border-radius:10px;padding:3px;flex-shrink:0}
+.mk-group button{font-size:12px;font-weight:700;padding:6px 11px;border-radius:8px;color:#ffffffb3;white-space:nowrap}
+.mk-group button.on{background:#fff;color:#12203a}
+.mk-spacer{flex:1}
+.mk-notes-btn{font-size:12px;font-weight:800;padding:8px 13px;border-radius:10px;background:linear-gradient(135deg,#e4c789,#c9a15a);color:#12203a;white-space:nowrap;flex-shrink:0}
+.mk-stage{height:calc(100% - 60px);display:flex;align-items:flex-start;justify-content:center;padding:22px;overflow:auto}
+.mk-frame{flex-shrink:0;transform-origin:top center;border-radius:18px;background:#0b0b0c;padding:10px;box-shadow:0 30px 70px #0004}
+.mk-frame.phone{border-radius:48px;padding:12px}
+.mk-frame.tablet{border-radius:34px;padding:16px}
+.mk-browserbar{height:30px;display:flex;align-items:center;gap:6px;padding:0 10px;background:#1d1d20;border-radius:10px 10px 0 0}
+.mk-browserbar i{width:10px;height:10px;border-radius:50%;background:#ff5f57}
+.mk-browserbar i:nth-child(2){background:#febc2e}.mk-browserbar i:nth-child(3){background:#28c840}
+.mk-browserbar span{margin-left:14px;font-size:11px;color:#9a9aa0;background:#2a2a2e;border-radius:6px;padding:3px 10px}
+.mk-notes{position:fixed;top:60px;right:0;bottom:0;width:min(420px,100%);background:#fff;box-shadow:-20px 0 50px #0003;transform:translateX(105%);transition:transform .25s ease;z-index:50;overflow-y:auto;padding:22px 22px 40px}
+.mk-notes.open{transform:none}
+.mk-notes h2{font-size:17px;font-weight:800;margin-bottom:4px}
+.mk-notes p.lead{font-size:12.5px;color:#6b6a63;line-height:1.55;margin-bottom:16px}
+.mk-notes ol{list-style:none;display:flex;flex-direction:column;gap:12px;counter-reset:n}
+.mk-notes li{counter-increment:n;font-size:12.5px;line-height:1.5;color:#3d3c37;padding-left:30px;position:relative}
+.mk-notes li::before{content:counter(n);position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:#f4ead7;color:#8a6a2c;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.mk-notes li b{color:#12203a}
+.mk-notes .close{position:absolute;top:16px;right:16px;font-size:20px;color:#999}
+
+/* ============ o app ============ */
+.device{container-type:inline-size;position:relative;overflow:hidden;
+  --bg:#f6f4ef;--surface:#ffffff;--surface2:#faf8f4;--line:#ebe7de;--text:#12203a;--muted:#7a776d;--soft:#f3efe6;
+  --gold:#c9a15a;--goldtext:#9a7536;--goldsoft:#f6eddc;--hero:#12203a;--herotext:#fff;
+  --ok:#16a34a;--oksoft:#e8f5ec;--warn:#c2770a;--warnsoft:#fbf1e1;--bad:#dc2626;--badsoft:#fdecec;
+  --shadow:0 1px 2px rgba(18,32,58,.04),0 4px 14px rgba(18,32,58,.05);
+  background:var(--bg);color:var(--text);font-size:14px;font-variant-numeric:tabular-nums}
+.device[data-theme="dark"]{--bg:#0b1220;--surface:#121c31;--surface2:#0f182b;--line:#1f2c47;--text:#eef0f5;--muted:#8f9bb3;--soft:#18243d;
+  --goldtext:#e4c789;--goldsoft:#2a2717;--hero:#16233d;--oksoft:#10291c;--warnsoft:#2b2111;--badsoft:#2d1416;--shadow:none}
+.app{display:grid;grid-template-columns:1fr;height:100%}
+.side{display:none}
+.main{overflow-y:auto;height:100%;padding-bottom:84px}
+.main::-webkit-scrollbar{width:8px}.main::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+
+/* topo */
+.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{height:56px;display:flex;align-items:center;gap:10px}
+.logo{font-weight:800;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;gap:7px}
+.logo b{width:30px;height:30px;border-radius:9px;background:var(--hero);color:#e4c789;display:none;align-items:center;justify-content:center;font-size:13px}
+.device[data-theme="dark"] .logo b{background:#e4c789;color:#12203a}
+.logo span{color:var(--gold)}
+.top .title{display:none;font-size:18px;font-weight:800;letter-spacing:-.01em}
+.top .grow{flex:1}
+.month{display:flex;align-items:center;gap:2px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px;font-size:12.5px;font-weight:700}
+.month button{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.month button:hover{background:var(--soft)}
+.month span{padding:0 6px;white-space:nowrap}
+.iconbtn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--muted);position:relative}
+.iconbtn:hover{background:var(--soft);color:var(--text)}
+.iconbtn .dot{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--gold);border:2px solid var(--bg)}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;flex-shrink:0;background:var(--goldsoft);color:var(--goldtext)}
+.av.lg{width:40px;height:40px;font-size:13px}
+.svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.svg.sm{width:15px;height:15px}.svg.xs{width:13px;height:13px}
+
+/* nav inferior (mobile) */
+.bnav{position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:flex;padding:6px 6px 18px}
+.bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--muted);padding:6px 0;border-radius:12px}
+.bnav button.on{color:var(--text)}
+.bnav button.on .svg{color:var(--gold)}
+.bnav button.on::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--gold);margin-top:1px}
+
+/* sidebar */
+.side{flex-direction:column;background:var(--surface);border-right:1px solid var(--line);padding:16px 12px;gap:4px;height:100%}
+.side .logo{padding:4px 8px 18px}
+.navi{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:12px;font-size:13.5px;font-weight:600;color:var(--muted);width:100%;text-align:left}
+.navi:hover{background:var(--soft);color:var(--text)}
+.navi.on{background:var(--goldsoft);color:var(--text);font-weight:800}
+.navi.on .svg{color:var(--gold)}
+.navi .badge{margin-left:auto;font-size:10.5px;font-weight:800;background:var(--warnsoft);color:var(--warn);border-radius:999px;padding:2px 7px}
+.side .sec{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:14px 12px 6px;opacity:.8}
+.side .me{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;border:1px solid var(--line)}
+.side .me p{font-size:12.5px;font-weight:700;line-height:1.2}
+.side .me small{font-size:11px;color:var(--muted);font-weight:600}
+
+/* blocos */
+.page{padding:18px 0 26px;display:flex;flex-direction:column;gap:16px}
+.hello{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hello h2{font-size:21px;font-weight:800;letter-spacing:-.02em}
+.hello p{font-size:12.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.card h3{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;letter-spacing:-.01em}
+.card h3 small{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+.card .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:999px;padding:10px 16px;font-size:13px;font-weight:800;background:linear-gradient(135deg,#e4c789,#c9a15a);color:#12203a;white-space:nowrap}
+.btn:hover{filter:brightness(1.04)}
+.btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--text)}
+.btn.sm{padding:7px 12px;font-size:12px}
+.btn.block{width:100%}
+.seg{align-self:flex-start;display:inline-flex;background:var(--soft);border-radius:12px;padding:3px;gap:2px;max-width:100%;overflow-x:auto}
+.seg button{font-size:12.5px;font-weight:700;color:var(--muted);padding:7px 13px;border-radius:9px;white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.chip.ok{background:var(--oksoft);color:var(--ok)}
+.chip.warn{background:var(--warnsoft);color:var(--warn)}
+.chip.bad{background:var(--badsoft);color:var(--bad)}
+.chip.gold{background:var(--goldsoft);color:var(--goldtext)}
+.chip.muted{background:var(--soft);color:var(--muted)}
+
+/* hero */
+.hero{background:var(--hero);color:var(--herotext);border-radius:22px;padding:20px;display:grid;gap:18px;position:relative;overflow:hidden}
+.device[data-theme="dark"] .hero{border:1px solid var(--line)}
+.hero .eyebrow{font-size:11.5px;font-weight:700;color:#ffffff99;display:flex;align-items:center;gap:6px}
+.hero .big{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-top:6px}
+.hero .note{font-size:12.5px;color:#ffffffa6;margin-top:6px;line-height:1.45}
+.hero .adj{display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:11px;font-weight:700;color:#e4c789;background:#ffffff12;border:1px solid #ffffff1f;border-radius:999px;padding:4px 10px}
+.tierbar{margin-top:4px}
+.tierbar .lbls{display:flex;justify-content:space-between;font-size:11.5px;color:#ffffffa6;font-weight:600;margin-bottom:8px}
+.tierbar .lbls b{color:#fff;font-weight:800}
+.tierbar .track{height:10px;border-radius:99px;background:#ffffff1c;position:relative}
+.tierbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#c9a15a,#e4c789)}
+.tierbar .mark{position:absolute;top:-4px;bottom:-4px;width:2px;background:#ffffff59;border-radius:2px}
+.tierbar .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:#ffffff99;font-weight:600}
+.tierbar .legend span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tierbar .legend b{color:#fff;font-weight:800}
+.tierbar .legend i{width:8px;height:8px;border-radius:50%;border:1.5px solid #ffffff66}
+.tierbar .legend .hit i{background:#e4c789;border-color:#e4c789}
+.tierbar .legend .next i{border-color:#e4c789}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px 14px;box-shadow:var(--shadow);text-align:left}
+.kpi p{font-size:11.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi b{display:block;font-size:19px;font-weight:800;letter-spacing:-.02em;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi small{font-size:11px;color:var(--muted);font-weight:600}
+button.kpi:hover{border-color:var(--gold)}
+.grid2{display:grid;gap:16px}
+
+/* listas */
+.row{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .nm{font-size:13.5px;font-weight:700;line-height:1.25}
+.row .nm small{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
+.row .val{margin-left:auto;text-align:right;font-size:13.5px;font-weight:800;white-space:nowrap}
+.row .val small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.mini{height:5px;border-radius:99px;background:var(--soft);margin-top:6px;overflow:hidden;width:100%}
+.mini i{display:block;height:100%;border-radius:99px;background:var(--gold)}
+.pos{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;flex-shrink:0;background:var(--soft);color:var(--muted)}
+.pos.p1{background:linear-gradient(135deg,#e4c789,#c9a15a);color:#12203a}
+.pos.p2{background:#d5d9e0;color:#12203a}.pos.p3{background:#d7a47a;color:#2b1608}
+.flex1{flex:1;min-width:0}
+
+/* metas */
+.tier{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.tier:first-of-type{border-top:0}
+.tier .ic{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--muted);font-size:12px;font-weight:800}
+.tier.live .ic{background:var(--goldsoft);color:var(--goldtext)}
+.tier .t{font-size:14px;font-weight:800}
+.tier .t small{font-size:11.5px;color:var(--muted);font-weight:600;margin-left:6px}
+.tier .r{text-align:right;font-size:14px;font-weight:800}
+.tier .r small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.switch{width:44px;height:26px;border-radius:99px;background:var(--line);position:relative;flex-shrink:0;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:transform .2s}
+.switch.on{background:var(--gold)}.switch.on::after{transform:translateX(18px)}
+.wk{display:flex;align-items:flex-end;gap:7px;height:120px;margin-top:14px;position:relative}
+.wk .avg{position:absolute;left:0;right:0;border-top:1.5px dashed var(--muted);opacity:.5;z-index:2}
+.wk div.b{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;z-index:1}
+.wk div.b i{display:block;width:100%;border-radius:7px 7px 3px 3px;background:var(--text);opacity:.85}
+.wk div.b.top i{background:var(--gold);opacity:1}
+.wk div.b em{font-style:normal;font-size:10.5px;font-weight:800;margin-bottom:4px}
+.wkd{display:flex;gap:7px;margin-top:6px}.wkd span{flex:1;text-align:center;font-size:10.5px;font-weight:700;color:var(--muted)}
+.off{opacity:.45}
+
+/* tarefas */
+.split{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.split>*,.grid2>*{min-width:0}
+.people{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.people::-webkit-scrollbar{display:none}
+.person{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:8px 12px 8px 8px;flex-shrink:0;text-align:left}
+.person.on{border-color:var(--gold);background:var(--goldsoft)}
+.person .nm{font-size:13px;font-weight:700;white-space:nowrap}
+.person .nm small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.ring{--p:0;width:34px;height:34px;border-radius:50%;background:conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ring span{width:26px;height:26px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+.person.on .ring span{background:var(--goldsoft)}
+.datenav{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700}
+.datenav button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);background:var(--surface)}
+.task{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);width:100%;text-align:left}
+.task + .task{margin-top:8px}
+.task .bx{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;transition:all .15s}
+.task.done .bx{background:var(--ok);border-color:var(--ok)}
+.task.done .tt{color:var(--muted);text-decoration:line-through}
+.task .tt{font-size:13.5px;font-weight:600;flex:1}
+.task .rc{font-size:11px;color:var(--muted);font-weight:600}
+.addline{display:flex;gap:8px;margin-top:12px}
+.input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;font-family:inherit}
+.input:focus{border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 18%,transparent)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pills button{font-size:11.5px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted)}
+.pills button.on{border-color:var(--gold);color:var(--goldtext);background:var(--goldsoft)}
+
+/* equipe */
+.cards{display:grid;grid-template-columns:1fr;gap:12px}
+.pc{display:flex;flex-direction:column;gap:12px}
+.pc .hd{display:flex;align-items:center;gap:11px}
+.pc .hd .nm{font-size:14px;font-weight:800}
+.pc .hd .nm small{display:block;font-size:11.5px;color:var(--muted);font-weight:600}
+.pc .st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pc .st div{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.pc .st p{font-size:10.5px;color:var(--muted);font-weight:700}
+.pc .st b{font-size:13.5px;font-weight:800}
+
+/* colaborador */
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* sheet */
+.sheet-bg{position:absolute;inset:0;background:#0007;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;border-radius:22px 22px 0 0;padding:20px 18px 30px;animation:up .22s ease}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.sheet h3{font-size:17px;font-weight:800}
+.sheet .amt{font-size:34px;font-weight:800;letter-spacing:-.02em;border:0;border-bottom:2px solid var(--gold);background:none;color:var(--text);width:100%;outline:none;padding:8px 0;margin:14px 0 6px;font-family:inherit}
+.sheet label{font-size:12px;color:var(--muted);font-weight:700}
+.toast{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);background:#12203a;color:#fff;font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:999px;z-index:30;display:flex;gap:7px;align-items:center;box-shadow:0 10px 30px #0004;white-space:nowrap}
+.toast .svg{color:#4ade80}
+
+/* ===== tablet (rail) ===== */
+@container (min-width: 700px){
+  .app{grid-template-columns:84px 1fr}
+  .side{display:flex;padding:14px 8px;align-items:center}
+  .side .logo{padding:4px 0 16px}.side .logo .txt{display:none}.side .logo b{display:flex}
+  .side .sec,.side .me div{display:none}
+  .navi{flex-direction:column;gap:4px;font-size:10.5px;padding:10px 4px;text-align:center;justify-content:center}
+  .navi .badge{position:absolute;margin:0;transform:translate(14px,-12px);padding:1px 5px;font-size:9.5px}
+  .navi{position:relative}
+  .side .me{border:0;padding:6px}
+  .bnav{display:none}
+  .main{padding-bottom:0}
+  .top .logo{display:none}.top .title{display:block}
+  .wrap{padding:0 24px}
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .hero{padding:24px;grid-template-columns:1fr}
+  .hero .big{font-size:46px}
+  .quick{grid-template-columns:repeat(4,1fr)}
+}
+/* ===== desktop (sidebar completa) ===== */
+@container (min-width: 1100px){
+  .app{grid-template-columns:236px 1fr}
+  .side{align-items:stretch;padding:18px 14px}
+  .side .logo{padding:4px 8px 18px}.side .logo .txt{display:inline}.side .logo b{display:none}
+  .side .sec,.side .me div{display:block}
+  .side .me{border:1px solid var(--line);padding:10px}
+  .navi{flex-direction:row;gap:11px;font-size:13.5px;padding:10px 12px;text-align:left;justify-content:flex-start}
+  .navi .badge{position:static;transform:none;margin-left:auto;padding:2px 7px;font-size:10.5px}
+  .wrap{padding:0 32px}
+  .hero{grid-template-columns:1.05fr 1fr;align-items:center;padding:26px 28px}
+  .hero .right{border-left:1px solid #ffffff1a;padding-left:26px}
+  .grid2{grid-template-columns:1.25fr 1fr}
+  .split{grid-template-columns:280px 1fr;align-items:start}
+  .people{flex-direction:column;overflow:visible}
+  .person{width:100%}
+  .cards{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="mk-bar">
+  <h1>Z <span>Meta</span> · Redesign</h1>
+  <div class="mk-group" id="mk-device">
+    <button data-v="desktop" class="on">Desktop</button>
+    <button data-v="tablet">iPad</button>
+    <button data-v="phone">Celular</button>
+  </div>
+  <div class="mk-group" id="mk-role">
+    <button data-v="gerente" class="on">Gerente</button>
+    <button data-v="colab">Colaborador</button>
+  </div>
+  <div class="mk-group" id="mk-theme">
+    <button data-v="light" class="on">Claro</button>
+    <button data-v="dark">Escuro</button>
+  </div>
+  <div class="mk-group hide" id="mk-rot" style="display:none">
+    <button data-v="portrait" class="on">Em pé</button>
+    <button data-v="landscape">Deitado</button>
+  </div>
+  <div class="mk-spacer"></div>
+  <button class="mk-notes-btn" id="mk-notes-btn">O que mudou</button>
+</div>
+
+<div class="mk-stage" id="stage">
+  <div class="mk-frame" id="frame">
+    <div class="mk-browserbar" id="bbar"><i></i><i></i><i></i><span>zmeta.com.br</span></div>
+    <div class="device" id="device" data-theme="light"></div>
+  </div>
+</div>
+
+<aside class="mk-notes" id="notes">
+  <button class="close" id="notes-close">×</button>
+  <h2>O que mudou</h2>
+  <p class="lead">Mesma marca (navy + dourado, Inter), mesmas funções e dados. A mudança é de organização e acabamento — tudo em CSS, sem biblioteca nova, então o app não fica mais pesado.</p>
+  <ol>
+    <li><b>Navegação por aparelho.</b> Desktop ganha menu lateral fixo; iPad, uma barra lateral só com ícones; celular, barra inferior ao alcance do polegar. Hoje é a mesma faixa de abas no topo pros três.</li>
+    <li><b>Menos níveis de menu.</b> Placar, Tarefas e Equipe deixam de ser sub-abas escondidas dentro de "Início" e viram itens do menu. Sub-seções viram um seletor segmentado simples.</li>
+    <li><b>Herocard mais claro.</b> Um número grande (meta de hoje) e uma barra única do mês com as camadas Meta / Super / Hiper marcadas — dá pra ver de relance onde a loja está e quanto falta pra próxima.</li>
+    <li><b>Uma cor de destaque só.</b> Dourado pra ação e destaque; verde/âmbar/vermelho só pra status. Sai o roxo/rosa das abas e do avatar e as bordas coloridas por papel no herocard (roxo continua só na comemoração de meta batida).</li>
+    <li><b>Cards mais leves.</b> Borda de 1px em vez de 2px, sombra discreta, sem o "pulinho" no hover em card estático. Menos texto em CAIXA ALTA.</li>
+    <li><b>Tarefas sem dropdown.</b> A lista de pessoas fica visível com o progresso do dia (anel verde) — troca de colaborador com um toque, e dá pra ver quem está pendente sem abrir um por um.</li>
+    <li><b>Ações rápidas pro colaborador.</b> "Lançar venda" vira botão principal no Início, abrindo uma folha de baixo no celular, com o checklist do dia logo abaixo.</li>
+    <li><b>Desktop usa a tela.</b> Largura máxima maior e conteúdo em 2 colunas (equipe + ranking lado a lado); hoje tudo fica numa coluna estreita de 1024px.</li>
+    <li><b>Números alinhados.</b> Algarismos tabulares nos valores em R$, pra coluna de números não "dançar".</li>
+  </ol>
+  <p class="lead" style="margin-top:18px">Dados do mockup: ArmyBR Anália Franco, outubro até 11/10 (vendas, cotas e tarefas reais de hoje). Interações são de demonstração — nada é salvo.</p>
+</aside>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9 4.5 4h15L21 9"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/><path d="M3 9h18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+  <symbol id="i-coins" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/></symbol>
+</svg>
+
+<script>
+const ic = (id, cls="") => `<svg class="svg ${cls}"><use href="#i-${id}"/></svg>`;
+const brl = (v, cents=false) => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:cents?2:0,maximumFractionDigits:cents?2:0});
+const ini = n => n.split(" ").map(p=>p[0]).slice(0,2).join("");
+
+/* ---------- dados reais (ArmyBR Anália Franco, out/2026 até 11/10) ---------- */
+const STORE = { name:"ArmyBR Anália Franco", sold:81004.28, tiers:[{n:"Meta",v:290000,c:"2%"},{n:"Super Meta",v:310000,c:"3%"},{n:"Hiper Meta",v:330000,c:"4%"}], daysLeft:20, todayLinear:10450, todayWeighted:7913 };
+const TEAM = [
+  { id:"jana", name:"Janailson Pereira", sold:34189.74, cota:85753.2, adv:0, tasks:["Reposição das sessões","Limpeza das sessões","Meta diária","Passar steamer nas peças","Limpar depósito","Ativação Online"], done:[] },
+  { id:"gus",  name:"Gustavo Belfort",  sold:30277.99, cota:85753.2, adv:1, tasks:["Reposição das sessões","Limpeza das sessões","Meta diária","Passar steamer nas peças","Reposição semanal","Ativação Online"], done:[0,1,2,3,4,5] },
+  { id:"bar",  name:"Bárbara Ortega",   sold:16536.55, cota:85753.2, adv:0, tasks:["Reposição das sessões","Passar steamer nas peças","Meta diária","Limpeza das sessões","Ativação Online"], done:[0,1,2,3,4] },
+  { id:"mar",  name:"Marianna Guerra",  sold:0,        cota:32740.4, adv:0, tasks:["Reposição das sessões","Limpeza das sessões","Meta diária","Passar steamer nas peças","Limpar área Café","Ativação Online"], done:[0,1,2,3,4,5] },
+];
+const WEEK = [["Seg",10.8],["Ter",9.8],["Qua",10.3],["Qui",13.1],["Sex",16.6],["Sáb",24.8],["Dom",14.6]];
+
+const S = { device:"desktop", rot:"portrait", theme:"light", role:"gerente", screen:"inicio", segMetas:"metas", segEquipe:"colab", person:"jana", weighted:true, sheet:false, toast:"", recur:"daily", colabDone:[0,1,2] };
+
+const pending = () => TEAM.reduce((s,p)=>s+(p.tasks.length-p.done.length),0);
+const NAV_G = [
+  {k:"inicio",l:"Início",i:"home"},
+  {k:"metas",l:"Metas",i:"target"},
+  {k:"tarefas",l:"Tarefas",i:"check",badge:()=>pending()||""},
+  {k:"equipe",l:"Equipe",i:"users"},
+  {k:"ranking",l:"Ranking",i:"trophy"},
+];
+const NAV_C = [
+  {k:"inicio",l:"Início",i:"home"},
+  {k:"ranking",l:"Ranking",i:"trophy"},
+  {k:"online",l:"Online",i:"globe"},
+];
+
+/* ---------- peças ---------- */
+function tierBar(sold, tiers, dark=true){
+  const max = tiers[tiers.length-1].v*1.04, pct = Math.min(100, sold/max*100);
+  const next = tiers.find(t=>sold<t.v);
+  return `<div class="tierbar">
+    <div class="lbls"><span>Vendido no mês <b>${brl(sold)}</b></span><span>${next?`faltam <b>${brl(next.v-sold)}</b> p/ ${next.n}`:`<b>Hiper Meta batida</b>`}</span></div>
+    <div class="track"><div class="fill" style="width:${pct}%"></div>${tiers.map(t=>`<div class="mark" style="left:${t.v/max*100}%"></div>`).join("")}</div>
+    <div class="legend">${tiers.map(t=>`<span class="${sold>=t.v?"hit":t===next?"next":""}"><i></i>${t.n} <b>${(t.v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1})}k</b></span>`).join("")}</div>
+  </div>`;
+}
+
+function heroGerente(){
+  const v = S.weighted ? STORE.todayWeighted : STORE.todayLinear;
+  return `<section class="hero">
+    <div>
+      <p class="eyebrow">${ic("store","xs")} Meta de hoje · ${STORE.name}</p>
+      <p class="big">${brl(v)}</p>
+      <p class="note">pra manter o ritmo da Meta em ${STORE.daysLeft} dias restantes</p>
+      ${S.weighted?`<span class="adj">◆ Segunda vende 0,76× um dia médio</span>`:""}
+    </div>
+    <div class="right">${tierBar(STORE.sold, STORE.tiers)}</div>
+  </section>`;
+}
+
+function kpisGerente(){
+  const leader = [...TEAM].sort((a,b)=>b.sold-a.sold)[0];
+  return `<div class="kpis">
+    <div class="kpi"><p>${ic("trend","xs")} Vendido no mês</p><b>${brl(STORE.sold)}</b><small>28% da Meta</small></div>
+    <div class="kpi"><p>${ic("coins","xs")} Comissão até agora</p><b>${brl(810.04,true)}</b><small>1% · não atingimento</small></div>
+    <button class="kpi" data-go="tarefas"><p>${ic("check","xs")} Pendências hoje</p><b>${pending()} tarefa${pending()!==1?"s":""}</b><small>${TEAM.filter(p=>p.done.length<p.tasks.length).length} pessoa(s) · ver</small></button>
+    <div class="kpi"><p>${ic("trophy","xs")} Líder de vendas</p><b>${leader.name.split(" ")[0]}</b><small>${brl(leader.sold)}</small></div>
+  </div>`;
+}
+
+function teamToday(){
+  return `<div class="card">
+    <h3>${ic("users","sm")} Equipe hoje <small>cota individual · checklist</small></h3>
+    <div style="margin-top:6px">${TEAM.map(p=>{
+      const pc = Math.min(100,p.sold/p.cota*100), d=p.done.length, t=p.tasks.length;
+      return `<div class="row">
+        <div class="av">${ini(p.name)}</div>
+        <div class="flex1"><p class="nm">${p.name}<small>${brl(p.sold)} de ${brl(p.cota)}</small></p><div class="mini"><i style="width:${pc}%"></i></div></div>
+        <div class="val">${d===t?`<span class="chip ok">${ic("ok","xs")} ${d}/${t}</span>`:`<span class="chip warn">${d}/${t}</span>`}</div>
+      </div>`;}).join("")}
+    </div>
+  </div>`;
+}
+
+function rankingCard(title=true){
+  const r=[...TEAM].sort((a,b)=>b.sold-a.sold);
+  return `<div class="card">
+    ${title?`<h3>${ic("trophy","sm")} Ranking do mês <small>vendas</small></h3>`:""}
+    <div style="margin-top:6px">${r.map((p,i)=>`<div class="row">
+      <div class="pos ${i<3?"p"+(i+1):""}">${i+1}</div>
+      <div class="flex1"><p class="nm">${p.name}</p><div class="mini"><i style="width:${p.sold/r[0].sold*100||0}%"></i></div></div>
+      <div class="val">${brl(p.sold)}<small>${(p.sold/STORE.sold*100).toFixed(0)}% da loja</small></div>
+    </div>`).join("")}</div>
+  </div>`;
+}
+
+function weekCard(){
+  const max = Math.max(...WEEK.map(w=>w[1]));
+  return `<div class="card">
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <div class="flex1"><h3>Ritmo da meta da loja</h3><p class="sub">Distribuir pelo peso do dia da semana — sábado pede mais, terça pede menos. A meta individual não muda.</p></div>
+      <button class="switch ${S.weighted?"on":""}" data-act="weight" aria-label="Distribuir pelo dia da semana"></button>
+    </div>
+    <div class="${S.weighted?"":"off"}">
+      <div class="wk"><div class="avg" style="bottom:${(100/7)/max*92}px"></div>${WEEK.map(w=>`<div class="b ${w[1]===max?"top":""}"><em>${w[1].toLocaleString("pt-BR")}%</em><i style="height:${w[1]/max*92}px"></i></div>`).join("")}</div>
+      <div class="wkd">${WEEK.map(w=>`<span>${w[0]}</span>`).join("")}</div>
+      <p class="sub" style="margin-top:10px">Base: últimos 90 dias de venda da loja · tracejado = dia médio</p>
+    </div>
+  </div>`;
+}
+
+/* ---------- telas gerente ---------- */
+function scrInicio(){
+  return `<div class="hello"><div><h2>Bom dia, Felipe</h2><p>Segunda, 12 de outubro · ${STORE.name}</p></div>
+      <button class="btn ghost sm">${ic("file","sm")} Relatório do mês</button></div>
+    ${heroGerente()}
+    ${kpisGerente()}
+    <div class="grid2">${teamToday()}${rankingCard()}</div>`;
+}
+
+function scrMetas(){
+  const seg = `<div class="seg"><button class="${S.segMetas==="metas"?"on":""}" data-seg="segMetas:metas">Metas do mês</button><button class="${S.segMetas==="lanc"?"on":""}" data-seg="segMetas:lanc">Lançamentos</button></div>`;
+  if (S.segMetas==="lanc"){
+    const days=[["Sáb, 11/10",14230.5],["Sex, 10/10",9810],["Qui, 09/10",8120.9],["Qua, 08/10",6402.35]];
+    return `${seg}<div class="card"><div style="display:flex;align-items:center;gap:10px"><h3 class="flex1">Lançamentos da loja</h3><button class="btn sm" data-act="sheet">${ic("plus","sm")} Lançar venda</button></div>
+      <div style="margin-top:8px">${days.map(d=>`<div class="row"><div class="av">${ic("cal","xs")}</div><div class="flex1"><p class="nm">${d[0]}<small>4 lançamentos</small></p></div><div class="val">${brl(d[1],true)}</div></div>`).join("")}</div></div>`;
+  }
+  const live = STORE.tiers.find(t=>STORE.sold<t.v);
+  return `${seg}
+    <div class="grid2">
+      <div class="card">
+        <h3>${ic("target","sm")} Camadas de outubro <small>não somam · vale a próxima</small></h3>
+        <div style="margin-top:4px">${STORE.tiers.map((t,i)=>{const isLive=t===live;return `<div class="tier ${isLive?"live":""}">
+          <div class="ic">${i+1}</div>
+          <div><p class="t">${t.n}${isLive?` <span class="chip gold" style="margin-left:6px">em jogo</span>`:""}</p>
+            <div class="mini" style="width:min(260px,100%)"><i style="width:${Math.min(100,STORE.sold/t.v*100)}%"></i></div>
+            <p class="sub" style="margin-top:5px">Comissão ${t.c} colaborador · ${t.c} gerente</p></div>
+          <div class="r">${brl(t.v)}<small>${(STORE.sold/t.v*100).toFixed(0)}%</small></div>
+        </div>`}).join("")}</div>
+        <button class="btn ghost sm" style="margin-top:6px">${ic("users","sm")} Ver distribuição por colaborador</button>
+      </div>
+      ${weekCard()}
+    </div>`;
+}
+
+function scrTarefas(){
+  const p = TEAM.find(x=>x.id===S.person);
+  return `<div class="split">
+    <div class="people">${TEAM.map(x=>{const pc=Math.round(x.done.length/x.tasks.length*100);return `<button class="person ${x.id===S.person?"on":""}" data-person="${x.id}">
+      <div class="ring" style="--p:${pc}"><span>${x.done.length}/${x.tasks.length}</span></div>
+      <p class="nm">${x.name.split(" ")[0]}<small>${pc===100?"tudo feito":(x.tasks.length-x.done.length)+" pendente(s)"}</small></p></button>`}).join("")}</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="av lg">${ini(p.name)}</div>
+        <div class="flex1"><h3>${p.name}</h3><p class="sub">${p.done.length} de ${p.tasks.length} feitas hoje</p></div>
+        <div class="datenav"><button>${ic("left","xs")}</button><span>Hoje, 12/10</span><button>${ic("right","xs")}</button></div>
+      </div>
+      <div style="margin-top:14px">${p.tasks.map((t,i)=>{const d=p.done.includes(i);return `<button class="task ${d?"done":""}" data-task="${i}">
+        <span class="bx">${d?ic("ok","xs"):""}</span><span class="tt">${t}</span><span class="rc">${t==="Reposição semanal"?"toda segunda":"todo dia"}</span></button>`}).join("")}</div>
+      <div class="addline"><input class="input" placeholder="Nova tarefa para ${p.name.split(" ")[0]}…"><button class="btn sm">${ic("plus","sm")} Adicionar</button></div>
+      <div class="pills">${[["daily","Todo dia"],["weekly","1x na semana"],["once","Só uma vez"]].map(r=>`<button class="${S.recur===r[0]?"on":""}" data-recur="${r[0]}">${r[1]}</button>`).join("")}<button>Para toda a equipe</button></div>
+    </div>
+  </div>`;
+}
+
+function scrEquipe(){
+  const segs=[["colab","Colaboradores"],["adv","Advertências"],["prem","Premiações"]];
+  const seg = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div class="seg">${segs.map(s=>`<button class="${S.segEquipe===s[0]?"on":""}" data-seg="segEquipe:${s[0]}">${s[1]}</button>`).join("")}</div><div class="flex1"></div><button class="btn sm">${ic("plus","sm")} ${S.segEquipe==="colab"?"Novo colaborador":S.segEquipe==="adv"?"Registrar advertência":"Lançar premiação"}</button></div>`;
+  if (S.segEquipe==="adv") return seg+`<div class="card"><h3>${ic("alert","sm")} Outubro <small>−3 pts por advertência</small></h3><div style="margin-top:6px">
+    <div class="row"><div class="av">GB</div><div class="flex1"><p class="nm">Gustavo Belfort<small>Não registrou volta do almoço · 04/10</small></p></div><div class="val"><span class="chip bad">−3 pts</span></div></div></div></div>`;
+  if (S.segEquipe==="prem") return seg+`<div class="card"><h3>${ic("gift","sm")} Premiações de outubro <small>verba ${brl(1000)}</small></h3><div style="margin-top:6px">
+    <div class="row"><div class="av">${ic("gift","xs")}</div><div class="flex1"><p class="nm">Nenhuma premiação lançada ainda<small>verba inteira disponível no mês</small></p></div><div class="val">${brl(1000)}</div></div></div></div>`;
+  return seg+`<div class="cards">${TEAM.map(p=>{const pc=Math.min(100,p.sold/p.cota*100);return `<div class="card pc">
+    <div class="hd"><div class="av lg">${ini(p.name)}</div><div class="flex1"><p class="nm">${p.name}<small>colaborador · ativo</small></p></div>${p.adv?`<span class="chip bad">${p.adv} adv.</span>`:`<span class="chip ok">em dia</span>`}</div>
+    <div class="st"><div><p>Vendido</p><b>${brl(p.sold/1000).replace(/,00$/,"")}k</b></div><div><p>Cota</p><b>${pc.toFixed(0)}%</b></div><div><p>Hoje</p><b>${p.done.length}/${p.tasks.length}</b></div></div>
+    <div class="mini" style="margin:0"><i style="width:${pc}%"></i></div>
+  </div>`}).join("")}</div>`;
+}
+
+/* ---------- telas colaborador (Bárbara) ---------- */
+const ME = TEAM.find(p=>p.id==="bar");
+const MY_TIERS=[{n:"Meta",v:85753.2},{n:"Super",v:91666.66},{n:"Hiper",v:97580.65}];
+function scrColabInicio(){
+  const rest = MY_TIERS[0].v-ME.sold, daily = rest/20;
+  const tasks = ME.tasks;
+  return `<div class="hello"><div><h2>Bom dia, Bárbara</h2><p>Segunda, 12 de outubro</p></div></div>
+    <section class="hero">
+      <div><p class="eyebrow">${ic("target","xs")} Sua meta de hoje</p><p class="big">${brl(daily)}</p><p class="note">pra bater sua Meta em 20 dias · comissão atual 1%</p></div>
+      <div class="right">${tierBar(ME.sold, MY_TIERS)}</div>
+    </section>
+    <div class="quick">
+      <button class="btn" data-act="sheet" style="grid-column:1/-1;padding:14px">${ic("plus","sm")} Lançar venda de hoje</button>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>${ic("check","sm")} Checklist de hoje <small>${S.colabDone.length}/${tasks.length}</small></h3>
+        <div style="margin-top:12px">${tasks.map((t,i)=>{const d=S.colabDone.includes(i);return `<button class="task ${d?"done":""}" data-ctask="${i}"><span class="bx">${d?ic("ok","xs"):""}</span><span class="tt">${t}</span></button>`}).join("")}</div>
+      </div>
+      <div class="card"><h3>${ic("store","sm")} Meta da loja <small>outubro</small></h3>
+        <p style="font-size:22px;font-weight:800;margin-top:10px">${brl(STORE.sold)} <span class="sub" style="font-size:12px">de ${brl(290000)}</span></p>
+        <div class="mini" style="height:8px"><i style="width:${STORE.sold/290000*100}%"></i></div>
+        <p class="sub" style="margin-top:8px">Você está em 3º no ranking da loja.</p>
+        <button class="btn ghost sm" style="margin-top:12px" data-go="ranking">${ic("trophy","sm")} Ver ranking</button>
+      </div>
+    </div>`;
+}
+function scrOnline(){
+  return `<div class="card"><h3>${ic("globe","sm")} Vendas online <small>outubro</small></h3><p class="sub" style="margin-top:8px">Mesma estrutura das outras telas: cartão de resumo em cima, lista embaixo. (Tela só ilustrativa no mockup.)</p></div>`;
+}
+
+/* ---------- casca ---------- */
+function render(){
+  const dev = document.getElementById("device");
+  dev.dataset.theme = S.theme;
+  const nav = S.role==="gerente"?NAV_G:NAV_C;
+  if(!nav.find(n=>n.k===S.screen)) S.screen="inicio";
+  const titles={inicio:"Início",metas:"Metas",tarefas:"Tarefas",equipe:"Equipe",ranking:"Ranking",online:"Online"};
+  let body="";
+  if(S.role==="gerente"){
+    body = {inicio:scrInicio,metas:scrMetas,tarefas:scrTarefas,equipe:scrEquipe,ranking:()=>rankingCard(false)}[S.screen]();
+  } else {
+    body = {inicio:scrColabInicio,ranking:()=>rankingCard(false),online:scrOnline}[S.screen]();
+  }
+  const who = S.role==="gerente"?{n:"Felipe Ribeiro",r:"Gerente · Anália Franco"}:{n:"Bárbara Ortega",r:"Colaboradora"};
+  dev.innerHTML = `<div class="app">
+    <aside class="side">
+      <div class="logo"><b>Z</b><span class="txt">Z <span>Meta</span></span></div>
+      <p class="sec">Loja</p>
+      ${nav.map(n=>`<button class="navi ${S.screen===n.k?"on":""}" data-go="${n.k}">${ic(n.i)}<span>${n.l}</span>${n.badge&&n.badge()?`<span class="badge">${n.badge()}</span>`:""}</button>`).join("")}
+      <div class="me"><span class="av">${ini(who.n)}</span><div><p>${who.n}</p><small>${who.r}</small></div></div>
+    </aside>
+    <main class="main" id="main">
+      <header class="top"><div class="wrap">
+        <div class="logo"><b>Z</b><span class="txt">Z <span>Meta</span></span></div>
+        <p class="title">${titles[S.screen]}</p>
+        <div class="grow"></div>
+        <div class="month"><button>${ic("left","xs")}</button><span>Out 2026</span><button>${ic("right","xs")}</button></div>
+        <button class="iconbtn" aria-label="Notificações">${ic("bell")}<span class="dot"></span></button>
+      </div></header>
+      <div class="wrap"><div class="page">${body}</div></div>
+    </main>
+    <nav class="bnav">${nav.map(n=>`<button class="${S.screen===n.k?"on":""}" data-go="${n.k}">${ic(n.i)}<span>${n.l}</span></button>`).join("")}</nav>
+    ${S.sheet?`<div class="sheet-bg" data-act="close"><div class="sheet" onclick="event.stopPropagation()">
+      <h3>Lançar venda</h3><p class="sub">${S.role==="gerente"?"Escolha o colaborador e o dia":"Hoje, 12/10 · Bárbara Ortega"}</p>
+      <input class="amt" value="R$ 1.250,00">
+      <label>Valor vendido no dia</label>
+      <button class="btn block" style="margin-top:18px" data-act="save">${ic("ok","sm")} Salvar lançamento</button>
+    </div></div>`:""}
+    ${S.toast?`<div class="toast">${ic("ok","sm")} ${S.toast}</div>`:""}
+  </div>`;
+  fit();
+}
+
+/* tamanhos de aparelho */
+const SIZES = { desktop:[1280,800], tablet:[834,1112], phone:[390,844] };
+function fit(){
+  const frame=document.getElementById("frame"), dev=document.getElementById("device"), bbar=document.getElementById("bbar");
+  let [w,h]=SIZES[S.device]; if(S.device==="tablet"&&S.rot==="landscape") [w,h]=[h,w];
+  dev.style.width=w+"px"; dev.style.height=h+"px";
+  dev.style.borderRadius = S.device==="phone"?"36px":S.device==="tablet"?"18px":"0 0 10px 10px";
+  frame.className="mk-frame "+(S.device==="phone"?"phone":S.device==="tablet"?"tablet":"");
+  bbar.style.display = S.device==="desktop"?"flex":"none";
+  const stage=document.getElementById("stage");
+  const fw=w+(S.device==="phone"?24:S.device==="tablet"?32:20), fh=h+(S.device==="desktop"?50:S.device==="tablet"?32:24);
+  const sc=Math.min(1,(stage.clientWidth-44)/fw,(stage.clientHeight-44)/fh);
+  frame.style.transform=`scale(${sc})`;
+  frame.style.marginBottom=`${-(1-sc)*fh}px`;
+  document.getElementById("mk-rot").style.display = S.device==="tablet"?"flex":"none";
+}
+window.addEventListener("resize",fit);
+
+/* eventos */
+document.getElementById("device").addEventListener("click",e=>{
+  const t=e.target.closest("[data-go],[data-seg],[data-person],[data-task],[data-ctask],[data-act],[data-recur]"); if(!t) return;
+  if(t.dataset.go){S.screen=t.dataset.go; render(); document.getElementById("main").scrollTop=0; return;}
+  if(t.dataset.seg){const [k,v]=t.dataset.seg.split(":"); S[k]=v;}
+  if(t.dataset.person) S.person=t.dataset.person;
+  if(t.dataset.recur) S.recur=t.dataset.recur;
+  if(t.dataset.task){const p=TEAM.find(x=>x.id===S.person),i=+t.dataset.task; p.done=p.done.includes(i)?p.done.filter(x=>x!==i):[...p.done,i];}
+  if(t.dataset.ctask){const i=+t.dataset.ctask; S.colabDone=S.colabDone.includes(i)?S.colabDone.filter(x=>x!==i):[...S.colabDone,i];}
+  const a=t.dataset.act;
+  if(a==="weight") S.weighted=!S.weighted;
+  if(a==="sheet") S.sheet=true;
+  if(a==="close") S.sheet=false;
+  if(a==="save"){S.sheet=false;S.toast="Venda lançada";setTimeout(()=>{S.toast="";render();},1600);}
+  const st=document.getElementById("main").scrollTop; render(); document.getElementById("main").scrollTop=st;
+});
+function group(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.toggle("on",x===b));S[key]=b.dataset.v;render();});}
+group("mk-device","device");group("mk-role","role");group("mk-theme","theme");group("mk-rot","rot");
+document.getElementById("mk-notes-btn").onclick=()=>document.getElementById("notes").classList.toggle("open");
+document.getElementById("notes-close").onclick=()=>document.getElementById("notes").classList.remove("open");
+render();
+</script>
+</body>
+</html>

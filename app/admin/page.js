@@ -43,7 +43,7 @@ import {
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
-import EmpresaDashboard, { EMPRESA_TABS } from "../../lib/EmpresaDashboard";
+import EmpresaDashboard, { EMPRESA_TABS, GESTAO_TABS } from "../../lib/EmpresaDashboard";
 import ColaboradorView from "../../lib/ColaboradorView";
 import GerenteView from "../../lib/GerenteView";
 import ConsorcioDashboard, { CONSORCIO_TABS } from "../../lib/ConsorcioDashboard";
@@ -346,7 +346,7 @@ export default function AdminPage() {
       ? ADMINISTRATIVO_TABS
       : isConsorcioView
       ? (viewingProfile.role === "gerente" ? GERENTE_TABS_CONSORCIO : TABS_CONSORCIO_COLAB)
-      : EMPRESA_TABS;
+      : viewingProfile.role === "gerente" ? GESTAO_TABS : EMPRESA_TABS;
     const effectiveViewTab = viewingTabs.some((t) => t.key === viewTab) ? viewTab : "atividades";
     return (
       <AppShell
@@ -425,7 +425,7 @@ export default function AdminPage() {
         userAvatarUrl={profile.avatar_url}
         onNameChange={(name) => setProfile((p) => ({ ...p, full_name: name }))}
         onAvatarChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
-        tabs={isConsorcioLoja ? CONSORCIO_TABS : EMPRESA_TABS}
+        tabs={isConsorcioLoja ? CONSORCIO_TABS : GESTAO_TABS}
         activeTab={lojaTab}
         onTabChange={setLojaTab}
       >
@@ -490,13 +490,11 @@ export default function AdminPage() {
 
         {overview && (
           <div
-            className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border-2"
-            style={{ background: "linear-gradient(160deg, #1c2e4d 0%, #12203a 100%)", borderColor: "#c9a15a", boxShadow: "0 10px 26px rgba(18,32,58,0.35)" }}
+            className="hero-card"
           >
-            <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-[#c9a15a]/15" />
             <div className="relative flex items-center gap-2 mb-5">
-              <Crown size={18} className="text-[#e4c789]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#e4c789]">Master Admin · Visão geral</span>
+              <Crown size={16} className="text-goldlight" />
+              <span className="text-xs font-semibold text-white/70">Master Admin · Visão geral</span>
             </div>
             <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
               <HeroStat Icon={Building2} value={overview.empresas_ativas} label="Empresas ativas" sub={`${overview.total_empresas} no total`} delay={0} />
@@ -1011,13 +1009,11 @@ function FinanceiroTab() {
       </div>
 
       <div
-        className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border-2"
-        style={{ background: "linear-gradient(160deg, #1c2e4d 0%, #12203a 100%)", borderColor: "#c9a15a", boxShadow: "0 10px 26px rgba(18,32,58,0.35)" }}
+        className="hero-card"
       >
-        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-[#c9a15a]/15" />
         <div className="relative flex items-center gap-2 mb-5">
-          <Wallet size={18} className="text-[#e4c789]" />
-          <span className="text-xs font-bold uppercase tracking-wider text-[#e4c789]">Financeiro · {monthLabel(month)}</span>
+          <Wallet size={16} className="text-goldlight" />
+          <span className="text-xs font-semibold text-white/70">Financeiro · {monthLabel(month)}</span>
         </div>
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
           <HeroStat Icon={DollarSign} value={formatBRL(totals.receita)} label="Receita total" sub="a cobrar no mês" />
@@ -1260,13 +1256,11 @@ function DadosTab() {
       </div>
 
       <div
-        className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border-2"
-        style={{ background: "linear-gradient(160deg, #1c2e4d 0%, #12203a 100%)", borderColor: "#c9a15a", boxShadow: "0 10px 26px rgba(18,32,58,0.35)" }}
+        className="hero-card"
       >
-        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-[#c9a15a]/15" />
         <div className="relative flex items-center gap-2 mb-5">
-          <TrendingUp size={18} className="text-[#e4c789]" />
-          <span className="text-xs font-bold uppercase tracking-wider text-[#e4c789]">Dados · {monthLabel(month)}</span>
+          <TrendingUp size={16} className="text-goldlight" />
+          <span className="text-xs font-semibold text-white/70">Dados · {monthLabel(month)}</span>
         </div>
         <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-4">
           <HeroStatLight
@@ -1437,13 +1431,11 @@ function FaturamentoHistorico({ empresa, onBack }) {
       </div>
 
       <div
-        className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border-2"
-        style={{ background: "linear-gradient(160deg, #1c2e4d 0%, #12203a 100%)", borderColor: "#c9a15a", boxShadow: "0 10px 26px rgba(18,32,58,0.35)" }}
+        className="hero-card"
       >
-        <div className="absolute -top-14 -right-10 w-48 h-48 rounded-full bg-[#c9a15a]/15" />
         <div className="relative flex items-center gap-2 mb-3">
-          <TrendingUp size={18} className="text-[#e4c789]" />
-          <span className="text-xs font-bold uppercase tracking-wider text-[#e4c789]">Faturamento no período</span>
+          <TrendingUp size={16} className="text-goldlight" />
+          <span className="text-xs font-semibold text-white/70">Faturamento no período</span>
         </div>
         <AutoFitText className="relative text-4xl sm:text-5xl font-extrabold text-white leading-tight">{formatBRL(totalPeriodo)}</AutoFitText>
         <p className="relative text-xs font-semibold text-white/55 mt-1">

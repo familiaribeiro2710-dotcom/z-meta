@@ -13,6 +13,10 @@
   --color-line: 231 227 217;    /* #e7e3d9 — bordas em cartões claros */
   --color-muted: 125 122 111;   /* #7d7a6f — texto secundário */
   --color-surface: 255 255 255; /* #ffffff — fundo de cards/inputs/modais */
+  /* redesign 2026-10-12: dourado de TEXTO (o #c9a15a puro não tem contraste em fundo claro) e
+     dourado suave de fundo (item ativo do menu, avatar sem foto, chip "em jogo") */
+  --color-goldtext: 154 117 54;  /* #9a7536 */
+  --color-goldsoft: 246 237 220; /* #f6eddc */
 }
 :root.dark {
   --color-navy: 242 241 236;    /* texto principal claro sobre fundo escuro */
@@ -20,6 +24,8 @@
   --color-line: 38 49 74;       /* divisórias sutis sobre navy escuro */
   --color-muted: 154 163 184;   /* texto secundário com contraste sobre navy escuro */
   --color-surface: 20 31 54;    /* #141f36 — fundo de cards/inputs/modais no escuro */
+  --color-goldtext: 228 199 137; /* #e4c789 */
+  --color-goldsoft: 42 39 27;
 }
 
 html, body {
@@ -41,6 +47,8 @@ html, body {
      Chrome/WebView quando essas props ficam no elemento raiz de scroll). Não
      reintroduzir sem testar explicitamente em Android de verdade. */
   -webkit-tap-highlight-color: transparent;
+  /* redesign 2026-10-12: algarismos de largura fixa — colunas de R$ não "dançam" */
+  font-variant-numeric: tabular-nums;
 }
 
 * {
@@ -59,7 +67,7 @@ html, body {
 
 @layer components {
   .input {
-    @apply w-full border-2 border-line bg-surface rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-4 focus:ring-gold/15 transition-all;
+    @apply w-full border border-line bg-surface rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-4 focus:ring-gold/15 transition-all;
   }
 
   /* Nova identidade (2026-07): dourado vira a cor de ação padrão do app — o gradiente
@@ -124,45 +132,56 @@ html, body {
     }
   }
 
+  /* redesign 2026-10-12 (mockup MOCKUP_REDESIGN.html): borda 1px, sombra discreta, sem o
+     "pulinho" no hover — card estático não é botão. */
   .card {
-    @apply border-2 border-line bg-surface rounded-3xl p-5 shadow-soft hover:shadow-card hover:-translate-y-0.5 transition-all;
+    @apply border border-line bg-surface rounded-2xl p-5 shadow-soft transition-colors;
+  }
+  /* o primeiro .label de um card funciona como TÍTULO do card (padrão do app inteiro:
+     <div className="card"><p className="label ..."><Icon/> Título</p>…) — vira título de verdade
+     (negrito, cor do texto, sem caixa alta) em vez de rótulo cinza em CAIXA ALTA. */
+  .card > .label:first-child,
+  .card-dark > .label-dark:first-child {
+    @apply text-sm normal-case tracking-normal text-navy font-extrabold;
   }
 
   /* Superfície escura opt-in — usada nas telas de gestão que antes eram tabela crua sobre
      fundo branco (Rankings, Funil por colaborador, Colaboradores). Não é dark mode do app
      inteiro — é um cartão específico que assume fundo navy em vez de branco. */
+  /* redesign 2026-10-12: .card-dark deixou de ser escuro — vira a mesma superfície clara do
+     .card. As telas foram escritas com texto branco aqui dentro (~70 lugares); em vez de reescrever
+     cada uma, os utilitários "brancos" são remapeados logo abaixo, SÓ dentro de .card-dark. */
   .card-dark {
-    @apply rounded-3xl p-5 border border-white/10 shadow-navycard transition-all;
-    background: #1c2e4d;
+    @apply rounded-2xl p-5 border border-line bg-surface shadow-soft transition-colors;
   }
 
   /* Linha de lista dentro de .card-dark — substitui <tr>/<td> de tabela crua. */
   .row-card {
-    @apply flex items-center gap-3 py-3 border-b border-white/10 last:border-0;
+    @apply flex items-center gap-3 py-3 border-b border-line last:border-0;
   }
 
   /* Avatar/ícone quadrado com leve dourado — âncora visual de cada linha, no lugar de
      só texto puro como nas tabelas antigas. */
   .avatar-chip {
     @apply w-9 h-9 rounded-xl flex items-center justify-center text-xs font-extrabold shrink-0;
-    background: rgba(201, 161, 90, 0.16);
-    color: #e4c789;
+    background: rgb(var(--color-goldsoft));
+    color: rgb(var(--color-goldtext));
   }
 
   .chip-ok {
     @apply text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0;
-    background: rgba(22, 163, 74, 0.18);
-    color: #86efac;
+    background: rgba(22, 163, 74, 0.12);
+    color: #16a34a;
   }
   .chip-warn {
     @apply text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0;
-    background: rgba(217, 119, 6, 0.18);
-    color: #fbbf76;
+    background: rgba(217, 119, 6, 0.12);
+    color: #c2770a;
   }
   .chip-danger {
     @apply text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0;
-    background: rgba(220, 38, 38, 0.18);
-    color: #fca5a5;
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
   }
 
   /* Posição de ranking — 1º/2º/3º ganham medalha, o resto fica neutro sobre o fundo escuro. */
@@ -182,7 +201,7 @@ html, body {
     color: #2b1608;
   }
   .rank-pos-plain {
-    @apply bg-white/10 text-white/70;
+    @apply bg-paper text-muted;
   }
 
   .label {
@@ -192,7 +211,7 @@ html, body {
   /* Label equivalente pra dentro de .card-dark (texto claro em vez de --muted, que é
      pensado pra fundo claro). */
   .label-dark {
-    @apply block text-[11px] uppercase tracking-wider text-white/50 mb-1.5 font-bold;
+    @apply block text-[11px] uppercase tracking-wider text-muted mb-1.5 font-bold;
   }
 
   .badge {
@@ -296,4 +315,38 @@ input[type="time"].date-input {
   animation-name: confettiFall;
   animation-timing-function: cubic-bezier(0.35, 0, 0.65, 1);
   animation-fill-mode: forwards;
+}
+
+/* ---- redesign 2026-10-12: remapeamento dos utilitários "brancos" dentro de .card-dark (agora
+   claro). Elemento com fundo próprio arbitrário (ex.: botão do WhatsApp, bg-[#25D366]) mantém o
+   texto branco. Herocards (fundo navy) não usam .card-dark, então não são afetados. ---- */
+.card-dark .text-white:not([class*="bg-["]) { color: rgb(var(--color-navy)); }
+.card-dark :is(.text-white\/90, .text-white\/70, .text-white\/65) { color: rgb(var(--color-navy) / 0.8); }
+.card-dark :is(.text-white\/60, .text-white\/55, .text-white\/50, .text-white\/45, .text-white\/40, .text-white\/35) { color: rgb(var(--color-muted)); }
+.card-dark :is(.text-white\/25, .text-white\/20) { color: rgb(var(--color-muted) / 0.6); }
+.card-dark .text-goldlight { color: rgb(var(--color-goldtext)); }
+.card-dark :is(.border-white\/10, .border-white\/15, .border-white\/20) { border-color: rgb(var(--color-line)); }
+.card-dark .bg-white\/10 { background-color: rgb(var(--color-paper)); }
+.card-dark .hover\:text-white:hover, .card-dark .hover\:text-white\/60:hover { color: rgb(var(--color-navy)); }
+.card-dark .hover\:text-goldlight:hover { color: rgb(var(--color-goldtext)); }
+.card-dark .hover\:bg-surface\/10:hover { background-color: rgb(var(--color-paper)); }
+
+/* ---- redesign 2026-10-12: herocard único pra todos os papéis + fileira de indicadores ---- */
+@layer components {
+  .hero-card {
+    @apply relative overflow-hidden rounded-3xl p-6 sm:p-7 text-white;
+    background: #12203a;
+  }
+  :root.dark .hero-card {
+    background: #16233d;
+    border: 1px solid rgb(var(--color-line));
+  }
+  /* indicadores que antes ficavam espremidos dentro do herocard: uma linha de cards claros
+     logo abaixo dele (2 colunas no celular, todos lado a lado a partir do desktop) */
+  .kpi-row {
+    @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-flow-col lg:auto-cols-fr lg:grid-cols-none gap-3;
+  }
+  .kpi-tile {
+    @apply min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-soft;
+  }
 }

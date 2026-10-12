@@ -28,6 +28,8 @@ module.exports = {
         line: withOpacity("--color-line"),
         muted: withOpacity("--color-muted"),
         surface: withOpacity("--color-surface"),
+        goldtext: withOpacity("--color-goldtext"),
+        goldsoft: withOpacity("--color-goldsoft"),
         success: "#16a34a",
         warn: "#d97706",
         danger: "#dc2626",

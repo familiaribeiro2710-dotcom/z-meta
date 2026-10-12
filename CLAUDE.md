@@ -202,3 +202,9 @@ Tema PWA: `theme_color`/`background_color` em `public/manifest.json`, ícones em
 - **`ignoreDuringBuilds: true` no ESLint** — bugs de JSX/import indefinido não aparecem no build, só em produção. Considerar ligar lint no CI ou pelo menos rodar `react/jsx-no-undef` manualmente antes de PRs que mexem em ícones/imports.
 - **Sem CHANGELOG formal/versionamento semântico** — histórico completo de decisões e bugs corrigidos vive em `CONTEXTO_PROJETO.md` (seção 12 tem a única funcionalidade explicitamente recusada até agora: master ver senhas de usuários em texto puro — recusado por segurança).
 - Ver `CONTEXTO_PROJETO.md` seção 13 pra lista completa de "coisas a saber" e próximos passos sugeridos.
+
+## Redesign 2026-10-12 (navegação e visual)
+
+- Navegação por aparelho no `AppShell`: barra inferior (celular), trilho de ícones (`md`), menu lateral (`lg:landscape`). Toda tela que usa `AppShell` com `tabs` herda isso.
+- Telas de gestão de vestuário usam `GESTAO_TABS` (Início/Tarefas/Equipe/Metas/Online/Leads); colaborador segue `EMPRESA_TABS`. Ao criar aba nova de gestão de vestuário, colocar em `GESTAO_TABS` e conferir as condições de `tab` em `HierarchyHome.js`.
+- Herocard = `.hero-card` (um só estilo pra todos os papéis); barra de camadas = `<TierBar>`; indicadores abaixo do herocard = `.kpi-row` + `.kpi-tile`. `.card-dark` é claro desde o redesign (utilitários brancos remapeados em `globals.css`). Detalhes em `CONTEXTO_PROJETO.md`.

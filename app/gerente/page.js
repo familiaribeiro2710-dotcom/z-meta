@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import AppShell from "../../lib/AppShell";
 import ChangePassword from "../../lib/ChangePassword";
-import GerenteView, { EMPRESA_TABS } from "../../lib/GerenteView";
+import GerenteView, { GESTAO_TABS } from "../../lib/GerenteView";
 import GerenteViewConsorcio, { GERENTE_TABS } from "../../lib/GerenteViewConsorcio";
 import { isCrmCategoria } from "../../lib/categoria";
 
@@ -56,7 +56,7 @@ export default function GerentePage() {
   }, [router]);
 
   const isConsorcio = isCrmCategoria(categoriaSlug);
-  const TABS = isConsorcio ? GERENTE_TABS : EMPRESA_TABS;
+  const TABS = isConsorcio ? GERENTE_TABS : GESTAO_TABS;
 
   if (loading) {
     return (
